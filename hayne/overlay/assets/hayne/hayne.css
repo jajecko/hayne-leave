@@ -50,7 +50,11 @@ body {
   width: auto;
   height: 20px;
   max-width: 150px;
-  filter: brightness(0);
+  filter: brightness(0)
+    drop-shadow(1px 0 0 #000)
+    drop-shadow(-1px 0 0 #000)
+    drop-shadow(0 1px 0 #000)
+    drop-shadow(0 -1px 0 #000);
 }
 
 .btn-primary,
@@ -87,7 +91,11 @@ body:has(.hayne-login-shell) {
   width: min(100%, 330px);
   height: auto;
   margin: 18px auto 28px;
-  filter: brightness(0);
+  filter: brightness(0)
+    drop-shadow(1px 0 0 #000)
+    drop-shadow(-1px 0 0 #000)
+    drop-shadow(0 1px 0 #000)
+    drop-shadow(0 -1px 0 #000);
 }
 
 .hayne-login-product-name {
