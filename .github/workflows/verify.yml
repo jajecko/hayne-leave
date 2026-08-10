@@ -69,6 +69,7 @@ jobs:
           grep -F 'assets/hayne/logo.svg' artifacts/hayne-login.html
           grep -F 'assets/hayne/favicon.svg' artifacts/hayne-login.html
           grep -F 'assets/hayne/hayne.css' artifacts/hayne-login.html
+          ! grep -F 'jorani.org' artifacts/hayne-login.html
           curl -fsS http://127.0.0.1:8080/assets/hayne/favicon.svg -o artifacts/hayne-favicon.svg
           grep -F '<svg' artifacts/hayne-favicon.svg
 
@@ -107,6 +108,7 @@ jobs:
           grep -F 'id="frmLeaveForm"' artifacts/hayne-create-leave.html
           for file in artifacts/hayne-leaves.html artifacts/hayne-balance.html artifacts/hayne-create-leave.html; do
             grep -F 'assets/hayne/app.css' "$file"
+            ! grep -F 'jorani.org' "$file"
           done
           curl -fsS http://localhost:8080/assets/hayne/app.css -o artifacts/hayne-app.css
           grep -F '#wrap .table' artifacts/hayne-app.css
