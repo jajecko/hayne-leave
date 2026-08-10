@@ -5,7 +5,7 @@
     if (document.querySelector('[data-hayne-home]')) return 'home';
     if (document.querySelector('[data-hayne-view="leave-create-v2"]')) return 'leaves/create';
     if (document.querySelector('[data-hayne-view="my-requests-v2"]')) return 'leaves';
-    if (document.querySelector('table.table-bordered.table-hover') && /balance/i.test(document.title)) return 'leaves/counters';
+    if (document.querySelector('table.table-bordered.table-hover') && /balance|saldo/i.test(document.title)) return 'leaves/counters';
     return normalizePath(window.location.pathname);
   };
 
@@ -16,9 +16,57 @@
     return node;
   };
 
+  const initialsFor = (name) => {
+    const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return 'HL';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0] || ''}${parts[parts.length - 1][0] || ''}`.toUpperCase();
+  };
+
+  const enhanceAccount = (wrap) => {
+    const account = wrap.querySelector('.nav.pull-right > .brand');
+    if (!account || account.querySelector('.hayne-user-avatar')) return;
+
+    const name = account.textContent.replace(/\s+/g, ' ').trim();
+    account.textContent = '';
+
+    const avatar = document.createElement('span');
+    avatar.className = 'hayne-user-avatar';
+    avatar.textContent = initialsFor(name);
+
+    const label = document.createElement('span');
+    label.className = 'hayne-user-name';
+    label.textContent = name;
+
+    account.appendChild(avatar);
+    account.appendChild(label);
+  };
+
+  const addSidebarFooter = (wrap) => {
+    const navbarInner = wrap.querySelector('> .navbar .navbar-inner');
+    if (!navbarInner || navbarInner.querySelector('.hayne-sidebar-footer')) return;
+
+    const footer = document.createElement('div');
+    footer.className = 'hayne-sidebar-footer';
+    footer.appendChild(icon('mdi-shield-check'));
+
+    const title = document.createElement('strong');
+    title.textContent = 'HAYNE Leave';
+    footer.appendChild(title);
+
+    const version = document.createElement('small');
+    version.textContent = 'Wersja 1.0.0';
+    footer.appendChild(version);
+
+    navbarInner.appendChild(footer);
+  };
+
   const initNavigation = () => {
     const wrap = document.getElementById('wrap');
     if (!wrap) return;
+
+    enhanceAccount(wrap);
+    addSidebarFooter(wrap);
 
     const nav = wrap.querySelector('.nav-responsive > ul.nav:not(.pull-right)');
     if (!nav || nav.dataset.hayneNavigation === 'target-v1') return;
@@ -30,9 +78,9 @@
 
     const directItems = [
       { path: 'home', label: 'Start', icon: 'mdi-home' },
-      { path: 'leaves/create', label: 'Nowy wniosek', icon: 'mdi-plus-box' },
-      { path: 'leaves', label: 'Moje wnioski', icon: 'mdi-format-list-bulleted' },
-      { path: 'leaves/counters', label: 'Saldo urlopowe', icon: 'mdi-chart-pie' },
+      { path: 'leaves/create', label: 'Nowy wniosek', icon: 'mdi-plus-box-outline' },
+      { path: 'leaves', label: 'Moje wnioski', icon: 'mdi-file-document-outline' },
+      { path: 'leaves/counters', label: 'Saldo urlopowe', icon: 'mdi-calendar-blank' },
     ];
 
     const fragment = document.createDocumentFragment();
@@ -58,25 +106,25 @@
       {
         label: 'Kalendarz',
         className: 'hayne-nav-calendar',
-        icon: 'mdi-calendar',
+        icon: 'mdi-calendar-blank',
         active: surface.startsWith('calendar'),
       },
       {
         label: 'Zespół',
         className: 'hayne-nav-team',
-        icon: 'mdi-account-multiple',
+        icon: 'mdi-account-multiple-outline',
         active: /^(hr|organization|contracts|positions|reports)(\/|$)/.test(surface),
       },
       {
         label: 'Do akceptacji',
         className: 'hayne-nav-approvals',
-        icon: 'mdi-check-circle',
+        icon: 'mdi-check-circle-outline',
         active: /^(requests|overtime)(\/|$)/.test(surface),
       },
       {
         label: 'Administracja',
         className: 'hayne-nav-admin',
-        icon: 'mdi-settings',
+        icon: 'mdi-settings-outline',
         active: /^(admin|users|leavetypes)(\/|$)/.test(surface) && !surface.startsWith('users/myprofile'),
       },
     ];
