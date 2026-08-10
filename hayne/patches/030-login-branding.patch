@@ -28,7 +28,7 @@
 -                </div>
 +            <div class="span6 hayne-login-brand-panel">
 +                <div class="hayne-login-brand" aria-label="HAYNE Leave">
-+                    <span class="hayne-wordmark hayne-wordmark--login" aria-hidden="true">HAYNE</span>
++                    <img class="hayne-logo hayne-logo--login" src="<?php echo base_url(); ?>assets/hayne/logo.svg" alt="HAYNE">
 +                    <span class="hayne-login-product-name">Leave</span>
 +                </div>
              </div>
