@@ -5,8 +5,6 @@
 -    <title><?php echo $title ?> - Jorani</title>
 +    <title><?php echo $title ?> - HAYNE Leave</title>
      <?php echo debugbar_head(); ?>
-@@ -19,3 +19,4 @@
-     <link href="<?php echo base_url(); ?>assets/bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet">
+@@ -20 +20,2 @@
      <link rel="stylesheet" href="<?php echo base_url(); ?>assets/dist/legacy.css">
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/hayne.css">
-     <?php CI_Controller::get_instance()->load->helper('language');
