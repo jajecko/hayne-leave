@@ -135,6 +135,41 @@
     });
   };
 
+  const stabilizeGridRows = () => {
+    const visibleIndexes = new Set([0, 1, 2, 4, 5, 6]);
+    document.querySelectorAll('#leaves thead tr, #leaves tbody tr').forEach((row) => {
+      Array.from(row.children).forEach((cell, index) => {
+        if (visibleIndexes.has(index) || cell.classList.contains('dataTables_empty')) {
+          cell.style.gridRow = '1';
+        }
+      });
+    });
+  };
+
+  const localizeDataTablesChrome = () => {
+    const empty = document.querySelector('#leaves tbody td.dataTables_empty');
+    if (empty) empty.textContent = 'Brak wniosków do wyświetlenia';
+
+    const infoNode = document.getElementById('leaves_info');
+    if (infoNode && window.jQuery && window.jQuery.fn.dataTable.isDataTable('#leaves')) {
+      const info = window.jQuery('#leaves').DataTable().page.info();
+      infoNode.textContent = info.recordsDisplay === 0
+        ? '0 wniosków'
+        : `${info.start + 1}–${info.end} z ${info.recordsDisplay} wniosków`;
+    }
+
+    const previous = document.querySelector('#leaves_previous');
+    const next = document.querySelector('#leaves_next');
+    if (previous) {
+      previous.textContent = '‹';
+      previous.setAttribute('aria-label', 'Poprzednia strona');
+    }
+    if (next) {
+      next.textContent = '›';
+      next.setAttribute('aria-label', 'Następna strona');
+    }
+  };
+
   const syncStatusTabs = (tabs, filterDetails) => {
     const current = checkedStatuses();
     const presets = {
@@ -170,6 +205,14 @@
       input.setAttribute('aria-label', 'Szukaj wniosków');
     }
     toolbarRight.insertBefore(filter, toolbarRight.firstChild);
+  };
+
+  const enhanceTablePresentation = () => {
+    stabilizeGridRows();
+    enhanceRowActions();
+    enhanceStatusCells();
+    enhanceTypeCells();
+    localizeDataTablesChrome();
   };
 
   const enhance = () => {
@@ -260,15 +303,9 @@
     });
 
     if (window.jQuery) {
-      window.jQuery('#leaves').on('draw.dt', () => {
-        enhanceRowActions();
-        enhanceStatusCells();
-        enhanceTypeCells();
-      });
+      window.jQuery('#leaves').on('draw.dt', () => window.setTimeout(enhanceTablePresentation, 0));
     }
-    enhanceRowActions();
-    enhanceStatusCells();
-    enhanceTypeCells();
+    enhanceTablePresentation();
 
     document.addEventListener('click', (event) => {
       document.querySelectorAll('.hayne-row-actions.is-open').forEach((menu) => {
