@@ -1,0 +1,11 @@
+--- a/legacy/application/views/menu/index.php
++++ b/legacy/application/views/menu/index.php
+@@ -41,5 +41,5 @@
+     <div class="navbar-inner">
+-      <a href="<?php echo base_url(); ?>home" class="brand">&nbsp;<img
+-          src="<?php echo base_url(); ?>assets/images/brand.png" height="18" width="18"
+-          style="margin-top:-6px;">&nbsp;Jorani</a>
++      <a href="<?php echo base_url(); ?>home" class="brand hayne-navbar-brand" aria-label="HAYNE Leave">
++        <img src="<?php echo base_url(); ?>assets/hayne/logo.png" class="hayne-navbar-logo" alt="HAYNE">
++      </a>
+       <div class="nav-responsive">

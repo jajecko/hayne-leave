@@ -1,0 +1,26 @@
+--- a/legacy/application/views/session/login.php
++++ b/legacy/application/views/session/login.php
+@@ -40,4 +40,4 @@
+ <div class="row vertical-center">
+-    <div class="span3">&nbsp;</div>
+-    <div class="span6 form-box">
++    <div class="span2">&nbsp;</div>
++    <div class="span8 form-box hayne-login-shell">
+         <div class="row-fluid">
+@@ -84,3 +84,3 @@
+                     <div class="span12">
+-                        <img src="<?php echo base_url(); ?>assets/images/logo_simple.png">
++                        <img src="<?php echo base_url(); ?>assets/hayne/logo.png" class="hayne-login-logo" alt="HAYNE">
+                     </div>
+@@ -92,5 +92,3 @@
+                     <div class="span12">
+-                        <span style="font-size: 250%; font-weight: bold; line-height: 100%;">
+-                            <center><?php echo lang('Leave Management System'); ?></center>
+-                        </span>
++                        <span class="hayne-login-product-name">HAYNE Leave</span>
+                     </div>
+@@ -100,3 +98,3 @@
+     </div>
+-    <div class="span3">&nbsp;</div>
++    <div class="span2">&nbsp;</div>
+ </div>
