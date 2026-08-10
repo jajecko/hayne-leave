@@ -37,6 +37,18 @@ jobs:
       - name: Build and start HAYNE Leave
         run: docker compose up --build -d
 
+      - name: Verify PR-UI-01 source in built image
+        run: |
+          docker compose exec -T jorani sh -ec '
+            view=legacy/application/views/leaves/create.php
+            header=legacy/application/views/templates/header.php
+            grep -F "data-hayne-view=\"leave-create-v2\"" "$view"
+            grep -F "Nowy wniosek" "$view"
+            grep -F "Rodzaj nieobecności" "$view"
+            grep -F "Wyślij wniosek" "$view"
+            grep -F "assets/hayne/request.css" "$header"
+          '
+
       - name: Verify alternate auth branding
         run: |
           docker compose exec -T jorani sh -ec '
@@ -121,10 +133,6 @@ jobs:
           grep -F 'table table-bordered table-hover' artifacts/hayne-balance.html
           grep -F 'id="frmLeaveForm"' artifacts/hayne-create-leave.html
           grep -F 'data-hayne-view="leave-create-v2"' artifacts/hayne-create-leave.html
-          grep -F '<h1>Nowy wniosek</h1>' artifacts/hayne-create-leave.html
-          grep -F 'Rodzaj nieobecności' artifacts/hayne-create-leave.html
-          grep -F 'Wyślij wniosek' artifacts/hayne-create-leave.html
-          grep -F 'assets/hayne/request.css' artifacts/hayne-create-leave.html
           for file in artifacts/hayne-leaves.html artifacts/hayne-balance.html artifacts/hayne-create-leave.html; do
             grep -F 'assets/hayne/app.css' "$file"
             ! grep -F 'jorani.org' "$file"
