@@ -115,6 +115,9 @@
     }
 
     var toggleDayoffs = false;
+    var hayneCalendarEvents = window.location.protocol === 'file:'
+        ? []
+        : '<?php echo base_url(); ?>leaves/individual';
 
     function hayneCalendarEventClass(event) {
         var color = String(event.color || '').toLowerCase();
@@ -151,7 +154,7 @@
                 center: "title",
                 right: ""
             },
-            events: '<?php echo base_url(); ?>leaves/individual',
+            events: hayneCalendarEvents,
             eventClick: function (calEvent, jsEvent, view) {
                 if (calEvent.color != '#000000') {
                     var link = "<?php echo base_url(); ?>ics/ical/" + calEvent.id;
