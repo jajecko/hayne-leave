@@ -44,6 +44,14 @@ jobs:
             grep -F "assets/hayne/request.css" legacy/application/views/templates/header.php
           '
 
+      - name: Verify PR-UI-02 source in built image
+        run: |
+          docker compose exec -T jorani sh -ec '
+            grep -F "my-requests-v2" legacy/application/views/leaves/index.php
+            grep -F "Moje wnioski" legacy/application/views/leaves/index.php
+            grep -F "assets/hayne/requests-list.css" legacy/application/views/templates/header.php
+          '
+
       - name: Verify alternate auth branding
         run: |
           docker compose exec -T jorani sh -ec '
@@ -125,6 +133,10 @@ jobs:
           curl -fsS -b artifacts/hayne-cookies.txt http://localhost:8080/leaves/counters -o artifacts/hayne-balance.html
           curl -fsS -b artifacts/hayne-cookies.txt http://localhost:8080/leaves/create -o artifacts/hayne-create-leave.html
           grep -F 'id="leaves"' artifacts/hayne-leaves.html
+          grep -F 'data-hayne-view="my-requests-v2"' artifacts/hayne-leaves.html
+          grep -F 'Moje wnioski' artifacts/hayne-leaves.html
+          grep -F 'Rodzaj nieobecności' artifacts/hayne-leaves.html
+          grep -F 'Nowy wniosek' artifacts/hayne-leaves.html
           grep -F 'table table-bordered table-hover' artifacts/hayne-balance.html
           grep -F 'id="frmLeaveForm"' artifacts/hayne-create-leave.html
           grep -F 'data-hayne-view="leave-create-v2"' artifacts/hayne-create-leave.html
@@ -132,12 +144,16 @@ jobs:
             grep -F 'assets/hayne/app.css' "$file"
             ! grep -F 'jorani.org' "$file"
           done
+          grep -F 'assets/hayne/requests-list.css' artifacts/hayne-leaves.html
           curl -fsS http://localhost:8080/assets/hayne/app.css -o artifacts/hayne-app.css
           curl -fsS http://localhost:8080/assets/hayne/request.css -o artifacts/hayne-request.css
+          curl -fsS http://localhost:8080/assets/hayne/requests-list.css -o artifacts/hayne-requests-list.css
           grep -F '#wrap .table' artifacts/hayne-app.css
           grep -F '#wrap input[type="text"]' artifacts/hayne-app.css
           grep -F '.hayne-request-page' artifacts/hayne-request.css
           grep -F '.hayne-request-actions' artifacts/hayne-request.css
+          grep -F '.hayne-requests-page' artifacts/hayne-requests-list.css
+          grep -F '.hayne-status-chip' artifacts/hayne-requests-list.css
 
       - name: Guard visible HAYNE white-label
         run: |
