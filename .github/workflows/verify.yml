@@ -37,6 +37,22 @@ jobs:
       - name: Build and start HAYNE Leave
         run: docker compose up --build -d
 
+      - name: Verify alternate auth branding
+        run: |
+          docker compose exec -T jorani sh -ec '
+            for file in \
+              legacy/application/views/session/login_simple.php \
+              legacy/application/views/session/failure.php \
+              legacy/application/views/session/authorize.php; do
+              grep -F "assets/hayne/logo.svg" "$file"
+              ! grep -F "assets/images/logo_simple.png" "$file"
+            done
+            grep -F "HAYNE Leave" legacy/application/views/session/login_simple.php
+            grep -F "assets/hayne/hayne.css" legacy/application/views/session/login_simple.php
+            grep -F "assets/hayne/favicon.svg" legacy/application/views/session/login_simple.php
+            ! grep -F " - Jorani" legacy/application/views/session/login_simple.php
+          '
+
       - name: Smoke test branded login page
         run: |
           mkdir -p artifacts
