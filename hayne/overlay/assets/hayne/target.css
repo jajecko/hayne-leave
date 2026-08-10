@@ -387,6 +387,26 @@
   margin-top: 22px;
 }
 
+/* DataTables writes inline widths after it measures the legacy table. The target grid owns layout. */
+#wrap .hayne-requests-card table.dataTable thead th,
+#wrap .hayne-requests-card table.dataTable tbody td {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+@media (min-width: 980px) {
+  .hayne-requests-header {
+    min-height: 78px;
+    padding-top: 12px;
+    padding-bottom: 18px;
+  }
+
+  #wrap .hayne-requests-create {
+    margin-top: -3px;
+  }
+}
+
 @media (min-width: 1100px) {
   .hayne-dashboard-hero {
     grid-template-columns: minmax(0, 1.15fr) minmax(340px, .85fr);
