@@ -1,0 +1,188 @@
+/* HAYNE Leave — create request surface.
+ * Scoped to the marker added by PR-UI-01. No leave workflow behavior is changed here.
+ */
+
+.hayne-request-page {
+  box-sizing: border-box;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 34px 0 72px;
+}
+
+.hayne-request-page *,
+.hayne-request-page *::before,
+.hayne-request-page *::after {
+  box-sizing: border-box;
+}
+
+.hayne-request-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--hayne-line);
+}
+
+.hayne-request-eyebrow {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--hayne-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+#wrap .hayne-request-header h1 {
+  margin: 0;
+  color: var(--hayne-ink);
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 600;
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+}
+
+.hayne-request-header p {
+  max-width: 520px;
+  margin: 12px 0 0;
+  color: var(--hayne-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.hayne-request-card {
+  padding: clamp(24px, 4vw, 40px);
+  border: 1px solid var(--hayne-line);
+  background: #fff;
+}
+
+#wrap .hayne-request-form {
+  max-width: 760px;
+  margin: 0;
+}
+
+#wrap .hayne-request-form label {
+  display: block;
+  margin: 24px 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+#wrap .hayne-request-form label:first-of-type {
+  margin-top: 0;
+}
+
+#wrap .hayne-request-form #type,
+#wrap .hayne-request-form textarea {
+  width: 100% !important;
+  max-width: none;
+}
+
+#wrap .hayne-request-form #viz_startdate,
+#wrap .hayne-request-form #viz_enddate {
+  width: min(100%, 430px);
+  margin-right: 8px;
+}
+
+#wrap .hayne-request-form #startdatetype,
+#wrap .hayne-request-form #enddatetype {
+  width: 150px;
+}
+
+#wrap .hayne-request-form #duration {
+  width: 150px;
+}
+
+#wrap .hayne-request-form textarea {
+  min-height: 128px;
+}
+
+.hayne-request-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  color: var(--hayne-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.hayne-request-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 30px;
+  padding-top: 24px;
+  border-top: 1px solid var(--hayne-line);
+}
+
+#wrap .hayne-request-actions .btn {
+  min-height: 42px;
+  margin: 0;
+  padding: 9px 16px;
+  font-weight: 700;
+}
+
+#wrap .hayne-request-actions .btn-danger {
+  margin-left: auto;
+  border-color: #d8d8d4;
+  background: #fff;
+  color: var(--hayne-ink);
+}
+
+#wrap .hayne-request-actions .btn-danger:hover,
+#wrap .hayne-request-actions .btn-danger:focus {
+  border-color: #9b9b96;
+  background: #f4f4f1;
+  color: #000;
+}
+
+#wrap .hayne-request-page .alert {
+  max-width: 760px;
+  margin-top: 14px;
+}
+
+@media (max-width: 767px) {
+  .hayne-request-page {
+    padding: 18px 0 44px;
+  }
+
+  .hayne-request-header {
+    align-items: flex-start;
+    flex-direction: column;
+    margin-bottom: 18px;
+    padding-bottom: 18px;
+  }
+
+  .hayne-request-card {
+    padding: 22px 18px;
+  }
+
+  #wrap .hayne-request-form #viz_startdate,
+  #wrap .hayne-request-form #viz_enddate,
+  #wrap .hayne-request-form #startdatetype,
+  #wrap .hayne-request-form #enddatetype,
+  #wrap .hayne-request-form #duration {
+    width: 100%;
+    margin-right: 0;
+  }
+
+  #wrap .hayne-request-form #startdatetype,
+  #wrap .hayne-request-form #enddatetype {
+    margin-top: 8px;
+  }
+
+  .hayne-request-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #wrap .hayne-request-actions .btn,
+  #wrap .hayne-request-actions .btn-danger {
+    width: 100%;
+    margin-left: 0;
+  }
+}

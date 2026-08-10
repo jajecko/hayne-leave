@@ -1,0 +1,94 @@
+--- a/legacy/application/views/leaves/create.php
++++ b/legacy/application/views/leaves/create.php
+@@ -10,9 +10,17 @@
+-<h2><?php echo lang('leaves_create_title'); ?> &nbsp;<?php echo $help; ?></h2>
+-
+-<div class="row-fluid">
+-    <div class="span8">
++<main class="hayne-request-page" data-hayne-view="leave-create-v2">
++    <header class="hayne-request-header">
++        <div>
++            <span class="hayne-request-eyebrow">HAYNE Leave</span>
++            <h1>Nowy wniosek</h1>
++            <p>Zaplanuj nieobecność, wybierz zakres dat i wyślij wniosek do akceptacji.</p>
++        </div>
++    </header>
++
++    <section class="hayne-request-card" aria-label="Formularz wniosku urlopowego">
++      <div class="row-fluid">
++        <div class="span12">
+ 
+         <?php echo validation_errors(); ?>
+ 
+         <?php
+-        $attributes = array('id' => 'frmLeaveForm');
++        $attributes = array('id' => 'frmLeaveForm', 'class' => 'hayne-request-form');
+         echo form_open('leaves/create', $attributes) ?>
+@@ -20,7 +28,8 @@
+         <label for="type">
+-            <?php echo lang('leaves_create_field_type'); ?>
+-            &nbsp;<span class="muted"
+-                id="lblCredit"><?php if (!is_null($credit)) { ?>(<?php echo $credit; ?>)<?php } ?></span>
++            Rodzaj nieobecności
++            <span class="hayne-request-credit">Dostępne saldo:
++                <span class="muted" id="lblCredit"><?php if (!is_null($credit)) { ?><?php echo $credit; ?><?php } ?></span>
++            </span>
+         </label>
+@@ -34,18 +43,18 @@
+-        <label for="viz_startdate"><?php echo lang('leaves_create_field_start'); ?></label>
++        <label for="viz_startdate">Data rozpoczęcia</label>
+         <input type="text" name="viz_startdate" id="viz_startdate" value="<?php echo set_value('startdate'); ?>"
+             autocomplete="off" />
+         <input type="hidden" name="startdate" id="startdate" />
+         <select name="startdatetype" id="startdatetype">
+-            <option value="Morning" selected><?php echo lang('Morning'); ?></option>
+-            <option value="Afternoon"><?php echo lang('Afternoon'); ?></option>
++            <option value="Morning" selected>Rano</option>
++            <option value="Afternoon">Po południu</option>
+         </select><br />
+ 
+-        <label for="viz_enddate"><?php echo lang('leaves_create_field_end'); ?></label>
++        <label for="viz_enddate">Data zakończenia</label>
+         <input type="text" name="viz_enddate" id="viz_enddate" value="<?php echo set_value('enddate'); ?>"
+             autocomplete="off" />
+         <input type="hidden" name="enddate" id="enddate" />
+         <select name="enddatetype" id="enddatetype">
+-            <option value="Morning"><?php echo lang('Morning'); ?></option>
+-            <option value="Afternoon" selected><?php echo lang('Afternoon'); ?></option>
++            <option value="Morning">Rano</option>
++            <option value="Afternoon" selected>Po południu</option>
+         </select><br />
+ 
+-        <label for="duration"><?php echo lang('leaves_create_field_duration'); ?> <span
++        <label for="duration">Liczba dni <span
+                 id="tooltipDayOff"></span></label>
+@@ -72,16 +81,16 @@
+-        <label for="cause"><?php echo lang('leaves_create_field_cause'); ?></label>
++        <label for="cause">Powód / komentarz</label>
+         <textarea name="cause"><?php echo set_value('cause'); ?></textarea>
+ 
+-        <br /><br />
+-        <button name="status" value="1" type="submit" class="btn btn-primary"><i class="mdi mdi-calendar-question"
+-                aria-hidden="true"></i>&nbsp; <?php echo lang('Planned'); ?></button>
+-        &nbsp;&nbsp;
+-        <button name="status" value="2" type="submit" class="btn btn-primary "><i class="mdi mdi-check"></i>&nbsp;
+-            <?php echo lang('Requested'); ?></button>
+-        <br /><br />
+-        <a href="<?php echo base_url(); ?>leaves" class="btn btn-danger"><i class="mdi mdi-close"></i>&nbsp;
+-            <?php echo lang('leaves_create_button_cancel'); ?></a>
++        <div class="hayne-request-actions">
++            <button name="status" value="2" type="submit" class="btn btn-primary"><i class="mdi mdi-check"></i>&nbsp;
++                Wyślij wniosek</button>
++            <button name="status" value="1" type="submit" class="btn"><i class="mdi mdi-calendar-question"
++                    aria-hidden="true"></i>&nbsp; Zapisz jako plan</button>
++            <a href="<?php echo base_url(); ?>leaves" class="btn btn-danger"><i class="mdi mdi-close"></i>&nbsp;
++                Anuluj</a>
++        </div>
+         </form>
+ 
+-    </div>
+-</div>
++        </div>
++      </div>
++    </section>
++</main>

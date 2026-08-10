@@ -37,6 +37,13 @@ jobs:
       - name: Build and start HAYNE Leave
         run: docker compose up --build -d
 
+      - name: Verify PR-UI-01 source in built image
+        run: |
+          docker compose exec -T jorani sh -ec '
+            grep -F "leave-create-v2" legacy/application/views/leaves/create.php
+            grep -F "assets/hayne/request.css" legacy/application/views/templates/header.php
+          '
+
       - name: Verify alternate auth branding
         run: |
           docker compose exec -T jorani sh -ec '
@@ -120,13 +127,17 @@ jobs:
           grep -F 'id="leaves"' artifacts/hayne-leaves.html
           grep -F 'table table-bordered table-hover' artifacts/hayne-balance.html
           grep -F 'id="frmLeaveForm"' artifacts/hayne-create-leave.html
+          grep -F 'data-hayne-view="leave-create-v2"' artifacts/hayne-create-leave.html
           for file in artifacts/hayne-leaves.html artifacts/hayne-balance.html artifacts/hayne-create-leave.html; do
             grep -F 'assets/hayne/app.css' "$file"
             ! grep -F 'jorani.org' "$file"
           done
           curl -fsS http://localhost:8080/assets/hayne/app.css -o artifacts/hayne-app.css
+          curl -fsS http://localhost:8080/assets/hayne/request.css -o artifacts/hayne-request.css
           grep -F '#wrap .table' artifacts/hayne-app.css
           grep -F '#wrap input[type="text"]' artifacts/hayne-app.css
+          grep -F '.hayne-request-page' artifacts/hayne-request.css
+          grep -F '.hayne-request-actions' artifacts/hayne-request.css
 
       - name: Guard visible HAYNE white-label
         run: |
