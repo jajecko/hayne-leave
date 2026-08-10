@@ -6,7 +6,7 @@
 -    <div class="span6 form-box">
 +    <div class="span2 hayne-login-gutter">&nbsp;</div>
 +    <div class="span8 form-box hayne-login-shell">
-@@ -70,20 +70,9 @@
+@@ -70,19 +70,8 @@
              </div>
 -            <div class="span6" style="height:100%;">
 -                <div class="row-fluid">
