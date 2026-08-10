@@ -49,7 +49,7 @@ jobs:
           done
           test -s artifacts/hayne-login.html
           grep -F 'HAYNE Leave' artifacts/hayne-login.html
-          grep -F 'assets/hayne/logo.png' artifacts/hayne-login.html
+          grep -F 'hayne-wordmark--login' artifacts/hayne-login.html
           grep -F 'assets/hayne/hayne.css' artifacts/hayne-login.html
 
       - name: Capture login screenshot
