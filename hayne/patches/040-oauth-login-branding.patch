@@ -1,6 +1,6 @@
 --- a/legacy/application/views/session/login_simple.php
 +++ b/legacy/application/views/session/login_simple.php
-@@ -15,7 +15,7 @@
+@@ -15,6 +15,6 @@
      <meta http-equiv="x-ua-compatible" content="ie=edge">
      <meta charset="utf-8">
 -    <title><?php echo $title ?> - Jorani</title>
