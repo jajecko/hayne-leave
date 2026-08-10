@@ -28,6 +28,8 @@
     if (document.querySelector('[data-hayne-home]')) return 'home';
     if (document.querySelector('[data-hayne-view="leave-create-v2"]')) return 'leaves/create';
     if (document.querySelector('[data-hayne-view="my-requests-v2"]')) return 'leaves';
+    if (document.querySelector('[data-hayne-view="leave-balance-v1"]')) return 'leaves/counters';
+    if (document.querySelector('[data-hayne-view="calendar-individual-v1"]')) return 'calendar/individual';
     if (document.querySelector('table.table-bordered.table-hover') && /balance|saldo|summary/i.test(document.title)) return 'leaves/counters';
     return normalizePath(window.location.pathname);
   };
