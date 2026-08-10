@@ -1,0 +1,254 @@
+/* Authenticated HAYNE home. All selectors are scoped to the local home override. */
+
+.hayne-home {
+  box-sizing: border-box;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 44px 0 64px;
+  color: var(--hayne-ink);
+}
+
+.hayne-home *,
+.hayne-home *::before,
+.hayne-home *::after {
+  box-sizing: border-box;
+}
+
+.hayne-home-hero {
+  display: flex;
+  min-height: 260px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 48px;
+  padding: clamp(32px, 5vw, 58px);
+  background: var(--hayne-black);
+  color: #fff;
+}
+
+.hayne-home-hero__copy {
+  max-width: 690px;
+}
+
+.hayne-home-eyebrow {
+  display: block;
+  margin-bottom: 18px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.hayne-home-hero h1 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(38px, 5vw, 60px);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+}
+
+.hayne-home-hero p {
+  max-width: 610px;
+  margin: 24px 0 0;
+  color: #d8d8d8;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.hayne-home-hero .hayne-home-hero__action {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 12px 20px;
+  border: 1px solid #fff;
+  border-radius: 0;
+  background: #fff;
+  color: #000;
+  background-image: none;
+  box-shadow: none;
+  font-weight: 600;
+  text-shadow: none;
+}
+
+.hayne-home-hero .hayne-home-hero__action:hover,
+.hayne-home-hero .hayne-home-hero__action:focus {
+  background: #ececec;
+  border-color: #ececec;
+  color: #000;
+}
+
+.hayne-home-section {
+  padding-top: 48px;
+}
+
+.hayne-home-section__heading {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--hayne-line);
+  padding-bottom: 14px;
+}
+
+.hayne-home-section__index {
+  color: var(--hayne-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.hayne-home-section h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.hayne-home-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--hayne-line);
+  border-left: 1px solid var(--hayne-line);
+}
+
+.hayne-home-card {
+  display: flex;
+  min-width: 0;
+  min-height: 210px;
+  flex-direction: column;
+  padding: 26px;
+  border-right: 1px solid var(--hayne-line);
+  border-bottom: 1px solid var(--hayne-line);
+  background: var(--hayne-surface);
+  color: var(--hayne-ink);
+  text-decoration: none;
+  transition: background-color 140ms ease;
+}
+
+.hayne-home-card:hover,
+.hayne-home-card:focus {
+  background: #f6f6f4;
+  color: var(--hayne-black);
+  text-decoration: none;
+}
+
+.hayne-home-card__label {
+  margin-bottom: 28px;
+  color: var(--hayne-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hayne-home-card strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.hayne-home-card > span:not(.hayne-home-card__label):not(.hayne-home-card__link) {
+  color: var(--hayne-muted);
+  line-height: 1.5;
+}
+
+.hayne-home-card__link {
+  margin-top: auto;
+  padding-top: 24px;
+  color: var(--hayne-ink);
+  font-weight: 600;
+}
+
+.hayne-home-section--manager {
+  padding-bottom: 8px;
+}
+
+.hayne-home-manager-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hayne-home-manager-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  padding: 11px 14px;
+  border: 1px solid var(--hayne-line);
+  color: var(--hayne-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.hayne-home-manager-links a:hover,
+.hayne-home-manager-links a:focus {
+  border-color: var(--hayne-black);
+  color: var(--hayne-black);
+  text-decoration: none;
+}
+
+.hayne-home-note {
+  max-width: 680px;
+  margin: 18px 0 0;
+  color: var(--hayne-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 979px) {
+  .hayne-home {
+    padding-top: 28px;
+  }
+
+  .hayne-home-hero {
+    min-height: 230px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .hayne-home-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hayne-home-card {
+    min-height: 170px;
+  }
+}
+
+@media (max-width: 767px) {
+  .hayne-home {
+    padding: 18px 0 42px;
+  }
+
+  .hayne-home-hero {
+    gap: 28px;
+    padding: 28px 24px;
+  }
+
+  .hayne-home-hero h1 {
+    font-size: clamp(34px, 11vw, 46px);
+  }
+
+  .hayne-home-hero .hayne-home-hero__action {
+    width: 100%;
+    text-align: center;
+  }
+
+  .hayne-home-section {
+    padding-top: 36px;
+  }
+
+  .hayne-home-card {
+    min-height: 160px;
+    padding: 22px;
+  }
+
+  .hayne-home-manager-links {
+    flex-direction: column;
+  }
+
+  .hayne-home-manager-links a {
+    justify-content: space-between;
+  }
+}

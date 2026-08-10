@@ -72,6 +72,31 @@ jobs:
           curl -fsS http://127.0.0.1:8080/assets/hayne/favicon.svg -o artifacts/hayne-favicon.svg
           grep -F '<svg' artifacts/hayne-favicon.svg
 
+      - name: Smoke test authenticated HAYNE home
+        run: |
+          curl -fsS \
+            -c artifacts/hayne-cookies.txt \
+            http://localhost:8080/session/login \
+            -o artifacts/hayne-auth-login.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/hayne-auth-login.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/hayne-cookies.txt \
+            -b artifacts/hayne-cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jorani' \
+            --data-urlencode 'password=jorani' \
+            --data-urlencode 'language=en' \
+            http://localhost:8080/session/login \
+            -o artifacts/hayne-home.html
+          test -s artifacts/hayne-home.html
+          grep -F 'data-hayne-home="v1"' artifacts/hayne-home.html
+          grep -F 'Time off, in one place.' artifacts/hayne-home.html
+          grep -F 'assets/hayne/home.css' artifacts/hayne-home.html
+          ! grep -F 'Welcome to Jorani' artifacts/hayne-home.html
+          curl -fsS http://localhost:8080/assets/hayne/home.css -o artifacts/hayne-home.css
+          grep -F '.hayne-home-hero' artifacts/hayne-home.css
+
       - name: Capture login screenshot
         run: |
           if command -v google-chrome >/dev/null 2>&1; then
