@@ -139,6 +139,9 @@
     const visibleIndexes = new Set([0, 1, 2, 4, 5, 6]);
     document.querySelectorAll('#leaves thead tr, #leaves tbody tr').forEach((row) => {
       Array.from(row.children).forEach((cell, index) => {
+        cell.style.removeProperty('width');
+        cell.style.removeProperty('min-width');
+        cell.style.removeProperty('max-width');
         if (visibleIndexes.has(index) || cell.classList.contains('dataTables_empty')) {
           cell.style.gridRow = '1';
         }
