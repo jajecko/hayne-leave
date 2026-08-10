@@ -1,6 +1,6 @@
 --- a/legacy/application/views/menu/index.php
 +++ b/legacy/application/views/menu/index.php
-@@ -36,9 +36,9 @@
+@@ -39,9 +39,9 @@
  <div id="wrap">
    <div class="navbar navbar-inverse navbar-fixed-top">
      <div class="navbar-inner">
