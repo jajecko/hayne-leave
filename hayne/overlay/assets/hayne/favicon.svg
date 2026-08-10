@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="HAYNE">
+  <rect x="0.5" y="0.5" width="31" height="31" rx="4.5" fill="#fff" stroke="#000"/>
+  <path d="M21.14,22.23h5.18V0h-5.18v8.61H5.13V0H0v22.23h5.13v-9.56h16.01v9.56Z" transform="translate(2.84 4.885)" fill="#000"/>
+</svg>
