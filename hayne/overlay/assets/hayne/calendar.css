@@ -1,0 +1,565 @@
+/* HAYNE Leave — individual calendar surface.
+ * FullCalendar data and behavior remain upstream; this file owns presentation only.
+ */
+
+.hayne-calendar-page {
+  box-sizing: border-box;
+  width: min(100%, 1062px);
+  margin: 0 auto 0 0;
+  padding: 4px 0 46px;
+}
+
+.hayne-calendar-page *,
+.hayne-calendar-page *::before,
+.hayne-calendar-page *::after {
+  box-sizing: border-box;
+}
+
+.hayne-calendar-header {
+  display: flex;
+  min-height: 104px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 8px 0 26px;
+}
+
+#wrap .hayne-calendar-header h1 {
+  margin: 0;
+  color: #111;
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -.035em;
+}
+
+.hayne-calendar-header p {
+  max-width: 590px;
+  margin: 12px 0 0;
+  color: #777772;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+#wrap .hayne-calendar-create {
+  display: inline-flex;
+  min-width: 143px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  margin: 1px 0 0;
+  padding: 10px 18px;
+  border: 1px solid #111;
+  border-radius: 9px;
+  background: #111;
+  background-image: none;
+  box-shadow: none;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-shadow: none;
+}
+
+#wrap .hayne-calendar-create:hover,
+#wrap .hayne-calendar-create:focus {
+  border-color: #000;
+  background: #000;
+  color: #fff;
+}
+
+.hayne-calendar-card {
+  overflow: hidden;
+  border: 1px solid #dfdfda;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .012);
+}
+
+.hayne-calendar-toolbar {
+  display: flex;
+  min-height: 78px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 17px 20px;
+  border-bottom: 1px solid #e5e5e0;
+}
+
+.hayne-calendar-nav,
+.hayne-calendar-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#wrap .hayne-calendar-nav button,
+#wrap .hayne-calendar-tool {
+  box-sizing: border-box;
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 9px 13px;
+  border: 1px solid #dfdfda;
+  border-radius: 8px;
+  background: #fff;
+  color: #30302d;
+  font-family: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#wrap .hayne-calendar-nav__arrow {
+  width: 42px;
+  padding: 0;
+  font-size: 25px;
+  font-weight: 400;
+}
+
+#wrap .hayne-calendar-nav button:hover,
+#wrap .hayne-calendar-nav button:focus,
+#wrap .hayne-calendar-tool:hover,
+#wrap .hayne-calendar-tool:focus,
+#wrap .hayne-calendar-tool.is-active {
+  border-color: #a9a9a4;
+  background: #f7f7f5;
+  color: #111;
+  outline: 0;
+}
+
+#wrap .hayne-calendar-today {
+  min-width: 76px;
+}
+
+#wrap .hayne-calendar-tool {
+  gap: 8px;
+}
+
+.hayne-calendar-tool__icon {
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  color: currentColor;
+}
+
+.hayne-calendar-tool__icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hayne-calendar-legend {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  gap: 18px;
+  overflow-x: auto;
+  padding: 13px 20px;
+  border-bottom: 1px solid #e8e8e4;
+  background: #fafaf8;
+  scrollbar-width: none;
+}
+
+.hayne-calendar-legend::-webkit-scrollbar {
+  display: none;
+}
+
+.hayne-calendar-legend__item {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  color: #5a5a55;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.hayne-calendar-legend__item > i {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border: 1px solid #a5a59f;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.hayne-calendar-legend__item--planned > i {
+  background: #c8c8c3;
+}
+
+.hayne-calendar-legend__item--accepted > i {
+  border-color: #111;
+  background: #111;
+}
+
+.hayne-calendar-legend__item--requested > i {
+  border-color: #7f7f79;
+  background: #efefec;
+  box-shadow: inset 0 0 0 2px #fff;
+}
+
+.hayne-calendar-legend__item--rejected > i {
+  border-color: #111;
+  background: repeating-linear-gradient(135deg, #fff 0 2px, #777772 2px 3px);
+}
+
+.hayne-calendar-legend__item--dayoff > i {
+  border-color: #c9c9c4;
+  background: repeating-linear-gradient(45deg, #f7f7f5 0 2px, #d4d4cf 2px 3px);
+}
+
+.hayne-calendar-stage {
+  padding: 22px 20px 20px;
+  background: #fff;
+}
+
+#wrap #calendar {
+  width: 100%;
+  margin: 0;
+  font-family: "Figtree", "Helvetica Neue", Arial, sans-serif;
+}
+
+#wrap #calendar .fc-toolbar {
+  min-height: 46px;
+  margin: 0 0 15px;
+}
+
+#wrap #calendar .fc-toolbar .fc-left,
+#wrap #calendar .fc-toolbar .fc-right {
+  display: none;
+}
+
+#wrap #calendar .fc-toolbar .fc-center {
+  float: none;
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+}
+
+#wrap #calendar .fc-toolbar h2 {
+  margin: 0;
+  color: #1e1e1b;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -.015em;
+  text-transform: capitalize;
+}
+
+#wrap #calendar .fc-view-container {
+  overflow: hidden;
+  border: 1px solid #dfdfda;
+  border-radius: 10px;
+}
+
+#wrap #calendar .fc-view,
+#wrap #calendar .fc-view > table,
+#wrap #calendar .fc-row,
+#wrap #calendar table {
+  margin: 0;
+  border: 0;
+}
+
+#wrap #calendar .fc-widget-header,
+#wrap #calendar .fc-widget-content {
+  border-color: #e5e5e0;
+}
+
+#wrap #calendar .fc-widget-header {
+  background: #fafaf8;
+}
+
+#wrap #calendar .fc-day-header {
+  height: 42px;
+  padding: 13px 8px 10px;
+  color: #6d6d68;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .045em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+#wrap #calendar .fc-basic-view .fc-body .fc-row {
+  min-height: 80px;
+}
+
+#wrap #calendar .fc-day {
+  background: #fff;
+}
+
+#wrap #calendar .fc-sat,
+#wrap #calendar .fc-sun {
+  background: #fbfbf9;
+}
+
+#wrap #calendar .fc-today {
+  background: #f5f5f2 !important;
+}
+
+#wrap #calendar .fc-day-number {
+  padding: 9px 10px 0;
+  color: #5f5f5a;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+#wrap #calendar .fc-other-month .fc-day-number {
+  color: #b4b4ae;
+  opacity: 1;
+}
+
+#wrap #calendar .fc-today .fc-day-number {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  margin: 5px 5px 0 0;
+  padding: 0;
+  border-radius: 50%;
+  background: #111;
+  color: #fff;
+  font-weight: 600;
+}
+
+#wrap #calendar .fc-event-container {
+  padding: 0 5px;
+}
+
+#wrap #calendar .fc-event {
+  box-sizing: border-box;
+  min-height: 27px;
+  margin: 2px 0;
+  padding: 5px 7px;
+  border: 1px solid #d0d0cb !important;
+  border-radius: 6px;
+  background: #f4f4f1 !important;
+  color: #2e2e2b !important;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-shadow: none;
+}
+
+#wrap #calendar .fc-event:hover {
+  border-color: #8f8f89 !important;
+  text-decoration: none;
+}
+
+#wrap #calendar .fc-event .fc-content {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#wrap #calendar .fc-event img {
+  max-width: 18px;
+  max-height: 18px;
+  margin-right: 5px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+#wrap #calendar .hayne-calendar-event--planned {
+  border-color: #c8c8c3 !important;
+  background: #eeeeeb !important;
+  color: #494944 !important;
+}
+
+#wrap #calendar .hayne-calendar-event--accepted {
+  border-color: #111 !important;
+  background: #111 !important;
+  color: #fff !important;
+}
+
+#wrap #calendar .hayne-calendar-event--requested {
+  border-color: #adada7 !important;
+  background: #f7f7f4 !important;
+  color: #272724 !important;
+  box-shadow: inset 3px 0 0 #8c8c86;
+}
+
+#wrap #calendar .hayne-calendar-event--rejected {
+  border-color: #555550 !important;
+  background: repeating-linear-gradient(135deg, #fff 0 5px, #f1f1ee 5px 7px) !important;
+  color: #3b3b37 !important;
+}
+
+#wrap #calendar .hayne-calendar-event--dayoff {
+  border-color: #d0d0cb !important;
+  background: repeating-linear-gradient(45deg, #f7f7f5 0 5px, #ecece8 5px 7px) !important;
+  color: #666661 !important;
+}
+
+#wrap .hayne-calendar-modal {
+  border: 1px solid #dfdfda;
+  border-radius: 12px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, .14);
+}
+
+#wrap .hayne-calendar-modal .modal-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid #e5e5e0;
+}
+
+#wrap .hayne-calendar-modal .modal-header h3 {
+  margin: 0;
+  color: #20201d;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+#wrap .hayne-calendar-modal .modal-body {
+  padding: 22px 20px;
+  color: #686863;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+#wrap .hayne-calendar-modal .modal-body p {
+  margin: 8px 0 0;
+}
+
+#wrap .hayne-calendar-modal .modal-body a {
+  color: #111;
+  font-weight: 600;
+}
+
+#wrap .hayne-calendar-modal .modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid #e5e5e0;
+  background: #fafaf8;
+  box-shadow: none;
+}
+
+#wrap .hayne-calendar-ics-control {
+  display: flex;
+  width: 100%;
+  margin: 16px 0 0;
+}
+
+#wrap .hayne-calendar-ics-control #txtIcsUrl {
+  box-sizing: border-box;
+  height: 42px;
+  flex: 1 1 auto;
+  margin: 0;
+  border: 1px solid #d8d8d3;
+  border-radius: 8px 0 0 8px;
+  box-shadow: none;
+  font-size: 11px;
+}
+
+#wrap .hayne-calendar-ics-control #cmdCopy {
+  height: 42px;
+  margin: 0;
+  border: 1px solid #111;
+  border-radius: 0 8px 8px 0;
+  background: #111;
+  background-image: none;
+  color: #fff;
+  text-shadow: none;
+}
+
+#wrap .hayne-calendar-wait {
+  width: 260px;
+  margin-left: -130px;
+  border: 1px solid #dfdfda;
+  border-radius: 12px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, .14);
+}
+
+#wrap .hayne-calendar-wait .modal-body {
+  display: flex;
+  min-height: 92px;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  color: #30302d;
+}
+
+.hayne-calendar-loader {
+  width: 22px;
+  height: 22px;
+  border: 2px solid #d7d7d2;
+  border-top-color: #111;
+  border-radius: 50%;
+  animation: hayne-calendar-spin .7s linear infinite;
+}
+
+@keyframes hayne-calendar-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 979px) {
+  .hayne-calendar-page {
+    width: 100%;
+    margin: 0;
+  }
+
+  .hayne-calendar-header {
+    min-height: 0;
+  }
+
+  .hayne-calendar-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .hayne-calendar-tools {
+    width: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .hayne-calendar-header {
+    flex-direction: column;
+    padding-top: 0;
+  }
+
+  #wrap .hayne-calendar-header h1 {
+    font-size: 34px;
+  }
+
+  #wrap .hayne-calendar-create {
+    width: 100%;
+  }
+
+  .hayne-calendar-card {
+    border-radius: 12px;
+  }
+
+  .hayne-calendar-stage {
+    padding: 16px 10px 12px;
+  }
+
+  .hayne-calendar-legend {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  #wrap #calendar .fc-basic-view .fc-body .fc-row {
+    min-height: 78px;
+  }
+
+  #wrap #calendar .fc-day-header {
+    padding-right: 3px;
+    padding-left: 3px;
+    font-size: 9px;
+  }
+
+  #wrap #calendar .fc-day-number {
+    padding-right: 6px;
+    padding-left: 6px;
+  }
+}
