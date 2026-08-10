@@ -4,23 +4,35 @@
  <div class="row vertical-center">
 -    <div class="span3">&nbsp;</div>
 -    <div class="span6 form-box">
-+    <div class="span2">&nbsp;</div>
++    <div class="span2 hayne-login-gutter">&nbsp;</div>
 +    <div class="span8 form-box hayne-login-shell">
          <div class="row-fluid">
-@@ -84,3 +84,3 @@
-                     <div class="span12">
+@@ -82,17 +82,10 @@
+             </div>
+-            <div class="span6" style="height:100%;">
+-                <div class="row-fluid">
+-                    <div class="span12">
 -                        <img src="<?php echo base_url(); ?>assets/images/logo_simple.png">
-+                        <img src="<?php echo base_url(); ?>assets/hayne/logo.png" class="hayne-login-logo" alt="HAYNE">
-                     </div>
-@@ -92,5 +92,3 @@
-                     <div class="span12">
+-                    </div>
+-                </div>
+-                <div class="row-fluid">
+-                    <div class="span12">&nbsp;</div>
+-                </div>
+-                <div class="row-fluid">
+-                    <div class="span12">
 -                        <span style="font-size: 250%; font-weight: bold; line-height: 100%;">
 -                            <center><?php echo lang('Leave Management System'); ?></center>
 -                        </span>
-+                        <span class="hayne-login-product-name">HAYNE Leave</span>
-                     </div>
-@@ -100,3 +98,3 @@
+-                    </div>
+-                </div>
++            <div class="span6 hayne-login-brand-panel">
++                <div class="hayne-login-brand" aria-label="HAYNE Leave">
++                    <span class="hayne-wordmark hayne-wordmark--login" aria-hidden="true">HAYNE</span>
++                    <span class="hayne-login-product-name">Leave</span>
++                </div>
+             </div>
+         </div>
      </div>
 -    <div class="span3">&nbsp;</div>
-+    <div class="span2">&nbsp;</div>
++    <div class="span2 hayne-login-gutter">&nbsp;</div>
  </div>
