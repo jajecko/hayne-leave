@@ -1,6 +1,6 @@
 --- a/legacy/application/views/leaves/index.php
 +++ b/legacy/application/views/leaves/index.php
-@@ -8,33 +8,48 @@
+@@ -8,36 +8,43 @@
   */
  ?>
  
@@ -70,7 +70,7 @@
      </div>
  </div>
  
-@@ -43,13 +58,13 @@
+@@ -43,12 +50,12 @@
      <thead>
          <tr>
 -            <th><?php echo lang('leaves_index_thead_id'); ?></th>
@@ -90,7 +90,7 @@
              <?php
              if ($this->config->item('enable_history') == TRUE) {
                  echo "<th>" . lang('leaves_index_thead_requested_date') . "</th>";
-@@ -168,26 +183,20 @@
+@@ -168,27 +175,17 @@
      </tbody>
  </table>
  
