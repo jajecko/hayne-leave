@@ -1,19 +1,35 @@
 (() => {
   const normalizePath = (value) => String(value || '').replace(/^\/+|\/+$/g, '');
 
+  const svgPaths = {
+    home: '<path d="M3 10.5 12 3l9 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-5v-6h-5v6h-5A1.5 1.5 0 0 1 3 19.5z"/>',
+    plus: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 8v8M8 12h8"/>',
+    file: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M9 12h6M9 16h6"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>',
+    team: '<circle cx="9" cy="8" r="3"/><path d="M3.5 20c.4-4 2.4-6 5.5-6s5.1 2 5.5 6"/><circle cx="17" cy="9" r="2.3"/><path d="M15.5 14.5c3.2-.7 5.1 1.1 5.5 4"/>',
+    approval: '<circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16.5 9"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1z"/>',
+    shield: '<path d="M12 3 20 6v5c0 5.1-3.1 8.3-8 10-4.9-1.7-8-4.9-8-10V6z"/><path d="m8.5 12 2.2 2.2 4.8-5"/>',
+    chevron: '<path d="m8 10 4 4 4-4"/>',
+    user: '<circle cx="12" cy="8" r="3"/><path d="M5.5 20c.4-4.2 2.6-6.2 6.5-6.2s6.1 2 6.5 6.2"/>',
+    lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+    logout: '<path d="M10 5H5v14h5M14 8l4 4-4 4M18 12H9"/>'
+  };
+
+  const icon = (name, className = '') => {
+    const node = document.createElement('span');
+    node.className = `hayne-line-icon${className ? ` ${className}` : ''}`;
+    node.setAttribute('aria-hidden', 'true');
+    node.innerHTML = `<svg viewBox="0 0 24 24" focusable="false">${svgPaths[name] || ''}</svg>`;
+    return node;
+  };
+
   const currentSurface = () => {
     if (document.querySelector('[data-hayne-home]')) return 'home';
     if (document.querySelector('[data-hayne-view="leave-create-v2"]')) return 'leaves/create';
     if (document.querySelector('[data-hayne-view="my-requests-v2"]')) return 'leaves';
-    if (document.querySelector('table.table-bordered.table-hover') && /balance|saldo/i.test(document.title)) return 'leaves/counters';
+    if (document.querySelector('table.table-bordered.table-hover') && /balance|saldo|summary/i.test(document.title)) return 'leaves/counters';
     return normalizePath(window.location.pathname);
-  };
-
-  const icon = (name) => {
-    const node = document.createElement('i');
-    node.className = `mdi ${name}`;
-    node.setAttribute('aria-hidden', 'true');
-    return node;
   };
 
   const initialsFor = (name) => {
@@ -24,11 +40,23 @@
   };
 
   const enhanceAccount = (wrap) => {
-    const account = wrap.querySelector('.nav.pull-right > .brand');
-    if (!account || account.querySelector('.hayne-user-avatar')) return;
+    const list = wrap.querySelector('.nav.pull-right');
+    const account = list ? list.querySelector(':scope > .brand') : null;
+    if (!list || !account || list.querySelector('.hayne-user-menu')) return;
 
     const name = account.textContent.replace(/\s+/g, ' ').trim();
-    account.textContent = '';
+    const profileHref = account.href;
+    const originalActions = Array.from(list.children).filter((node) => node.tagName === 'LI');
+
+    const menuItem = document.createElement('li');
+    menuItem.className = 'dropdown hayne-user-menu';
+
+    const toggle = document.createElement('a');
+    toggle.href = '#';
+    toggle.className = 'brand dropdown-toggle hayne-user-toggle';
+    toggle.setAttribute('data-toggle', 'dropdown');
+    toggle.setAttribute('aria-label', name || 'Konto użytkownika');
+    toggle.setAttribute('aria-haspopup', 'true');
 
     const avatar = document.createElement('span');
     avatar.className = 'hayne-user-avatar';
@@ -38,17 +66,52 @@
     label.className = 'hayne-user-name';
     label.textContent = name;
 
-    account.appendChild(avatar);
-    account.appendChild(label);
+    toggle.appendChild(avatar);
+    toggle.appendChild(label);
+    toggle.appendChild(icon('chevron', 'hayne-user-chevron'));
+
+    const menu = document.createElement('ul');
+    menu.className = 'dropdown-menu pull-right hayne-user-dropdown';
+
+    const labels = ['Mój profil', 'Zmień hasło', 'Wyloguj'];
+    const iconNames = ['user', 'lock', 'logout'];
+    originalActions.forEach((action, index) => {
+      const link = action.querySelector('a');
+      if (!link) return;
+      link.textContent = '';
+      link.prepend(icon(iconNames[index] || 'user'));
+      const text = document.createElement('span');
+      text.textContent = labels[index] || link.title || 'Opcja';
+      link.appendChild(text);
+      action.className = index === originalActions.length - 1 ? 'hayne-user-action hayne-user-action--logout' : 'hayne-user-action';
+      menu.appendChild(action);
+    });
+
+    if (!menu.querySelector(`a[href="${profileHref}"]`)) {
+      const profile = document.createElement('li');
+      profile.className = 'hayne-user-action';
+      const link = document.createElement('a');
+      link.href = profileHref;
+      link.appendChild(icon('user'));
+      const text = document.createElement('span');
+      text.textContent = 'Mój profil';
+      link.appendChild(text);
+      profile.appendChild(link);
+      menu.prepend(profile);
+    }
+
+    menuItem.appendChild(toggle);
+    menuItem.appendChild(menu);
+    account.replaceWith(menuItem);
   };
 
   const addSidebarFooter = (wrap) => {
-    const navbarInner = wrap.querySelector('> .navbar .navbar-inner');
+    const navbarInner = wrap.querySelector(':scope > .navbar .navbar-inner');
     if (!navbarInner || navbarInner.querySelector('.hayne-sidebar-footer')) return;
 
     const footer = document.createElement('div');
     footer.className = 'hayne-sidebar-footer';
-    footer.appendChild(icon('mdi-shield-check'));
+    footer.appendChild(icon('shield'));
 
     const title = document.createElement('strong');
     title.textContent = 'HAYNE Leave';
@@ -69,7 +132,7 @@
     addSidebarFooter(wrap);
 
     const nav = wrap.querySelector('.nav-responsive > ul.nav:not(.pull-right)');
-    if (!nav || nav.dataset.hayneNavigation === 'target-v1') return;
+    if (!nav || nav.dataset.hayneNavigation === 'target-v2') return;
 
     const brand = wrap.querySelector('.hayne-navbar-brand');
     const brandHref = brand ? brand.href : `${window.location.origin}/home`;
@@ -77,10 +140,10 @@
     const surface = currentSurface();
 
     const directItems = [
-      { path: 'home', label: 'Start', icon: 'mdi-home' },
-      { path: 'leaves/create', label: 'Nowy wniosek', icon: 'mdi-plus-box-outline' },
-      { path: 'leaves', label: 'Moje wnioski', icon: 'mdi-file-document-outline' },
-      { path: 'leaves/counters', label: 'Saldo urlopowe', icon: 'mdi-calendar-blank' },
+      { path: 'home', label: 'Start', icon: 'home' },
+      { path: 'leaves/create', label: 'Nowy wniosek', icon: 'plus' },
+      { path: 'leaves', label: 'Moje wnioski', icon: 'file' },
+      { path: 'leaves/counters', label: 'Saldo urlopowe', icon: 'calendar' },
     ];
 
     const fragment = document.createDocumentFragment();
@@ -103,30 +166,10 @@
     nav.insertBefore(fragment, nav.firstChild);
 
     const groups = [
-      {
-        label: 'Kalendarz',
-        className: 'hayne-nav-calendar',
-        icon: 'mdi-calendar-blank',
-        active: surface.startsWith('calendar'),
-      },
-      {
-        label: 'Zespół',
-        className: 'hayne-nav-team',
-        icon: 'mdi-account-multiple-outline',
-        active: /^(hr|organization|contracts|positions|reports)(\/|$)/.test(surface),
-      },
-      {
-        label: 'Do akceptacji',
-        className: 'hayne-nav-approvals',
-        icon: 'mdi-check-circle-outline',
-        active: /^(requests|overtime)(\/|$)/.test(surface),
-      },
-      {
-        label: 'Administracja',
-        className: 'hayne-nav-admin',
-        icon: 'mdi-settings-outline',
-        active: /^(admin|users|leavetypes)(\/|$)/.test(surface) && !surface.startsWith('users/myprofile'),
-      },
+      { label: 'Kalendarz', className: 'hayne-nav-calendar', icon: 'calendar', active: surface.startsWith('calendar') },
+      { label: 'Zespół', className: 'hayne-nav-team', icon: 'team', active: /^(hr|organization|contracts|positions|reports)(\/|$)/.test(surface) },
+      { label: 'Do akceptacji', className: 'hayne-nav-approvals', icon: 'approval', active: /^(requests|overtime)(\/|$)/.test(surface) },
+      { label: 'Administracja', className: 'hayne-nav-admin', icon: 'settings', active: /^(admin|users|leavetypes)(\/|$)/.test(surface) && !surface.startsWith('users/myprofile') },
     ];
 
     Array.from(nav.children).forEach((li) => {
@@ -145,15 +188,15 @@
 
       li.classList.add('hayne-nav-group', group.className);
       if (group.active) li.classList.add('is-active');
-      if (!toggle.querySelector('.mdi')) toggle.insertBefore(icon(group.icon), toggle.firstChild);
-
-      const labelNode = document.createElement('span');
-      labelNode.className = 'hayne-nav-label';
-      labelNode.textContent = group.label;
+      toggle.prepend(icon(group.icon));
 
       Array.from(toggle.childNodes).forEach((child) => {
         if (child.nodeType === Node.TEXT_NODE) child.remove();
       });
+
+      const labelNode = document.createElement('span');
+      labelNode.className = 'hayne-nav-label';
+      labelNode.textContent = group.label;
       const caret = toggle.querySelector('.caret');
       if (caret) toggle.insertBefore(labelNode, caret);
       else toggle.appendChild(labelNode);
@@ -170,7 +213,7 @@
       if (li.querySelector(':scope > .navbar-form')) li.classList.add('hayne-nav-legacy-create');
     });
 
-    nav.dataset.hayneNavigation = 'target-v1';
+    nav.dataset.hayneNavigation = 'target-v2';
   };
 
   if (document.readyState === 'loading') {
