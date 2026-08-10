@@ -1,6 +1,6 @@
 <?php
 /**
- * HAYNE presentation of the Jorani leave counters view.
+ * HAYNE presentation of the upstream leave counters view.
  * Counter calculations, links and date navigation remain unchanged.
  */
 ?>
@@ -29,7 +29,7 @@
         <div class="hayne-balance-card__intro">
             <div>
                 <h2>Twoje limity</h2>
-                <p>Wartości są wyliczane przez istniejący mechanizm Jorani dla wskazanego dnia.</p>
+                <p>Wartości są wyliczane przez system dla wskazanego dnia.</p>
             </div>
             <a class="btn hayne-balance-create" href="<?php echo base_url(); ?>leaves/create">Nowy wniosek</a>
         </div>
@@ -120,7 +120,10 @@ if ($language_code != 'en') { ?>
 <?php } ?>
 
 <script type="text/javascript">
-    document.getElementById('wrap')?.setAttribute('data-hayne-topbar-title', 'Saldo urlopowe');
+    var hayneWrap = document.getElementById('wrap');
+    if (hayneWrap) {
+        hayneWrap.setAttribute('data-hayne-topbar-title', 'Saldo urlopowe');
+    }
 
     /**
      * Converts a local date to an ISO compliant string
