@@ -32,7 +32,6 @@ jobs:
           for patch_file in "$GITHUB_WORKSPACE"/hayne/patches/*.patch; do
             echo "Checking ${patch_file}"
             patch --dry-run --batch --forward -p1 < "${patch_file}"
-            patch --batch --forward -p1 < "${patch_file}"
           done
 
       - name: Build and start HAYNE Leave
