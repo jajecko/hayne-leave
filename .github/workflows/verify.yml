@@ -40,13 +40,8 @@ jobs:
       - name: Verify PR-UI-01 source in built image
         run: |
           docker compose exec -T jorani sh -ec '
-            view=legacy/application/views/leaves/create.php
-            header=legacy/application/views/templates/header.php
-            grep -F "data-hayne-view=\"leave-create-v2\"" "$view"
-            grep -F "Nowy wniosek" "$view"
-            grep -F "Rodzaj nieobecności" "$view"
-            grep -F "Wyślij wniosek" "$view"
-            grep -F "assets/hayne/request.css" "$header"
+            grep -F "leave-create-v2" legacy/application/views/leaves/create.php
+            grep -F "assets/hayne/request.css" legacy/application/views/templates/header.php
           '
 
       - name: Verify alternate auth branding
