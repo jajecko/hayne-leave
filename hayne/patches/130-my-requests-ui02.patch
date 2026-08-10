@@ -1,0 +1,131 @@
+--- a/legacy/application/views/leaves/index.php
++++ b/legacy/application/views/leaves/index.php
+@@ -8,33 +8,48 @@
+  */
+ ?>
+ 
+-<h2><?php echo lang('leaves_index_title'); ?> &nbsp;<?php echo $help; ?></h2>
++<section class="hayne-requests-page" data-hayne-view="my-requests-v2">
++<header class="hayne-requests-header">
++    <div>
++        <h1>Moje wnioski</h1>
++        <p>Przeglądaj swoje nieobecności, sprawdzaj ich status i zarządzaj wnioskami.</p>
++    </div>
++    <a href="<?php echo base_url(); ?>leaves/create" class="btn hayne-requests-create">
++        <i class="mdi mdi-plus-circle"></i>&nbsp; Nowy wniosek
++    </a>
++</header>
+ 
+ <?php echo $flash_partial_view; ?>
+ 
+-<div class="row">
+-    <div class="span3">
+-        <label for="cboLeaveType">
+-            <?php echo lang('leaves_index_thead_type'); ?>
+-            <select name="cboLeaveType" id="cboLeaveType">
+-                <option value="" selected></option>
+-                <?php foreach ($types as $type): ?>
+-                    <option value="<?php echo $type['id']; ?>"><?php echo $type['name']; ?></option>
+-                <?php endforeach ?>
+-            </select>
+-        </label>
++<div class="hayne-requests-card">
++<div class="hayne-requests-filters">
++    <div class="hayne-requests-type-filter">
++        <label for="cboLeaveType">Rodzaj nieobecności</label>
++        <select name="cboLeaveType" id="cboLeaveType">
++            <option value="" selected>Wszystkie rodzaje</option>
++            <?php foreach ($types as $type): ?>
++                <option value="<?php echo $type['id']; ?>"><?php echo $type['name']; ?></option>
++            <?php endforeach ?>
++        </select>
+     </div>
+-    <div class="span1">&nbsp;</div>
+-    <div class="span8">
+-        <span class="label"><input type="checkbox" checked id="chkPlanned" class="filterStatus">
+-            &nbsp;<?php echo lang('Planned'); ?></span> &nbsp;
+-        <span class="label label-success"><input type="checkbox" checked id="chkAccepted" class="filterStatus">
+-            &nbsp;<?php echo lang('Accepted'); ?></span> &nbsp;
+-        <span class="label label-warning"><input type="checkbox" checked id="chkRequested" class="filterStatus">
+-            &nbsp;<?php echo lang('Requested'); ?></span> &nbsp;
+-        <span class="label label-important" style="background-color: #ff0000;"><input type="checkbox" checked
+-                id="chkRejected" class="filterStatus"> &nbsp;<?php echo lang('Rejected'); ?></span> &nbsp;
+-        <span class="label label-important" style="background-color: #ff0000;"><input type="checkbox" checked
+-                id="chkCancellation" class="filterStatus"> &nbsp;<?php echo lang('Cancellation'); ?></span> &nbsp;
+-        <span class="label label-important" style="background-color: #ff0000;"><input type="checkbox" checked
+-                id="chkCanceled" class="filterStatus"> &nbsp;<?php echo lang('Canceled'); ?></span>
++    <div class="hayne-status-filters" aria-label="Filtry statusu">
++        <label class="hayne-status-chip"><input type="checkbox" checked id="chkPlanned" class="filterStatus">
++            <span>Plan</span></label>
++        <label class="hayne-status-chip"><input type="checkbox" checked id="chkAccepted" class="filterStatus">
++            <span>Zaakceptowane</span></label>
++        <label class="hayne-status-chip"><input type="checkbox" checked id="chkRequested" class="filterStatus">
++            <span>Oczekujące</span></label>
++        <label class="hayne-status-chip"><input type="checkbox" checked id="chkRejected" class="filterStatus">
++            <span>Odrzucone</span></label>
++        <label class="hayne-status-chip"><input type="checkbox" checked id="chkCancellation" class="filterStatus">
++            <span>Anulowanie</span></label>
++        <label class="hayne-status-chip"><input type="checkbox" checked id="chkCanceled" class="filterStatus">
++            <span>Anulowane</span></label>
+     </div>
+ </div>
+ 
+@@ -43,13 +58,13 @@
+     <thead>
+         <tr>
+-            <th><?php echo lang('leaves_index_thead_id'); ?></th>
+-            <th><?php echo lang('leaves_index_thead_start_date'); ?></th>
+-            <th><?php echo lang('leaves_index_thead_end_date'); ?></th>
+-            <th><?php echo lang('leaves_index_thead_cause'); ?></th>
+-            <th><?php echo lang('leaves_index_thead_duration'); ?></th>
+-            <th><?php echo lang('leaves_index_thead_type'); ?></th>
+-            <th><?php echo lang('leaves_index_thead_status'); ?></th>
++            <th>ID / Akcje</th>
++            <th>Data od</th>
++            <th>Data do</th>
++            <th>Powód</th>
++            <th>Liczba dni</th>
++            <th>Typ</th>
++            <th>Status</th>
+             <?php
+             if ($this->config->item('enable_history') == TRUE) {
+                 echo "<th>" . lang('leaves_index_thead_requested_date') . "</th>";
+@@ -168,26 +183,20 @@
+     </tbody>
+ </table>
+ 
+-
+-<div class="row-fluid">
+-    <div class="span12">&nbsp;</div>
+-</div>
+-
+-<div class="row-fluid">
+-    <div class="span12">
+-        <a href="<?php echo base_url(); ?>leaves/export" class="btn btn-primary"><i class="mdi mdi-download"></i>&nbsp;
+-            <?php echo lang('leaves_index_button_export'); ?></a>
+-        &nbsp;&nbsp;
+-        <a href="<?php echo base_url(); ?>leaves/create" class="btn btn-primary"><i
+-                class="mdi mdi-plus-circle"></i>&nbsp; <?php echo lang('leaves_index_button_create'); ?></a>
+-        &nbsp;&nbsp;
+-        <?php if ($this->config->item('ics_enabled') == TRUE) { ?>
+-            <a id="lnkICS" href="#"><i class="mdi mdi-earth nolink"></i> ICS</a>
+-        <?php } ?>
+-    </div>
+-</div>
+-
+-<div class="row-fluid">
+-    <div class="span12">&nbsp;</div>
++<div class="hayne-requests-actions">
++    <a href="<?php echo base_url(); ?>leaves/export" class="btn hayne-secondary-action">
++        <i class="mdi mdi-download"></i>&nbsp; Eksportuj
++    </a>
++    <?php if ($this->config->item('ics_enabled') == TRUE) { ?>
++        <a id="lnkICS" href="#" class="btn hayne-secondary-action">
++            <i class="mdi mdi-earth nolink"></i>&nbsp; Kalendarz ICS
++        </a>
++    <?php } ?>
+ </div>
++</div>
++</section>
+ 
+ <div id="frmDeleteLeaveRequest" class="modal hide fade">
