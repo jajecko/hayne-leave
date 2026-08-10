@@ -1,6 +1,6 @@
 --- a/legacy/application/views/templates/header.php
 +++ b/legacy/application/views/templates/header.php
-@@ -13,11 +13,12 @@
+@@ -13,10 +13,11 @@
      <meta name="viewport" content="width=device-width, initial-scale=1">
      <meta http-equiv="x-ua-compatible" content="ie=edge">
      <meta charset="utf-8">
