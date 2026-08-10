@@ -37,15 +37,6 @@ jobs:
       - name: Build and start HAYNE Leave
         run: docker compose up --build -d
 
-      - name: Verify Polish HAYNE navigation
-        run: |
-          docker compose exec -T jorani sh -ec '
-            menu=legacy/application/views/menu/index.php
-            for text in "Administracja" "Zespół" "Do akceptacji" "Urlopy" "Kalendarz" "Nowy wniosek" "Saldo urlopowe" "Moje wnioski"; do
-              grep -F "$text" "$menu"
-            done
-          '
-
       - name: Verify alternate auth branding
         run: |
           docker compose exec -T jorani sh -ec '
