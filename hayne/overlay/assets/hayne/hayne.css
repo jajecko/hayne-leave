@@ -125,6 +125,12 @@ body:has(.hayne-login-shell) .vertical-center {
   align-items: center;
 }
 
+.hayne-login-shell > .row-fluid::before,
+.hayne-login-shell > .row-fluid::after {
+  display: none;
+  content: none;
+}
+
 .hayne-login-shell > .row-fluid > .span6 {
   float: none;
   width: auto;
