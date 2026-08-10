@@ -1,0 +1,14 @@
+/* HAYNE authenticated navigation state.
+ * Keep the direct "Moje wnioski" shortcut visible without marking it active on every route.
+ */
+
+#wrap .nav-responsive > .nav:first-child > li:first-child > a {
+  background: transparent !important;
+  color: #282828 !important;
+}
+
+#wrap .nav-responsive > .nav:first-child > li:first-child > a:hover,
+#wrap .nav-responsive > .nav:first-child > li:first-child > a:focus {
+  background: #f0f0ed !important;
+  color: #000 !important;
+}
