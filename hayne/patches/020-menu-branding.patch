@@ -10,13 +10,13 @@
 +        <span class="hayne-navbar-product">Leave</span>
 +      </a>
        <div class="nav-responsive">
-@@ -52,3 +53,3 @@
+@@ -52,4 +53,4 @@
            <?php if (($is_hr == TRUE) || ($is_admin == TRUE)) { ?>
              <li class="dropdown">
 -              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><?php echo lang('menu_admin_title'); ?> <b
 +              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Administracja <b
                    class="caret"></b></a>
-@@ -56,14 +57,14 @@
+@@ -56,12 +57,12 @@
                <ul class="dropdown-menu">
 -                <li><a href="<?php echo base_url(); ?>users"><?php echo lang('menu_admin_list_users'); ?></a></li>
 -                <li><a href="<?php echo base_url(); ?>users/create"><?php echo lang('menu_admin_add_user'); ?></a></li>
@@ -36,13 +36,13 @@
                  <?php if ($is_admin == TRUE) { ?>
 -                  <li><a href="<?php echo base_url(); ?>admin/settings"><?php echo lang('menu_admin_settings'); ?></a></li>
 +                  <li><a href="<?php echo base_url(); ?>admin/settings">Ustawienia</a></li>
-@@ -79,3 +80,3 @@
+@@ -79,4 +80,4 @@
            <?php if ($is_hr == TRUE) { ?>
              <li class="dropdown">
 -              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><?php echo lang('menu_hr_title'); ?> <b
 +              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Zespół <b
                    class="caret"></b></a>
-@@ -83,12 +84,12 @@
+@@ -83,9 +84,9 @@
                <ul class="dropdown-menu">
 -                <li class="nav-header"><?php echo lang('menu_hr_employees_divider'); ?></li>
 -                <li><a href="<?php echo base_url(); ?>hr/employees"><?php echo lang('menu_hr_list_employees'); ?></a></li>
@@ -58,13 +58,7 @@
 +                <li class="nav-header">Organizacja</li>
 +                <li><a href="<?php echo base_url(); ?>contracts">Umowy</a></li>
 +                <li><a href="<?php echo base_url(); ?>positions">Stanowiska</a></li>
-@@ -106,3 +107,3 @@
-           <?php if ($is_manager == TRUE) { ?>
-             <li class="dropdown">
-               <a href="#" class="dropdown-toggle" data-toggle="dropdown">
--                <?php echo lang('menu_validation_title'); ?>&nbsp;
-+                Do akceptacji&nbsp;
-@@ -140,3 +141,3 @@
+@@ -140,4 +141,4 @@
  
            <li class="dropdown">
 -            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><?php echo lang('menu_requests_title'); ?> <b
@@ -82,13 +76,13 @@
 +              <li><a href="<?php echo base_url(); ?>leaves">Moje wnioski</a></li>
 +              <li><a href="<?php echo base_url(); ?>leaves/create">Nowy wniosek</a>
                </li>
-@@ -162,3 +163,3 @@
+@@ -162,4 +163,4 @@
  
            <li class="dropdown">
 -            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><?php echo lang('menu_calendar_title'); ?> <b
 +            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Kalendarz <b
                  class="caret"></b></a>
-@@ -192,3 +193,3 @@
+@@ -192,4 +193,4 @@
              <form class="navbar-form pull-left">
                <a class="btn btn-warning"
 -                href="<?php echo base_url(); ?>leaves/create"><b><?php echo lang('menu_leaves_request_button'); ?></b></a>
