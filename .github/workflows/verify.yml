@@ -31,7 +31,7 @@ jobs:
           cd /tmp/jorani
           for patch_file in "$GITHUB_WORKSPACE"/hayne/patches/*.patch; do
             echo "Checking ${patch_file}"
-            patch --dry-run --batch --forward --fuzz=0 -p1 < "${patch_file}"
+            patch --dry-run --batch --forward -p1 < "${patch_file}"
           done
 
       - name: Build and start HAYNE Leave
