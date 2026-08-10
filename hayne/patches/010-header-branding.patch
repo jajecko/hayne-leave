@@ -5,9 +5,10 @@
 -    <title><?php echo $title ?> - Jorani</title>
 +    <title><?php echo $title ?> - HAYNE Leave</title>
      <?php echo debugbar_head(); ?>
-@@ -20 +20,2 @@
+@@ -20 +20,3 @@
      <link rel="stylesheet" href="<?php echo base_url(); ?>assets/dist/legacy.css">
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/hayne.css">
-@@ -30 +31 @@
++    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/home.css">
+@@ -30 +32 @@
 -    <link rel="icon" type="image/x-icon" href="<?php echo base_url(); ?>assets/favicon.ico" sizes="32x32">
 +    <link rel="icon" type="image/svg+xml" href="<?php echo base_url(); ?>assets/hayne/favicon.svg">
