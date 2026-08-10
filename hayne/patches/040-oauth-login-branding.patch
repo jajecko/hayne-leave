@@ -9,12 +9,13 @@
 -        description="Jorani a free and open source leave management system. Workflow of approval; e-mail notifications; calendars; reports; export to Excel and more.">
 +        description="HAYNE Leave employee leave management.">
      <meta name="version" content="1.0.1">
-@@ -22 +22,2 @@
+@@ -22 +22,3 @@
      <link rel="stylesheet" href="<?php echo base_url(); ?>assets/dist/legacy.css">
++    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/typography.css">
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/hayne.css">
-@@ -31 +32 @@
+@@ -31 +33 @@
 -    <link rel="icon" type="image/x-icon" href="<?php echo base_url(); ?>favicon.ico" sizes="32x32">
 +    <link rel="icon" type="image/svg+xml" href="<?php echo base_url(); ?>assets/hayne/favicon.svg">
-@@ -63 +64 @@
+@@ -63 +65 @@
 -                <img width="100" src="<?php echo base_url(); ?>assets/images/logo_simple.png">
 +                <img class="hayne-logo hayne-logo--oauth-login" src="<?php echo base_url(); ?>assets/hayne/logo.svg" alt="HAYNE">
