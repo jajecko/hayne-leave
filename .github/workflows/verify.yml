@@ -72,6 +72,18 @@ jobs:
             grep -F ".hayne-balance-table" assets/hayne/balance.css
           '
 
+      - name: Verify PR-UI-09 source in built image
+        run: |
+          docker compose exec -T jorani sh -ec '
+            grep -F "calendar-individual-v1" legacy/application/views/calendar/individual.php
+            grep -F "leaves/individual" legacy/application/views/calendar/individual.php
+            grep -F "contracts/calendar/userdayoffs" legacy/application/views/calendar/individual.php
+            grep -F "eventAfterRender" legacy/application/views/calendar/individual.php
+            grep -F "assets/hayne/calendar.css" legacy/application/views/templates/header.php
+            grep -F ".hayne-calendar-page" assets/hayne/calendar.css
+            grep -F ".hayne-calendar-card" assets/hayne/calendar.css
+          '
+
       - name: Verify alternate auth branding
         run: |
           docker compose exec -T jorani sh -ec '
@@ -152,6 +164,7 @@ jobs:
           curl -fsS -b artifacts/hayne-cookies.txt http://localhost:8080/leaves -o artifacts/hayne-leaves.html
           curl -fsS -b artifacts/hayne-cookies.txt http://localhost:8080/leaves/counters -o artifacts/hayne-balance.html
           curl -fsS -b artifacts/hayne-cookies.txt http://localhost:8080/leaves/create -o artifacts/hayne-create-leave.html
+          curl -fsS -b artifacts/hayne-cookies.txt http://localhost:8080/calendar/individual -o artifacts/hayne-calendar.html
           grep -F 'id="leaves"' artifacts/hayne-leaves.html
           grep -F 'data-hayne-view="my-requests-v2"' artifacts/hayne-leaves.html
           grep -F 'Moje wnioski' artifacts/hayne-leaves.html
@@ -166,7 +179,12 @@ jobs:
           grep -F 'id="frmLeaveForm"' artifacts/hayne-create-leave.html
           grep -F 'data-hayne-view="leave-create-v2"' artifacts/hayne-create-leave.html
           grep -F 'assets/hayne/request.js' artifacts/hayne-create-leave.html
-          for file in artifacts/hayne-leaves.html artifacts/hayne-balance.html artifacts/hayne-create-leave.html; do
+          grep -F 'data-hayne-view="calendar-individual-v1"' artifacts/hayne-calendar.html
+          grep -F 'Kalendarz' artifacts/hayne-calendar.html
+          grep -F 'Dni wolne' artifacts/hayne-calendar.html
+          grep -F 'assets/hayne/calendar.css' artifacts/hayne-calendar.html
+          grep -F 'id="calendar"' artifacts/hayne-calendar.html
+          for file in artifacts/hayne-leaves.html artifacts/hayne-balance.html artifacts/hayne-create-leave.html artifacts/hayne-calendar.html; do
             grep -F 'assets/hayne/app.css' "$file"
             ! grep -F 'jorani.org' "$file"
           done
@@ -177,6 +195,7 @@ jobs:
           curl -fsS http://localhost:8080/assets/hayne/requests-list.css -o artifacts/hayne-requests-list.css
           curl -fsS http://localhost:8080/assets/hayne/requests.js -o artifacts/hayne-requests.js
           curl -fsS http://localhost:8080/assets/hayne/balance.css -o artifacts/hayne-balance.css
+          curl -fsS http://localhost:8080/assets/hayne/calendar.css -o artifacts/hayne-calendar.css
           grep -F '#wrap .table' artifacts/hayne-app.css
           grep -F '#wrap input[type="text"]' artifacts/hayne-app.css
           grep -F '.hayne-request-page' artifacts/hayne-request.css
@@ -190,6 +209,8 @@ jobs:
           grep -F 'Szukaj wniosków...' artifacts/hayne-requests.js
           grep -F '.hayne-balance-page' artifacts/hayne-balance.css
           grep -F '.hayne-balance-table' artifacts/hayne-balance.css
+          grep -F '.hayne-calendar-page' artifacts/hayne-calendar.css
+          grep -F '.hayne-calendar-event--accepted' artifacts/hayne-calendar.css
 
       - name: Guard visible HAYNE white-label
         run: |
@@ -198,7 +219,8 @@ jobs:
             artifacts/hayne-home.html \
             artifacts/hayne-leaves.html \
             artifacts/hayne-balance.html \
-            artifacts/hayne-create-leave.html; do
+            artifacts/hayne-create-leave.html \
+            artifacts/hayne-calendar.html; do
             ! grep -F 'Jorani' "$file"
             ! grep -F 'jorani.org' "$file"
           done
@@ -210,7 +232,7 @@ jobs:
             google-chrome $chrome_flags \
               --screenshot=artifacts/hayne-login.png \
               http://127.0.0.1:8080/session/login
-            for page in home leaves balance create-leave; do
+            for page in home leaves balance create-leave calendar; do
               google-chrome $chrome_flags \
                 --screenshot="artifacts/hayne-${page}.png" \
                 "file://${GITHUB_WORKSPACE}/artifacts/hayne-${page}.html"
