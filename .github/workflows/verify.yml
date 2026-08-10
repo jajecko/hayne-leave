@@ -61,10 +61,10 @@ jobs:
             grep -F "Welcome to HAYNE Leave" "$template"
             ! grep -F "Welcome to Jorani" "$template"
             ! grep -F "jorani.org" "$template"
-            grep -F "FROM_NAME'\'', '\''HAYNE Leave" "$config"
-            grep -F "SUBJECT_PREFIX'\'', '\''[HAYNE Leave] " "$config"
-            ! grep -F "FROM_NAME'\'', '\''Jorani" "$config"
-            ! grep -F "SUBJECT_PREFIX'\'', '\''[Jorani] " "$config"
+            grep -E "from_name.*HAYNE Leave" "$config"
+            grep -E "subject_prefix.*HAYNE Leave" "$config"
+            ! grep -E "from_name.*Jorani" "$config"
+            ! grep -E "subject_prefix.*Jorani" "$config"
           '
 
       - name: Smoke test branded login page
