@@ -88,7 +88,7 @@ body:has(.hayne-login-shell) {
 
 .hayne-login-logo {
   display: block;
-  width: min(100%, 330px);
+  width: min(100%, 420px);
   height: auto;
   margin: 18px auto 28px;
   filter: brightness(0)
