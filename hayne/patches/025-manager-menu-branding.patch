@@ -3,3 +3,6 @@
 @@ -102 +102 @@
 -                <?php echo lang('menu_validation_title'); ?>&nbsp;
 +                Do akceptacji&nbsp;
+@@ -119 +119 @@
+-                <li class="nav-header"><?php echo lang('menu_validation_title'); ?></li>
++                <li class="nav-header">Akceptacja</li>
