@@ -1,0 +1,267 @@
+/* HAYNE Leave — PR-UI-02: my requests surface.
+ * Presentation-only layer. Existing Jorani table IDs, filters and actions remain intact.
+ */
+
+.hayne-requests-page {
+  box-sizing: border-box;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 34px 0 72px;
+}
+
+.hayne-requests-page *,
+.hayne-requests-page *::before,
+.hayne-requests-page *::after {
+  box-sizing: border-box;
+}
+
+.hayne-requests-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 26px;
+}
+
+#wrap .hayne-requests-header h1 {
+  margin: 0;
+  color: var(--hayne-ink);
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 600;
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+}
+
+.hayne-requests-header p {
+  max-width: 620px;
+  margin: 10px 0 0;
+  color: var(--hayne-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+#wrap .hayne-requests-create {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 11px 18px;
+  border: 1px solid #111;
+  border-radius: 9px;
+  background: #111;
+  color: #fff;
+  font-weight: 700;
+  text-shadow: none;
+  box-shadow: none;
+}
+
+#wrap .hayne-requests-create:hover,
+#wrap .hayne-requests-create:focus {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+.hayne-requests-card {
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid var(--hayne-line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.hayne-requests-filters {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 18px 26px;
+  margin-bottom: 22px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--hayne-line);
+}
+
+.hayne-requests-type-filter {
+  min-width: min(100%, 260px);
+}
+
+#wrap .hayne-requests-type-filter label {
+  display: block;
+  margin: 0 0 7px;
+  color: var(--hayne-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+#wrap .hayne-requests-type-filter select {
+  width: 100%;
+  min-height: 40px;
+  margin: 0;
+}
+
+.hayne-status-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#wrap .hayne-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--hayne-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--hayne-ink);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: none;
+}
+
+#wrap .hayne-status-chip input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+#wrap .hayne-requests-card .dataTables_wrapper {
+  color: var(--hayne-ink);
+}
+
+#wrap .hayne-requests-card .dataTables_filter {
+  margin: 0 0 16px;
+}
+
+#wrap .hayne-requests-card .dataTables_filter label {
+  color: var(--hayne-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#wrap .hayne-requests-card .dataTables_filter input {
+  min-width: 240px;
+  min-height: 40px;
+  margin-left: 8px;
+  border: 1px solid var(--hayne-line);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+#wrap .hayne-requests-card table.dataTable {
+  width: 100% !important;
+  margin-top: 10px !important;
+  border-collapse: separate !important;
+  border-spacing: 0;
+}
+
+#wrap .hayne-requests-card table.dataTable thead th {
+  padding: 13px 10px;
+  border-bottom: 1px solid var(--hayne-line);
+  color: var(--hayne-muted);
+  background: #fafafa;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+#wrap .hayne-requests-card table.dataTable tbody td {
+  padding: 14px 10px;
+  border-bottom: 1px solid var(--hayne-line);
+  vertical-align: middle;
+}
+
+#wrap .hayne-requests-card table.dataTable tbody tr:hover td {
+  background: #fafafa;
+}
+
+#wrap .hayne-requests-card .label {
+  border-radius: 999px;
+  padding: 5px 9px;
+  border: 1px solid var(--hayne-line);
+  background: #f5f5f5;
+  color: var(--hayne-ink);
+  font-size: 11px;
+  text-shadow: none;
+}
+
+#wrap .hayne-requests-card .label-success,
+#wrap .hayne-requests-card .label-warning,
+#wrap .hayne-requests-card .label-important {
+  background: #f5f5f5 !important;
+  color: var(--hayne-ink) !important;
+}
+
+.hayne-requests-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--hayne-line);
+}
+
+#wrap .hayne-requests-actions .btn {
+  margin: 0;
+}
+
+#wrap .hayne-requests-actions .hayne-secondary-action {
+  border: 1px solid var(--hayne-line);
+  background: #fff;
+  color: var(--hayne-ink);
+  text-shadow: none;
+  box-shadow: none;
+}
+
+#wrap .hayne-requests-card .dataTables_info,
+#wrap .hayne-requests-card .dataTables_paginate,
+#wrap .hayne-requests-card .dataTables_length {
+  margin-top: 16px;
+  color: var(--hayne-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 767px) {
+  .hayne-requests-page {
+    padding: 22px 0 48px;
+  }
+
+  .hayne-requests-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #wrap .hayne-requests-create {
+    width: 100%;
+    text-align: center;
+  }
+
+  .hayne-requests-card {
+    padding: 16px;
+    overflow-x: auto;
+  }
+
+  .hayne-requests-filters,
+  .hayne-status-filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #wrap .hayne-status-chip {
+    justify-content: flex-start;
+  }
+
+  #wrap .hayne-requests-card .dataTables_filter,
+  #wrap .hayne-requests-card .dataTables_filter label,
+  #wrap .hayne-requests-card .dataTables_filter input {
+    width: 100%;
+  }
+
+  #wrap .hayne-requests-card .dataTables_filter input {
+    min-width: 0;
+    margin: 7px 0 0;
+  }
+}
