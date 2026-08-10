@@ -1,0 +1,20 @@
+/* HAYNE authenticated shell compatibility overrides.
+ * Loaded after app.css so legacy/global surface rules cannot break the shell presentation.
+ */
+
+/* The direct shortcut is always visible, but it must not look selected on every route. */
+#wrap .nav-responsive > .nav:first-child > li:first-child > a {
+  background: transparent !important;
+  color: #282828 !important;
+}
+
+#wrap .nav-responsive > .nav:first-child > li:first-child > a:hover,
+#wrap .nav-responsive > .nav:first-child > li:first-child > a:focus {
+  background: #f0f0ed !important;
+  color: #000 !important;
+}
+
+/* app.css normalizes authenticated headings; the dark Home hero intentionally needs light copy. */
+#wrap .hayne-home-hero h1 {
+  color: #fff !important;
+}
