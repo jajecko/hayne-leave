@@ -56,6 +56,17 @@ jobs:
             grep -F "assets/hayne/requests-list.css" legacy/application/views/templates/header.php
           '
 
+      - name: Verify PR-UI-06 source in built image
+        run: |
+          docker compose exec -T jorani sh -ec '
+            grep -F "leave-balance-v1" legacy/application/views/leaves/counters.php
+            grep -F "Saldo urlopowe" legacy/application/views/leaves/counters.php
+            grep -F "Stan na dzień" legacy/application/views/leaves/counters.php
+            grep -F "assets/hayne/balance.css" legacy/application/views/templates/header.php
+            grep -F ".hayne-balance-page" assets/hayne/balance.css
+            grep -F ".hayne-balance-table" assets/hayne/balance.css
+          '
+
       - name: Verify alternate auth branding
         run: |
           docker compose exec -T jorani sh -ec '
@@ -141,7 +152,11 @@ jobs:
           grep -F 'Moje wnioski' artifacts/hayne-leaves.html
           grep -F 'Rodzaj nieobecności' artifacts/hayne-leaves.html
           grep -F 'Nowy wniosek' artifacts/hayne-leaves.html
-          grep -F 'table table-bordered table-hover' artifacts/hayne-balance.html
+          grep -F 'data-hayne-view="leave-balance-v1"' artifacts/hayne-balance.html
+          grep -F 'Saldo urlopowe' artifacts/hayne-balance.html
+          grep -F 'Stan na dzień' artifacts/hayne-balance.html
+          grep -F 'Twoje limity' artifacts/hayne-balance.html
+          grep -F 'assets/hayne/balance.css' artifacts/hayne-balance.html
           grep -F 'id="frmLeaveForm"' artifacts/hayne-create-leave.html
           grep -F 'data-hayne-view="leave-create-v2"' artifacts/hayne-create-leave.html
           grep -F 'assets/hayne/request.js' artifacts/hayne-create-leave.html
@@ -154,6 +169,7 @@ jobs:
           curl -fsS http://localhost:8080/assets/hayne/request.css -o artifacts/hayne-request.css
           curl -fsS http://localhost:8080/assets/hayne/request.js -o artifacts/hayne-request.js
           curl -fsS http://localhost:8080/assets/hayne/requests-list.css -o artifacts/hayne-requests-list.css
+          curl -fsS http://localhost:8080/assets/hayne/balance.css -o artifacts/hayne-balance.css
           grep -F '#wrap .table' artifacts/hayne-app.css
           grep -F '#wrap input[type="text"]' artifacts/hayne-app.css
           grep -F '.hayne-request-page' artifacts/hayne-request.css
@@ -163,6 +179,8 @@ jobs:
           grep -F 'Wyślij wniosek' artifacts/hayne-request.js
           grep -F '.hayne-requests-page' artifacts/hayne-requests-list.css
           grep -F '.hayne-status-chip' artifacts/hayne-requests-list.css
+          grep -F '.hayne-balance-page' artifacts/hayne-balance.css
+          grep -F '.hayne-balance-table' artifacts/hayne-balance.css
 
       - name: Guard visible HAYNE white-label
         run: |
