@@ -53,6 +53,20 @@ jobs:
             ! grep -F " - Jorani" legacy/application/views/session/login_simple.php
           '
 
+      - name: Verify HAYNE mail branding
+        run: |
+          docker compose exec -T jorani sh -ec '
+            template=legacy/application/views/emails/en/new_user.php
+            config=legacy/application/config/config.php
+            grep -F "Welcome to HAYNE Leave" "$template"
+            ! grep -F "Welcome to Jorani" "$template"
+            ! grep -F "jorani.org" "$template"
+            grep -F "FROM_NAME'\'', '\''HAYNE Leave" "$config"
+            grep -F "SUBJECT_PREFIX'\'', '\''[HAYNE Leave] " "$config"
+            ! grep -F "FROM_NAME'\'', '\''Jorani" "$config"
+            ! grep -F "SUBJECT_PREFIX'\'', '\''[Jorani] " "$config"
+          '
+
       - name: Smoke test branded login page
         run: |
           mkdir -p artifacts
