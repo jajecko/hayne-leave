@@ -237,17 +237,25 @@
 
 /* Hero line-art details. */
 .hayne-dashboard-hero {
+  min-height: 325px;
   padding: 40px;
 }
 
 .hayne-dashboard-hero__copy {
   align-self: start;
-  padding-top: 17px;
+  padding-top: 13px;
 }
 
 .hayne-dashboard-hero p {
-  max-width: 465px;
-  line-height: 1.45;
+  max-width: 410px;
+  margin: 18px 0 34px;
+  line-height: 1.5;
+}
+
+#wrap .hayne-dashboard-hero__action {
+  min-width: 160px;
+  min-height: 50px;
+  padding: 13px 24px;
 }
 
 .hayne-dashboard-hero__lamp {
@@ -371,9 +379,12 @@
   stroke-width: 2;
 }
 
-.hayne-kpi-grid,
-.hayne-dashboard-grid {
+.hayne-kpi-grid {
   margin-top: 18px;
+}
+
+.hayne-dashboard-grid {
+  margin-top: 22px;
 }
 
 @media (min-width: 1100px) {
