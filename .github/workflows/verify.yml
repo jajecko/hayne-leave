@@ -97,6 +97,21 @@ jobs:
           curl -fsS http://localhost:8080/assets/hayne/home.css -o artifacts/hayne-home.css
           grep -F '.hayne-home-hero' artifacts/hayne-home.css
 
+      - name: Smoke test authenticated HAYNE surfaces
+        run: |
+          curl -fsS -b artifacts/hayne-cookies.txt http://localhost:8080/leaves -o artifacts/hayne-leaves.html
+          curl -fsS -b artifacts/hayne-cookies.txt http://localhost:8080/leaves/counters -o artifacts/hayne-balance.html
+          curl -fsS -b artifacts/hayne-cookies.txt http://localhost:8080/leaves/create -o artifacts/hayne-create-leave.html
+          grep -F 'id="leaves"' artifacts/hayne-leaves.html
+          grep -F 'table table-bordered table-hover' artifacts/hayne-balance.html
+          grep -F 'id="frmLeaveForm"' artifacts/hayne-create-leave.html
+          for file in artifacts/hayne-leaves.html artifacts/hayne-balance.html artifacts/hayne-create-leave.html; do
+            grep -F 'assets/hayne/app.css' "$file"
+          done
+          curl -fsS http://localhost:8080/assets/hayne/app.css -o artifacts/hayne-app.css
+          grep -F '#wrap .table' artifacts/hayne-app.css
+          grep -F '#wrap input[type="text"]' artifacts/hayne-app.css
+
       - name: Capture login screenshot
         run: |
           if command -v google-chrome >/dev/null 2>&1; then
