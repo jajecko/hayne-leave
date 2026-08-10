@@ -128,6 +128,18 @@ jobs:
           grep -F '#wrap .table' artifacts/hayne-app.css
           grep -F '#wrap input[type="text"]' artifacts/hayne-app.css
 
+      - name: Guard visible HAYNE white-label
+        run: |
+          for file in \
+            artifacts/hayne-login.html \
+            artifacts/hayne-home.html \
+            artifacts/hayne-leaves.html \
+            artifacts/hayne-balance.html \
+            artifacts/hayne-create-leave.html; do
+            ! grep -F 'Jorani' "$file"
+            ! grep -F 'jorani.org' "$file"
+          done
+
       - name: Capture login screenshot
         run: |
           if command -v google-chrome >/dev/null 2>&1; then
