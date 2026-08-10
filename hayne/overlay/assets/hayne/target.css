@@ -166,6 +166,182 @@
   border-top: 1px solid #ecece8;
 }
 
+/* Reliable line icons on the dashboard, independent of legacy MDI glyph coverage. */
+#wrap .hayne-kpi-card__icon svg,
+#wrap .hayne-upcoming-empty__icon svg,
+#wrap .hayne-quick-action__icon svg,
+#wrap .hayne-quick-action__chevron svg,
+#wrap .hayne-inline-chevron svg,
+#wrap .hayne-dashboard-hero__calendar-check svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#wrap .hayne-kpi-card__icon svg {
+  width: 34px;
+  height: 34px;
+}
+
+#wrap .hayne-upcoming-empty__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+#wrap .hayne-inline-chevron {
+  display: inline-grid;
+  width: 15px;
+  height: 15px;
+  place-items: center;
+}
+
+#wrap .hayne-quick-action__icon,
+#wrap .hayne-quick-action__chevron {
+  display: grid;
+  place-items: center;
+}
+
+#wrap .hayne-quick-action__icon {
+  width: 30px;
+  height: 30px;
+}
+
+#wrap .hayne-quick-action__chevron {
+  width: 18px;
+  height: 18px;
+  justify-self: end;
+}
+
+#wrap .hayne-quick-action--primary .hayne-quick-action__icon,
+#wrap .hayne-quick-action--primary .hayne-quick-action__chevron {
+  color: #fff;
+}
+
+/* Hero line-art details. */
+.hayne-dashboard-hero__lamp {
+  position: absolute;
+  z-index: 4;
+  bottom: 18px;
+  left: 68px;
+  width: 128px;
+  height: 188px;
+}
+
+.hayne-dashboard-hero__lamp::before {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 78px;
+  height: 16px;
+  border: 2px solid #777772;
+  border-bottom: 0;
+  border-radius: 50% 50% 0 0;
+  content: "";
+}
+
+.hayne-dashboard-hero__lamp-arm {
+  position: absolute;
+  bottom: 14px;
+  left: 38px;
+  width: 2px;
+  height: 118px;
+  background: #777772;
+}
+
+.hayne-dashboard-hero__lamp-arm::before {
+  position: absolute;
+  top: 0;
+  left: -1px;
+  width: 102px;
+  height: 2px;
+  background: #777772;
+  content: "";
+  transform: rotate(-46deg);
+  transform-origin: left center;
+}
+
+.hayne-dashboard-hero__lamp-arm::after {
+  position: absolute;
+  top: -4px;
+  left: -5px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid #777772;
+  border-radius: 50%;
+  background: #fff;
+  content: "";
+}
+
+.hayne-dashboard-hero__lamp-shade {
+  position: absolute;
+  top: 7px;
+  right: 1px;
+  width: 58px;
+  height: 38px;
+  border: 2px solid #777772;
+  border-radius: 5px 25px 25px 5px;
+  background: #fff;
+  transform: rotate(42deg);
+}
+
+.hayne-dashboard-hero__calendar {
+  right: 10px;
+  width: 214px;
+  height: 146px;
+  padding: 24px 18px 16px;
+  border: 2px solid #686864;
+  border-radius: 8px 8px 5px 5px;
+}
+
+.hayne-dashboard-hero__calendar::before {
+  position: absolute;
+  top: -9px;
+  right: 15px;
+  left: 15px;
+  height: 18px;
+  background: repeating-linear-gradient(90deg, transparent 0 20px, #686864 20px 22px, transparent 22px 28px);
+  content: "";
+}
+
+.hayne-dashboard-hero__calendar-grid {
+  display: grid;
+  height: 88px;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  border-top: 1px solid #d4d4cf;
+  border-left: 1px solid #d4d4cf;
+}
+
+.hayne-dashboard-hero__calendar-grid > span {
+  border-right: 1px solid #d4d4cf;
+  border-bottom: 1px solid #d4d4cf;
+}
+
+.hayne-dashboard-hero__calendar-check {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 2px solid #111;
+  border-radius: 50%;
+  background: #fff;
+  color: #111;
+}
+
+.hayne-dashboard-hero__calendar-check svg {
+  width: 19px;
+  height: 19px;
+  stroke-width: 2;
+}
+
 @media (min-width: 1100px) {
   .hayne-dashboard-hero {
     grid-template-columns: minmax(0, 1.15fr) minmax(340px, .85fr);
