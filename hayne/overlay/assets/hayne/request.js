@@ -1,14 +1,11 @@
 (() => {
   const SVG_NS = 'http://www.w3.org/2000/svg';
-
   const iconPaths = {
     calendar: [
       ['rect', { x: '3', y: '5', width: '18', height: '16', rx: '2' }],
       ['path', { d: 'M16 3v4M8 3v4M3 10h18' }],
     ],
-    chevron: [
-      ['path', { d: 'm8 10 4 4 4-4' }],
-    ],
+    chevron: [['path', { d: 'm8 10 4 4 4-4' }]],
     send: [
       ['path', { d: 'm22 2-7 20-4-9-9-4Z' }],
       ['path', { d: 'M22 2 11 13' }],
@@ -21,9 +18,7 @@
       ['circle', { cx: '12', cy: '12', r: '4' }],
       ['path', { d: 'M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41' }],
     ],
-    moon: [
-      ['path', { d: 'M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2Z' }],
-    ],
+    moon: [['path', { d: 'M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2Z' }]],
   };
 
   const makeIcon = (name, className = '') => {
@@ -34,28 +29,13 @@
     const svg = document.createElementNS(SVG_NS, 'svg');
     svg.setAttribute('viewBox', '0 0 24 24');
     svg.setAttribute('focusable', 'false');
-
     (iconPaths[name] || []).forEach(([tag, attrs]) => {
       const node = document.createElementNS(SVG_NS, tag);
       Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
       svg.appendChild(node);
     });
-
     span.appendChild(svg);
     return span;
-  };
-
-  const normalizedCredit = (value) => {
-    const raw = String(value || '').replace(/[()]/g, '').trim();
-    if (!raw) return '—';
-    return `${raw} dni`;
-  };
-
-  const relabel = (label, text) => {
-    if (!label) return;
-    const preserved = Array.from(label.children);
-    label.textContent = text;
-    preserved.forEach((child) => label.appendChild(child));
   };
 
   const makeField = (className = '') => {
@@ -64,7 +44,7 @@
     return field;
   };
 
-  const makeControlShell = (control, iconName, className = '') => {
+  const makeControl = (control, iconName = null, className = '') => {
     const shell = document.createElement('div');
     shell.className = `hayne-request-control${className ? ` ${className}` : ''}`;
     if (iconName) shell.appendChild(makeIcon(iconName, 'hayne-request-control__icon'));
@@ -72,10 +52,15 @@
     return shell;
   };
 
-  const makeSelectShell = (select, iconName = null) => {
-    const shell = makeControlShell(select, iconName, 'hayne-request-control--select');
+  const makeSelectControl = (select, iconName = null) => {
+    const shell = makeControl(select, iconName, 'hayne-request-control--select');
     shell.appendChild(makeIcon('chevron', 'hayne-request-control__chevron'));
     return shell;
+  };
+
+  const normalizeCredit = (value) => {
+    const raw = String(value || '').replace(/[()]/g, '').trim();
+    return raw ? `${raw} dni` : '—';
   };
 
   const updateDayPartIcon = (select, shell) => {
@@ -83,6 +68,18 @@
     const next = makeIcon(select.value === 'Afternoon' ? 'moon' : 'sun', 'hayne-request-control__icon');
     if (current) current.replaceWith(next);
     else shell.insertBefore(next, shell.firstChild);
+  };
+
+  const cleanLegacySpacing = (form, layout) => {
+    Array.from(form.childNodes).forEach((node) => {
+      if (node === layout) return;
+      if (node.nodeType === Node.TEXT_NODE) {
+        const visible = String(node.textContent || '').replace(/\u00a0/g, '').trim();
+        if (!visible) node.remove();
+        return;
+      }
+      if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'BR') node.remove();
+    });
   };
 
   const enhanceRequest = () => {
@@ -99,12 +96,14 @@
     if (wrap) wrap.dataset.hayneTopbarTitle = 'Nowy wniosek';
 
     const header = page.querySelector('.hayne-request-header');
-    const eyebrow = header ? header.querySelector('.hayne-request-eyebrow') : null;
-    const title = header ? header.querySelector('h1') : null;
-    const intro = header ? header.querySelector('p') : null;
-    if (eyebrow) eyebrow.remove();
-    if (title) title.textContent = 'Nowy wniosek';
-    if (intro) intro.textContent = 'Wypełnij formularz poniżej, aby złożyć wniosek o nieobecność. Wniosek zostanie przesłany do osoby akceptującej.';
+    if (header) {
+      const eyebrow = header.querySelector('.hayne-request-eyebrow');
+      const title = header.querySelector('h1');
+      const intro = header.querySelector('p');
+      if (eyebrow) eyebrow.remove();
+      if (title) title.textContent = 'Nowy wniosek';
+      if (intro) intro.textContent = 'Wypełnij formularz poniżej, aby złożyć wniosek o nieobecność. Wniosek zostanie przesłany do osoby akceptującej.';
+    }
 
     const layout = document.createElement('div');
     layout.className = 'hayne-request-layout';
@@ -113,7 +112,7 @@
     const typeLabel = form.querySelector('label[for="type"]');
     const creditSource = form.querySelector('#lblCredit');
     if (type && typeLabel) {
-      const typeField = makeField('hayne-request-field--type');
+      const field = makeField('hayne-request-field--type');
       const labelRow = document.createElement('div');
       labelRow.className = 'hayne-request-label-row';
 
@@ -124,103 +123,80 @@
       if (creditSource) {
         const credit = document.createElement('span');
         credit.className = 'hayne-request-credit hayne-request-credit--target';
-        credit.textContent = 'Dostępne saldo: ';
+        credit.append('Dostępne saldo: ');
 
-        const value = document.createElement('strong');
-        value.className = 'hayne-request-credit-value';
-        value.textContent = normalizedCredit(creditSource.textContent);
-        credit.appendChild(value);
+        const visualValue = document.createElement('strong');
+        visualValue.className = 'hayne-request-credit-value';
+        visualValue.textContent = normalizeCredit(creditSource.textContent);
+        credit.appendChild(visualValue);
+
+        creditSource.classList.add('hayne-request-credit-source');
         credit.appendChild(creditSource);
         labelRow.appendChild(credit);
 
-        creditSource.classList.add('hayne-request-credit-source');
-        const syncCredit = () => {
-          value.textContent = normalizedCredit(creditSource.textContent);
-        };
-        new MutationObserver(syncCredit).observe(creditSource, { childList: true, characterData: true, subtree: true });
+        new MutationObserver(() => {
+          visualValue.textContent = normalizeCredit(creditSource.textContent);
+        }).observe(creditSource, { childList: true, characterData: true, subtree: true });
       }
 
-      const select2 = type.nextElementSibling && type.nextElementSibling.classList.contains('select2-container')
+      type.classList.add('hayne-request-type-select');
+      const existingSelect2 = type.nextElementSibling && type.nextElementSibling.classList.contains('select2-container')
         ? type.nextElementSibling
         : null;
-      const typeControl = document.createElement('div');
-      typeControl.className = 'hayne-request-type-control';
-      typeControl.appendChild(type);
-      if (select2) typeControl.appendChild(select2);
-      typeControl.appendChild(makeIcon('chevron', 'hayne-request-control__chevron'));
+      const control = document.createElement('div');
+      control.className = 'hayne-request-type-control';
+      control.appendChild(type);
+      if (existingSelect2) control.appendChild(existingSelect2);
+      control.appendChild(makeIcon('chevron', 'hayne-request-control__chevron'));
 
-      typeField.appendChild(labelRow);
-      typeField.appendChild(typeControl);
-      layout.appendChild(typeField);
+      field.appendChild(labelRow);
+      field.appendChild(control);
+      layout.appendChild(field);
     }
 
-    const datesGrid = document.createElement('div');
-    datesGrid.className = 'hayne-request-grid hayne-request-grid--dates';
-
-    const startInput = form.querySelector('#viz_startdate');
-    const startHidden = form.querySelector('#startdate');
-    const startLabel = form.querySelector('label[for="viz_startdate"]');
-    if (startInput && startLabel) {
-      startLabel.textContent = 'Data rozpoczęcia';
-      startInput.placeholder = 'Wybierz datę';
+    const dates = document.createElement('div');
+    dates.className = 'hayne-request-grid hayne-request-grid--dates';
+    [
+      ['viz_startdate', 'startdate', 'Data rozpoczęcia'],
+      ['viz_enddate', 'enddate', 'Data zakończenia'],
+    ].forEach(([visibleId, hiddenId, labelText]) => {
+      const input = form.querySelector(`#${visibleId}`);
+      const hidden = form.querySelector(`#${hiddenId}`);
+      const label = form.querySelector(`label[for="${visibleId}"]`);
+      if (!input || !label) return;
+      label.textContent = labelText;
+      input.placeholder = 'Wybierz datę';
       const field = makeField();
-      field.appendChild(startLabel);
-      const shell = makeControlShell(startInput, 'calendar', 'hayne-request-control--date');
-      field.appendChild(shell);
-      if (startHidden) field.appendChild(startHidden);
-      datesGrid.appendChild(field);
-    }
+      field.appendChild(label);
+      field.appendChild(makeControl(input, 'calendar', 'hayne-request-control--date'));
+      if (hidden) field.appendChild(hidden);
+      dates.appendChild(field);
+    });
+    if (dates.children.length) layout.appendChild(dates);
 
-    const endInput = form.querySelector('#viz_enddate');
-    const endHidden = form.querySelector('#enddate');
-    const endLabel = form.querySelector('label[for="viz_enddate"]');
-    if (endInput && endLabel) {
-      endLabel.textContent = 'Data zakończenia';
-      endInput.placeholder = 'Wybierz datę';
-      const field = makeField();
-      field.appendChild(endLabel);
-      const shell = makeControlShell(endInput, 'calendar', 'hayne-request-control--date');
-      field.appendChild(shell);
-      if (endHidden) field.appendChild(endHidden);
-      datesGrid.appendChild(field);
-    }
-    if (datesGrid.children.length) layout.appendChild(datesGrid);
-
-    const dayPartsGrid = document.createElement('div');
-    dayPartsGrid.className = 'hayne-request-grid hayne-request-grid--dayparts';
-
-    const startType = form.querySelector('#startdatetype');
-    if (startType) {
-      Array.from(startType.options).forEach((option) => {
+    const dayParts = document.createElement('div');
+    dayParts.className = 'hayne-request-grid hayne-request-grid--dayparts';
+    [
+      ['startdatetype', 'Część dnia (od)'],
+      ['enddatetype', 'Część dnia (do)'],
+    ].forEach(([id, labelText]) => {
+      const select = form.querySelector(`#${id}`);
+      if (!select) return;
+      Array.from(select.options).forEach((option) => {
         option.textContent = option.value === 'Afternoon' ? 'Po południu' : 'Rano';
       });
-      const label = document.createElement('label');
-      label.htmlFor = 'startdatetype';
-      label.textContent = 'Część dnia (od)';
-      const field = makeField();
-      const shell = makeSelectShell(startType, startType.value === 'Afternoon' ? 'moon' : 'sun');
-      startType.addEventListener('change', () => updateDayPartIcon(startType, shell));
-      field.appendChild(label);
-      field.appendChild(shell);
-      dayPartsGrid.appendChild(field);
-    }
 
-    const endType = form.querySelector('#enddatetype');
-    if (endType) {
-      Array.from(endType.options).forEach((option) => {
-        option.textContent = option.value === 'Afternoon' ? 'Po południu' : 'Rano';
-      });
       const label = document.createElement('label');
-      label.htmlFor = 'enddatetype';
-      label.textContent = 'Część dnia (do)';
+      label.htmlFor = id;
+      label.textContent = labelText;
       const field = makeField();
-      const shell = makeSelectShell(endType, endType.value === 'Afternoon' ? 'moon' : 'sun');
-      endType.addEventListener('change', () => updateDayPartIcon(endType, shell));
+      const shell = makeSelectControl(select, select.value === 'Afternoon' ? 'moon' : 'sun');
+      select.addEventListener('change', () => updateDayPartIcon(select, shell));
       field.appendChild(label);
       field.appendChild(shell);
-      dayPartsGrid.appendChild(field);
-    }
-    if (dayPartsGrid.children.length) layout.appendChild(dayPartsGrid);
+      dayParts.appendChild(field);
+    });
+    if (dayParts.children.length) layout.appendChild(dayParts);
 
     const duration = form.querySelector('#duration');
     const durationLabel = form.querySelector('label[for="duration"]');
@@ -230,7 +206,6 @@
       durationLabel.textContent = 'Liczba dni';
       if (tooltip) durationLabel.appendChild(tooltip);
       duration.placeholder = '0 dni';
-
       const field = makeField('hayne-request-field--duration');
       field.appendChild(durationLabel);
       field.appendChild(duration);
@@ -267,9 +242,7 @@
       submit.className = 'btn btn-primary hayne-request-submit';
       submit.textContent = '';
       submit.appendChild(makeIcon('send'));
-      const text = document.createElement('span');
-      text.textContent = 'Wyślij wniosek';
-      submit.appendChild(text);
+      submit.appendChild(document.createTextNode('Wyślij wniosek'));
       actions.appendChild(submit);
     }
 
@@ -278,9 +251,7 @@
       planned.className = 'btn hayne-request-plan';
       planned.textContent = '';
       planned.appendChild(makeIcon('plan'));
-      const text = document.createElement('span');
-      text.textContent = 'Zapisz jako plan';
-      planned.appendChild(text);
+      planned.appendChild(document.createTextNode('Zapisz jako plan'));
       actions.appendChild(planned);
     }
 
@@ -293,6 +264,7 @@
 
     if (actions.children.length) layout.appendChild(actions);
     form.appendChild(layout);
+    cleanLegacySpacing(form, layout);
   };
 
   const scheduleEnhancement = () => window.setTimeout(enhanceRequest, 0);
