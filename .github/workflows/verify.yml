@@ -32,6 +32,7 @@ jobs:
           for patch_file in "$GITHUB_WORKSPACE"/hayne/patches/*.patch; do
             echo "Checking ${patch_file}"
             patch --dry-run --batch --forward -p1 < "${patch_file}"
+            patch --batch --forward -p1 < "${patch_file}"
           done
 
       - name: Build and start HAYNE Leave
@@ -108,6 +109,9 @@ jobs:
           grep -F 'data-hayne-home="v1"' artifacts/hayne-home.html
           grep -F 'Time off, in one place.' artifacts/hayne-home.html
           grep -F 'assets/hayne/home.css' artifacts/hayne-home.html
+          grep -F '>Urlopy <b' artifacts/hayne-home.html
+          grep -F '>Kalendarz <b' artifacts/hayne-home.html
+          grep -F '<b>Nowy wniosek</b>' artifacts/hayne-home.html
           ! grep -F 'Welcome to Jorani' artifacts/hayne-home.html
           curl -fsS http://localhost:8080/assets/hayne/home.css -o artifacts/hayne-home.css
           grep -F '.hayne-home-hero' artifacts/hayne-home.css
@@ -120,13 +124,21 @@ jobs:
           grep -F 'id="leaves"' artifacts/hayne-leaves.html
           grep -F 'table table-bordered table-hover' artifacts/hayne-balance.html
           grep -F 'id="frmLeaveForm"' artifacts/hayne-create-leave.html
+          grep -F 'data-hayne-view="leave-create-v2"' artifacts/hayne-create-leave.html
+          grep -F '<h1>Nowy wniosek</h1>' artifacts/hayne-create-leave.html
+          grep -F 'Rodzaj nieobecności' artifacts/hayne-create-leave.html
+          grep -F 'Wyślij wniosek' artifacts/hayne-create-leave.html
+          grep -F 'assets/hayne/request.css' artifacts/hayne-create-leave.html
           for file in artifacts/hayne-leaves.html artifacts/hayne-balance.html artifacts/hayne-create-leave.html; do
             grep -F 'assets/hayne/app.css' "$file"
             ! grep -F 'jorani.org' "$file"
           done
           curl -fsS http://localhost:8080/assets/hayne/app.css -o artifacts/hayne-app.css
+          curl -fsS http://localhost:8080/assets/hayne/request.css -o artifacts/hayne-request.css
           grep -F '#wrap .table' artifacts/hayne-app.css
           grep -F '#wrap input[type="text"]' artifacts/hayne-app.css
+          grep -F '.hayne-request-page' artifacts/hayne-request.css
+          grep -F '.hayne-request-actions' artifacts/hayne-request.css
 
       - name: Guard visible HAYNE white-label
         run: |
