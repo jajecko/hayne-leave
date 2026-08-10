@@ -51,6 +51,8 @@
   line-height: 1.5;
 }
 
+/* .hayne-home-hero remains as the compatibility selector used by the smoke contract. */
+.hayne-home-hero,
 .hayne-dashboard-hero {
   display: grid;
   min-height: 230px;
@@ -88,24 +90,6 @@
   color: #666662;
   font-size: 15px;
   line-height: 1.6;
-}
-
-.hayne-dashboard-hero__actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 9px;
-}
-
-#wrap .hayne-dashboard-hero__actions .btn {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
-  padding: 10px 16px;
-  border-radius: 9px;
 }
 
 .hayne-kpi-grid {
@@ -322,10 +306,6 @@
     align-items: start;
   }
 
-  .hayne-dashboard-hero__actions {
-    justify-content: flex-start;
-  }
-
   .hayne-kpi-grid {
     grid-template-columns: 1fr;
   }
@@ -356,11 +336,6 @@
 
   #wrap .hayne-dashboard-hero h2 {
     font-size: clamp(36px, 12vw, 48px);
-  }
-
-  .hayne-dashboard-hero__actions,
-  #wrap .hayne-dashboard-hero__actions .btn {
-    width: 100%;
   }
 
   .hayne-kpi-grid,
