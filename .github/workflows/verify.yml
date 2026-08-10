@@ -31,5 +31,55 @@ jobs:
           cd /tmp/jorani
           for patch_file in "$GITHUB_WORKSPACE"/hayne/patches/*.patch; do
             echo "Checking ${patch_file}"
-            patch --dry-run --batch --forward -p1 < "${patch_file}"
+            patch --dry-run --batch --forward --fuzz=0 -p1 < "${patch_file}"
           done
+
+      - name: Build and start HAYNE Leave
+        run: docker compose up --build -d
+
+      - name: Smoke test branded login page
+        run: |
+          mkdir -p artifacts
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/session/login -o artifacts/hayne-login.html; then
+              break
+            fi
+            echo "Waiting for HAYNE Leave (${attempt}/60)..."
+            sleep 2
+          done
+          test -s artifacts/hayne-login.html
+          grep -F 'HAYNE Leave' artifacts/hayne-login.html
+          grep -F 'assets/hayne/logo.png' artifacts/hayne-login.html
+          grep -F 'assets/hayne/hayne.css' artifacts/hayne-login.html
+
+      - name: Capture login screenshot
+        run: |
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome \
+              --headless \
+              --no-sandbox \
+              --disable-gpu \
+              --hide-scrollbars \
+              --window-size=1440,900 \
+              --screenshot=artifacts/hayne-login.png \
+              http://127.0.0.1:8080/session/login
+          else
+            echo "google-chrome is not available on this runner; HTML smoke remains authoritative."
+          fi
+
+      - name: Upload smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hayne-login-smoke
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
