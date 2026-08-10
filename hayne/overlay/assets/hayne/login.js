@@ -33,6 +33,14 @@
     return span;
   };
 
+  const makeLeaveSubmark = () => {
+    const mark = document.createElement('span');
+    mark.className = 'hayne-login-lockup-sub';
+    mark.textContent = 'LEAVE';
+    mark.setAttribute('aria-hidden', 'true');
+    return mark;
+  };
+
   const wrapInput = (input, iconName, isPassword = false) => {
     if (!input || input.closest('.hayne-login-control')) return;
     const control = document.createElement('div');
@@ -77,6 +85,11 @@
     }
 
     brandPanel.classList.add('hayne-login-card-brand');
+    const logo = brand.querySelector('.hayne-logo--login');
+    if (logo && !brand.querySelector('.hayne-login-lockup-sub')) {
+      logo.insertAdjacentElement('afterend', makeLeaveSubmark());
+    }
+
     const product = brand.querySelector('.hayne-login-product-name');
     if (product) product.textContent = 'HAYNE Leave';
 
