@@ -37,6 +37,20 @@ jobs:
       - name: Build and start HAYNE Leave
         run: docker compose up --build -d
 
+      - name: Verify Polish HAYNE navigation
+        run: |
+          docker compose exec -T jorani sh -ec '
+            menu=legacy/application/views/menu/index.php
+            grep -F ">Administracja <b" "$menu"
+            grep -F ">Zespół <b" "$menu"
+            grep -F "Do akceptacji" "$menu"
+            grep -F ">Urlopy <b" "$menu"
+            grep -F ">Kalendarz <b" "$menu"
+            grep -F "<b>Nowy wniosek</b>" "$menu"
+            grep -F ">Saldo urlopowe</a>" "$menu"
+            grep -F ">Moje wnioski</a>" "$menu"
+          '
+
       - name: Verify alternate auth branding
         run: |
           docker compose exec -T jorani sh -ec '
@@ -108,9 +122,6 @@ jobs:
           grep -F 'data-hayne-home="v1"' artifacts/hayne-home.html
           grep -F 'Time off, in one place.' artifacts/hayne-home.html
           grep -F 'assets/hayne/home.css' artifacts/hayne-home.html
-          grep -F '>Urlopy <b' artifacts/hayne-home.html
-          grep -F '>Kalendarz <b' artifacts/hayne-home.html
-          grep -F '<b>Nowy wniosek</b>' artifacts/hayne-home.html
           ! grep -F 'Welcome to Jorani' artifacts/hayne-home.html
           curl -fsS http://localhost:8080/assets/hayne/home.css -o artifacts/hayne-home.css
           grep -F '.hayne-home-hero' artifacts/hayne-home.css
