@@ -1,9 +1,11 @@
 --- a/legacy/application/views/session/login.php
 +++ b/legacy/application/views/session/login.php
-@@ -41,3 +41,3 @@
-     <div class="span3">&nbsp;</div>
+@@ -40,4 +40,4 @@
+ <div class="row vertical-center">
+-    <div class="span3">&nbsp;</div>
 -    <div class="span6 form-box">
-+    <div class="span6 form-box hayne-login-shell">
++    <div class="span2">&nbsp;</div>
++    <div class="span8 form-box hayne-login-shell">
          <div class="row-fluid">
 @@ -84,3 +84,3 @@
                      <div class="span12">
@@ -17,3 +19,8 @@
 -                        </span>
 +                        <span class="hayne-login-product-name">HAYNE Leave</span>
                      </div>
+@@ -100,3 +98,3 @@
+     </div>
+-    <div class="span3">&nbsp;</div>
++    <div class="span2">&nbsp;</div>
+ </div>
