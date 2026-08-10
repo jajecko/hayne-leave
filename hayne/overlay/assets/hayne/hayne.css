@@ -21,6 +21,17 @@ body {
   max-width: 100%;
 }
 
+.hayne-logo--oauth {
+  display: inline-block;
+  width: 100px;
+  vertical-align: middle;
+}
+
+.hayne-logo--oauth-login {
+  width: min(180px, 100%);
+  margin-bottom: 22px;
+}
+
 .navbar-inverse .navbar-inner {
   background: var(--hayne-surface);
   border-color: var(--hayne-line);
