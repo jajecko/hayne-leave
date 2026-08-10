@@ -74,9 +74,16 @@ jobs:
 
       - name: Smoke test authenticated HAYNE home
         run: |
+          curl -fsS \
+            -c artifacts/hayne-cookies.txt \
+            http://127.0.0.1:8080/session/login \
+            -o artifacts/hayne-auth-login.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/hayne-auth-login.html | head -n 1)"
+          test -n "$csrf_token"
           curl -fsS -L \
             -c artifacts/hayne-cookies.txt \
             -b artifacts/hayne-cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
             --data-urlencode 'login=jorani' \
             --data-urlencode 'password=jorani' \
             --data-urlencode 'language=en' \
