@@ -1,0 +1,442 @@
+/* HAYNE Leave — login acceptance target.
+ * Scoped to body.hayne-login-target so authenticated surfaces remain untouched.
+ */
+
+body.hayne-login-target {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 35% -10%, rgba(0, 0, 0, .025) 0 190px, transparent 191px),
+    radial-gradient(circle at 104% 8%, rgba(0, 0, 0, .018) 0 230px, transparent 231px),
+    radial-gradient(circle at 96% 96%, rgba(0, 0, 0, .018) 0 220px, transparent 221px),
+    #fbfbfa !important;
+  color: #171714;
+  font-family: "Figtree", "Helvetica Neue", Arial, sans-serif;
+}
+
+body.hayne-login-target::before {
+  position: fixed;
+  z-index: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 29%;
+  border-right: 1px solid #e4e4df;
+  background-color: #fff;
+  background-image:
+    url("logo.svg"),
+    url("login-illustration.svg");
+  background-repeat: no-repeat;
+  background-position:
+    44px 50px,
+    center 62%;
+  background-size:
+    184px auto,
+    min(88%, 385px) auto;
+  content: "";
+}
+
+body.hayne-login-target::after {
+  position: fixed;
+  z-index: 1;
+  top: 88px;
+  left: 44px;
+  box-sizing: border-box;
+  width: 184px;
+  height: 13px;
+  padding-left: .45em;
+  background-image:
+    linear-gradient(#777772, #777772),
+    linear-gradient(#777772, #777772);
+  background-repeat: no-repeat;
+  background-position: left center, right center;
+  background-size: 28px 1px, 28px 1px;
+  color: #3e3e3a;
+  content: "LEAVE";
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: .45em;
+  line-height: 13px;
+  text-align: center;
+  pointer-events: none;
+}
+
+body.hayne-login-target .vertical-center {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  display: flex;
+  width: 71%;
+  min-height: 100vh;
+  margin: 0 0 0 29%;
+  padding: 54px 44px;
+  align-items: center;
+  justify-content: center;
+}
+
+body.hayne-login-target .vertical-center::before,
+body.hayne-login-target .vertical-center::after {
+  display: none;
+  content: none;
+}
+
+body.hayne-login-target .hayne-login-gutter {
+  display: none !important;
+}
+
+body.hayne-login-target .hayne-login-shell.form-box {
+  box-sizing: border-box;
+  float: none;
+  width: min(626px, 100%);
+  margin: 0 !important;
+  padding: 56px 58px 48px;
+  border: 1px solid #dfdfda;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .035);
+}
+
+body.hayne-login-target .hayne-login-shell > .row-fluid {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+}
+
+body.hayne-login-target .hayne-login-shell > .row-fluid::before,
+body.hayne-login-target .hayne-login-shell > .row-fluid::after {
+  display: none;
+  content: none;
+}
+
+body.hayne-login-target .hayne-login-shell > .row-fluid > .span6 {
+  float: none;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+body.hayne-login-target .hayne-login-card-brand {
+  order: -1;
+  display: block;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+body.hayne-login-target .hayne-login-brand {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  text-align: center;
+}
+
+body.hayne-login-target .hayne-logo--login {
+  width: min(264px, 74%);
+  margin: 0 auto;
+}
+
+body.hayne-login-target .hayne-login-lockup-sub {
+  display: flex;
+  width: 196px;
+  align-items: center;
+  gap: 12px;
+  margin: 8px auto 0;
+  padding-left: .45em;
+  color: #3e3e3a;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .45em;
+  line-height: 1;
+}
+
+body.hayne-login-target .hayne-login-lockup-sub::before,
+body.hayne-login-target .hayne-login-lockup-sub::after {
+  height: 1px;
+  flex: 1 1 auto;
+  background: #777772;
+  content: "";
+}
+
+body.hayne-login-target .hayne-login-product-name {
+  display: block;
+  margin: 31px 0 0;
+  color: #171714;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -.025em;
+  line-height: 1.1;
+  text-transform: none;
+}
+
+body.hayne-login-target .hayne-login-subtitle {
+  max-width: 430px;
+  margin: 13px auto 36px;
+  color: #7c7c77;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+body.hayne-login-target .hayne-login-legacy-title {
+  display: none;
+}
+
+body.hayne-login-target .hayne-login-shell form {
+  width: 100%;
+  margin: 0;
+}
+
+body.hayne-login-target .hayne-login-shell form > br {
+  display: none;
+}
+
+body.hayne-login-target .hayne-login-shell label {
+  display: block;
+  margin: 0 0 8px;
+  color: #272724;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+body.hayne-login-target .hayne-login-control {
+  position: relative;
+  width: 100%;
+  margin: 0 0 21px;
+}
+
+body.hayne-login-target .hayne-login-shell input[type="text"],
+body.hayne-login-target .hayne-login-shell input[type="password"],
+body.hayne-login-target .hayne-login-shell input[type="text"].input-medium,
+body.hayne-login-target .hayne-login-shell input[type="password"].input-medium {
+  box-sizing: border-box;
+  width: 100% !important;
+  max-width: none;
+  height: 54px;
+  min-height: 54px;
+  margin: 0;
+  padding: 0 48px 0 52px;
+  border: 1px solid #d8d8d3;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: none;
+  color: #242421;
+  font-family: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+}
+
+body.hayne-login-target .hayne-login-shell input[type="text"]::placeholder,
+body.hayne-login-target .hayne-login-shell input[type="password"]::placeholder {
+  color: #9a9a95;
+  opacity: 1;
+}
+
+body.hayne-login-target .hayne-login-shell input[type="text"]:focus,
+body.hayne-login-target .hayne-login-shell input[type="password"]:focus {
+  border-color: #969691;
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, .045);
+}
+
+.hayne-login-icon {
+  display: inline-grid;
+  width: 21px;
+  height: 21px;
+  place-items: center;
+  color: currentColor;
+}
+
+.hayne-login-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body.hayne-login-target .hayne-login-control__leading {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 17px;
+  color: #757570;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+body.hayne-login-target .hayne-password-toggle {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  right: 12px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #8a8a84;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+body.hayne-login-target .hayne-password-toggle:hover,
+body.hayne-login-target .hayne-password-toggle:focus {
+  background: #f3f3f0;
+  color: #333330;
+  outline: 0;
+}
+
+body.hayne-login-target .hayne-password-toggle.is-revealed {
+  color: #111;
+}
+
+body.hayne-login-target .hayne-login-shell select,
+body.hayne-login-target .hayne-login-shell .select2-container {
+  box-sizing: border-box;
+  width: 100% !important;
+  max-width: none;
+  margin-bottom: 20px;
+}
+
+body.hayne-login-target .hayne-login-shell .select2-container .select2-choice,
+body.hayne-login-target .hayne-login-shell select {
+  min-height: 46px;
+  border: 1px solid #d8d8d3;
+  border-radius: 9px;
+  background: #fff;
+  background-image: none;
+  box-shadow: none;
+  color: #242421;
+}
+
+body.hayne-login-target .hayne-login-submit,
+body.hayne-login-target .hayne-login-shell .btn-primary.hayne-login-submit {
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  margin: 6px 0 0;
+  padding: 13px 20px;
+  border: 1px solid #111;
+  border-radius: 10px;
+  background: #111;
+  background-image: none;
+  box-shadow: none;
+  color: #fff;
+  font-family: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  text-shadow: none;
+}
+
+body.hayne-login-target .hayne-login-submit:hover,
+body.hayne-login-target .hayne-login-submit:focus {
+  border-color: #000;
+  background: #000;
+  color: #fff;
+}
+
+body.hayne-login-target .hayne-login-help {
+  margin: 24px 0 0;
+  color: #858580;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: center;
+}
+
+body.hayne-login-target .alert,
+body.hayne-login-target .alert-error,
+body.hayne-login-target .alert-danger {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 0 20px;
+  padding: 11px 14px;
+  border: 1px solid #e2bcbc;
+  border-radius: 9px;
+  background: #fff7f7;
+  color: #792828;
+  font-size: 12px;
+}
+
+@media (max-width: 980px) {
+  body.hayne-login-target::before {
+    width: 34%;
+    background-position: 30px 38px, center 63%;
+    background-size: 150px auto, min(92%, 320px) auto;
+  }
+
+  body.hayne-login-target::after {
+    top: 69px;
+    left: 30px;
+    width: 150px;
+    background-size: 22px 1px, 22px 1px;
+    font-size: 8px;
+  }
+
+  body.hayne-login-target .vertical-center {
+    width: 66%;
+    margin-left: 34%;
+    padding: 36px 24px;
+  }
+
+  body.hayne-login-target .hayne-login-shell.form-box {
+    padding: 44px 36px 38px;
+  }
+}
+
+@media (max-width: 720px) {
+  body.hayne-login-target::before,
+  body.hayne-login-target::after {
+    display: none;
+  }
+
+  body.hayne-login-target .vertical-center {
+    width: 100%;
+    min-height: 100vh;
+    margin-left: 0;
+    padding: 24px 14px;
+  }
+
+  body.hayne-login-target .hayne-login-shell.form-box {
+    width: min(100%, 560px);
+    padding: 38px 24px 32px;
+    border-radius: 14px;
+  }
+
+  body.hayne-login-target .hayne-logo--login {
+    width: min(230px, 76%);
+  }
+
+  body.hayne-login-target .hayne-login-lockup-sub {
+    width: 172px;
+    font-size: 9px;
+  }
+
+  body.hayne-login-target .hayne-login-product-name {
+    margin-top: 28px;
+    font-size: 28px;
+  }
+
+  body.hayne-login-target .hayne-login-subtitle {
+    margin-bottom: 30px;
+    font-size: 14px;
+  }
+}
