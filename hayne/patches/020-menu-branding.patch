@@ -1,0 +1,15 @@
+--- a/legacy/application/views/menu/index.php
++++ b/legacy/application/views/menu/index.php
+@@ -36,9 +36,9 @@
+ <div id="wrap">
+   <div class="navbar navbar-inverse navbar-fixed-top">
+     <div class="navbar-inner">
+-      <a href="<?php echo base_url(); ?>home" class="brand">&nbsp;<img
+-          src="<?php echo base_url(); ?>assets/images/brand.png" height="18" width="18"
+-          style="margin-top:-6px;">&nbsp;Jorani</a>
++      <a href="<?php echo base_url(); ?>home" class="brand hayne-navbar-brand" aria-label="HAYNE Leave">
++        <img src="<?php echo base_url(); ?>assets/hayne/logo.png" class="hayne-navbar-logo" alt="HAYNE">
++      </a>
+       <div class="nav-responsive">
+         <ul class="nav">
+           <li><a href="<?php echo base_url(); ?>leaves" title="<?php echo lang('menu_leaves_list_requests'); ?>"><i
