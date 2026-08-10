@@ -292,7 +292,7 @@
 }
 
 #wrap #calendar .fc-basic-view .fc-body .fc-row {
-  min-height: 112px;
+  min-height: 80px;
 }
 
 #wrap #calendar .fc-day {
@@ -549,7 +549,7 @@
   }
 
   #wrap #calendar .fc-basic-view .fc-body .fc-row {
-    min-height: 88px;
+    min-height: 78px;
   }
 
   #wrap #calendar .fc-day-header {
