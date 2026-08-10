@@ -1,7 +1,7 @@
 <?php
 $haynePendingApprovals = isset($requests_count) ? (int) $requests_count : 0;
 ?>
-<main class="hayne-home" data-hayne-home="v2">
+<main class="hayne-home" data-hayne-home="v1">
     <header class="hayne-dashboard-header">
         <div>
             <span class="hayne-dashboard-eyebrow">HAYNE Leave</span>
