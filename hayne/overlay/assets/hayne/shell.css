@@ -1,20 +1,408 @@
-/* HAYNE authenticated shell compatibility overrides.
- * Loaded after app.css so legacy/global surface rules cannot break the shell presentation.
+/* HAYNE authenticated shell — dashboard target compatibility layer.
+ * Loaded after app.css; it turns the legacy Jorani navigation into the approved HAYNE shell.
  */
 
-/* The direct shortcut is always visible, but it must not look selected on every route. */
+#wrap {
+  --hayne-sidebar-width: 258px;
+  --hayne-topbar-height: 94px;
+  min-height: 100vh;
+  padding-left: var(--hayne-sidebar-width);
+  background: #f7f7f5;
+}
+
+#wrap::before {
+  left: var(--hayne-sidebar-width);
+  display: flex;
+  height: var(--hayne-topbar-height);
+  align-items: center;
+  padding: 0 260px 0 60px;
+  border-bottom: 1px solid #e4e4df;
+  background: rgba(255, 255, 255, .97);
+  color: #111;
+  content: "Panel";
+  font-family: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  font-size: 27px;
+  font-weight: 600;
+  letter-spacing: -.03em;
+}
+
+#wrap > .navbar {
+  width: var(--hayne-sidebar-width);
+  border-right: 1px solid #e3e3de;
+  background: #fff;
+}
+
+#wrap > .navbar .navbar-inner {
+  padding: 26px 18px 18px;
+  background: #fff !important;
+}
+
+#wrap .hayne-navbar-brand {
+  display: flex !important;
+  min-height: 104px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 6px 8px !important;
+  border-radius: 9px;
+}
+
+#wrap .hayne-logo--nav {
+  width: 190px;
+  max-width: 100%;
+}
+
+#wrap .hayne-navbar-product {
+  display: flex;
+  width: 160px;
+  align-items: center;
+  gap: 10px;
+  color: #2e2e2b;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .34em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+#wrap .hayne-navbar-product::before,
+#wrap .hayne-navbar-product::after {
+  height: 1px;
+  flex: 1 1 auto;
+  background: #777772;
+  content: "";
+}
+
+#wrap .nav-responsive {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+#wrap .nav-responsive > .nav:first-child {
+  display: flex;
+  width: 100%;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0;
+}
+
+#wrap .nav-responsive > .nav:first-child > li {
+  order: 100;
+  float: none;
+  width: 100%;
+}
+
+#wrap .nav-responsive > .nav:first-child > .hayne-nav-home { order: 10; }
+#wrap .nav-responsive > .nav:first-child > .hayne-nav-leaves-create { order: 20; }
+#wrap .nav-responsive > .nav:first-child > .hayne-nav-leaves { order: 30; }
+#wrap .nav-responsive > .nav:first-child > .hayne-nav-leaves-counters { order: 40; }
+#wrap .nav-responsive > .nav:first-child > .hayne-nav-calendar { order: 50; }
+#wrap .nav-responsive > .nav:first-child > .hayne-nav-team { order: 60; }
+#wrap .nav-responsive > .nav:first-child > .hayne-nav-approvals { order: 70; }
+#wrap .nav-responsive > .nav:first-child > .hayne-nav-admin { order: 80; }
+
+#wrap .hayne-nav-legacy-list,
+#wrap .hayne-nav-legacy-requests,
+#wrap .hayne-nav-legacy-create {
+  display: none !important;
+}
+
+#wrap .nav-responsive > .nav:first-child > li > a,
 #wrap .nav-responsive > .nav:first-child > li:first-child > a {
+  position: relative;
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: 13px;
+  padding: 12px 15px;
+  border: 0 !important;
+  border-radius: 10px;
   background: transparent !important;
-  color: #282828 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: #393936 !important;
+  font-family: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.25;
+  text-shadow: none !important;
+  transition: background-color 140ms ease, color 140ms ease;
 }
 
-#wrap .nav-responsive > .nav:first-child > li:first-child > a:hover,
-#wrap .nav-responsive > .nav:first-child > li:first-child > a:focus {
-  background: #f0f0ed !important;
-  color: #000 !important;
+#wrap .nav-responsive > .nav:first-child > li > a::after,
+#wrap .nav-responsive > .nav:first-child > li:first-child > a::after {
+  content: none;
 }
 
-/* app.css normalizes authenticated headings; the dark Home hero intentionally needs light copy. */
-#wrap .hayne-home-hero h1 {
+#wrap .nav-responsive > .nav:first-child > li > a > .mdi {
+  width: 20px;
+  flex: 0 0 20px;
+  color: #555550;
+  font-size: 23px;
+  line-height: 1;
+  text-align: center;
+}
+
+#wrap .nav-responsive > .nav:first-child > li > a:hover,
+#wrap .nav-responsive > .nav:first-child > li > a:focus,
+#wrap .nav-responsive > .nav:first-child > li.open > a {
+  background: #f1f1ee !important;
+  color: #111 !important;
+}
+
+#wrap .nav-responsive > .nav:first-child > li > a:hover > .mdi,
+#wrap .nav-responsive > .nav:first-child > li > a:focus > .mdi,
+#wrap .nav-responsive > .nav:first-child > li.open > a > .mdi {
+  color: #111;
+}
+
+#wrap .nav-responsive > .nav:first-child > li.is-active > a,
+#wrap .nav-responsive > .nav:first-child > li.is-active > a:hover,
+#wrap .nav-responsive > .nav:first-child > li.is-active > a:focus {
+  background: #111 !important;
   color: #fff !important;
+}
+
+#wrap .nav-responsive > .nav:first-child > li.is-active > a > .mdi,
+#wrap .nav-responsive > .nav:first-child > li.is-active > a .caret {
+  color: #fff;
+  border-top-color: #fff;
+}
+
+#wrap .nav-responsive > .nav:first-child > .hayne-nav-admin {
+  margin-top: 2px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+#wrap .nav-responsive > .nav:first-child > li:last-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+#wrap .hayne-nav-group > a .hayne-nav-label {
+  min-width: 0;
+  overflow: hidden;
+  flex: 1 1 auto;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#wrap .hayne-nav-group > a .caret {
+  margin-left: auto;
+  border-top-color: #969691;
+}
+
+#wrap .nav-responsive > .nav:first-child > li.dropdown > .dropdown-menu {
+  top: 0;
+  left: calc(100% + 10px);
+  min-width: 232px;
+  padding: 8px;
+  border: 1px solid #e0e0db;
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, .11);
+}
+
+#wrap .hayne-sidebar-footer {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 10px;
+  margin-top: auto;
+  padding: 18px 10px 6px;
+  border-top: 1px solid #ecece8;
+  color: #333330;
+}
+
+#wrap .hayne-sidebar-footer > .mdi {
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-size: 28px;
+}
+
+#wrap .hayne-sidebar-footer strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+#wrap .hayne-sidebar-footer small {
+  color: #94948f;
+  font-size: 10px;
+}
+
+#wrap .nav-responsive > .nav.pull-right {
+  top: 22px !important;
+  right: 34px !important;
+  min-height: 50px;
+  padding: 0 5px 0 8px;
+  border: 1px solid #dfdfda;
+  border-radius: 12px;
+  background: #fff !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .025);
+}
+
+#wrap .nav-responsive > .nav.pull-right > .brand {
+  display: flex !important;
+  max-width: 220px;
+  min-height: 40px;
+  align-items: center;
+  gap: 10px;
+  margin-right: 5px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+#wrap .hayne-user-avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: #eeeeeb;
+  color: #20201e;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+#wrap .hayne-user-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#wrap .nav-responsive > .nav.pull-right > li:first-of-type {
+  display: none;
+}
+
+#wrap .nav-responsive > .nav.pull-right > li > a {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+}
+
+#wrap > .container-fluid {
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: calc(var(--hayne-topbar-height) + 34px) 50px 48px;
+}
+
+@media (max-width: 1100px) {
+  #wrap {
+    --hayne-sidebar-width: 228px;
+  }
+
+  #wrap::before {
+    padding-left: 36px;
+  }
+
+  #wrap > .container-fluid {
+    padding-right: 32px;
+    padding-left: 32px;
+  }
+}
+
+@media (max-width: 979px) {
+  #wrap {
+    padding-left: 0;
+  }
+
+  #wrap::before {
+    display: none;
+  }
+
+  #wrap > .navbar {
+    position: relative;
+    width: 100%;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid #e5e5e0;
+  }
+
+  #wrap > .navbar .navbar-inner {
+    height: auto;
+    min-height: 0;
+    padding: 14px 16px;
+  }
+
+  #wrap .hayne-navbar-brand {
+    width: auto;
+    min-height: 58px;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+
+  #wrap .hayne-logo--nav {
+    width: 140px;
+  }
+
+  #wrap .hayne-navbar-product {
+    width: 120px;
+    font-size: 8px;
+  }
+
+  #wrap .nav-responsive > .nav:first-child {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  #wrap .nav-responsive > .nav:first-child > li {
+    width: auto;
+  }
+
+  #wrap .nav-responsive > .nav:first-child > li > a {
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  #wrap .hayne-sidebar-footer {
+    display: none;
+  }
+
+  #wrap .nav-responsive > .nav.pull-right {
+    position: static !important;
+    width: fit-content !important;
+    max-width: 100%;
+    align-self: flex-start;
+    margin-top: 10px !important;
+    box-shadow: none;
+  }
+
+  #wrap .nav-responsive > .nav:first-child > li.dropdown > .dropdown-menu {
+    top: 100%;
+    left: 0;
+  }
+
+  #wrap > .container-fluid {
+    padding: 26px 20px 44px;
+  }
+}
+
+@media (max-width: 620px) {
+  #wrap .nav-responsive > .nav:first-child {
+    grid-template-columns: 1fr;
+  }
+
+  #wrap .nav-responsive > .nav.pull-right {
+    width: calc(100% - 20px) !important;
+    justify-content: flex-end;
+  }
+
+  #wrap .nav-responsive > .nav.pull-right > .brand {
+    margin-right: auto;
+  }
+
+  #wrap > .container-fluid {
+    padding: 22px 14px 40px;
+  }
 }

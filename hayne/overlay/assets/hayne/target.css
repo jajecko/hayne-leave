@@ -1,0 +1,437 @@
+/* Final HAYNE target alignment layer.
+ * Loaded last so legacy Bootstrap/Jorani rules cannot override the approved shell.
+ */
+
+#wrap .hayne-line-icon {
+  display: inline-grid;
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+  place-items: center;
+  color: currentColor;
+}
+
+#wrap .hayne-line-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#wrap .nav-responsive > .nav:first-child > li > a > .hayne-line-icon {
+  color: #555550;
+}
+
+#wrap .nav-responsive > .nav:first-child > li.is-active > a > .hayne-line-icon {
+  color: #fff;
+}
+
+#wrap .hayne-nav-group > a .caret {
+  display: none;
+}
+
+#wrap .hayne-navbar-product::before,
+#wrap .hayne-navbar-product::after {
+  width: 28px;
+  flex: 0 0 28px;
+}
+
+#wrap .hayne-sidebar-footer > .hayne-line-icon {
+  width: 29px;
+  height: 29px;
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: #484844;
+}
+
+#wrap .nav-responsive > .nav.pull-right {
+  right: 70px !important;
+  display: block !important;
+  width: auto !important;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none;
+}
+
+#wrap .nav-responsive > .nav.pull-right > .hayne-user-menu {
+  position: relative;
+  display: block !important;
+  float: none !important;
+  width: auto;
+  margin: 0;
+}
+
+#wrap .nav-responsive > .nav.pull-right > .hayne-user-menu > .hayne-user-toggle {
+  box-sizing: border-box;
+  display: grid !important;
+  width: max-content;
+  min-width: 190px;
+  max-width: 240px;
+  height: 52px;
+  grid-template-columns: 36px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 10px;
+  margin: 0 !important;
+  padding: 7px 11px !important;
+  border: 1px solid #dfdfda !important;
+  border-radius: 12px;
+  background: #fff !important;
+  background-image: none !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .025) !important;
+  color: #22221f !important;
+  font-family: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  text-shadow: none !important;
+}
+
+#wrap .hayne-user-toggle:hover,
+#wrap .hayne-user-toggle:focus,
+#wrap .hayne-user-menu.open > .hayne-user-toggle {
+  border-color: #c9c9c4 !important;
+  background: #fafaf8 !important;
+  color: #111 !important;
+}
+
+#wrap .hayne-user-avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: #eeeeeb;
+  color: #22221f;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+#wrap .hayne-user-name {
+  min-width: 0;
+  max-width: 145px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#wrap .hayne-user-chevron {
+  width: 17px;
+  height: 17px;
+  color: #777772;
+  transition: transform 140ms ease;
+}
+
+#wrap .hayne-user-menu.open .hayne-user-chevron {
+  transform: rotate(180deg);
+}
+
+#wrap .hayne-user-dropdown {
+  top: calc(100% + 8px);
+  right: 0;
+  left: auto;
+  min-width: 220px;
+  margin: 0;
+  padding: 7px;
+  border: 1px solid #dfdfda;
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, .11);
+}
+
+#wrap .hayne-user-dropdown > li > a {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  color: #2f2f2c;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+#wrap .hayne-user-dropdown > li > a:hover,
+#wrap .hayne-user-dropdown > li > a:focus {
+  background: #f2f2ef;
+  color: #111;
+}
+
+#wrap .hayne-user-dropdown .hayne-line-icon {
+  width: 18px;
+  height: 18px;
+  color: #666661;
+}
+
+#wrap .hayne-user-action--logout {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid #ecece8;
+}
+
+#wrap > .container-fluid {
+  padding-right: 70px;
+}
+
+/* Reliable line icons on the dashboard, independent of legacy MDI glyph coverage. */
+#wrap .hayne-kpi-card__icon svg,
+#wrap .hayne-upcoming-empty__icon svg,
+#wrap .hayne-quick-action__icon svg,
+#wrap .hayne-quick-action__chevron svg,
+#wrap .hayne-inline-chevron svg,
+#wrap .hayne-dashboard-hero__calendar-check svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#wrap .hayne-kpi-card__icon svg {
+  width: 34px;
+  height: 34px;
+}
+
+#wrap .hayne-upcoming-empty__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+#wrap .hayne-inline-chevron {
+  display: inline-grid;
+  width: 15px;
+  height: 15px;
+  place-items: center;
+}
+
+#wrap .hayne-quick-action__icon,
+#wrap .hayne-quick-action__chevron {
+  display: grid;
+  place-items: center;
+}
+
+#wrap .hayne-quick-action__icon {
+  width: 30px;
+  height: 30px;
+}
+
+#wrap .hayne-quick-action__chevron {
+  width: 18px;
+  height: 18px;
+  justify-self: end;
+}
+
+#wrap .hayne-quick-action--primary .hayne-quick-action__icon,
+#wrap .hayne-quick-action--primary .hayne-quick-action__chevron {
+  color: #fff;
+}
+
+/* Hero line-art details. */
+.hayne-dashboard-hero {
+  min-height: 325px;
+  padding: 40px;
+}
+
+.hayne-dashboard-hero__copy {
+  align-self: start;
+  padding-top: 13px;
+}
+
+.hayne-dashboard-hero p {
+  max-width: 410px;
+  margin: 18px 0 34px;
+  line-height: 1.5;
+}
+
+#wrap .hayne-dashboard-hero__action {
+  min-width: 160px;
+  min-height: 50px;
+  padding: 13px 24px;
+}
+
+.hayne-dashboard-hero__lamp {
+  position: absolute;
+  z-index: 4;
+  bottom: 18px;
+  left: 50px;
+  width: 128px;
+  height: 188px;
+}
+
+.hayne-dashboard-hero__lamp::before {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 78px;
+  height: 16px;
+  border: 2px solid #777772;
+  border-bottom: 0;
+  border-radius: 50% 50% 0 0;
+  content: "";
+}
+
+.hayne-dashboard-hero__lamp-arm {
+  position: absolute;
+  bottom: 14px;
+  left: 38px;
+  width: 2px;
+  height: 118px;
+  background: #777772;
+}
+
+.hayne-dashboard-hero__lamp-arm::before {
+  position: absolute;
+  top: 0;
+  left: -1px;
+  width: 102px;
+  height: 2px;
+  background: #777772;
+  content: "";
+  transform: rotate(-46deg);
+  transform-origin: left center;
+}
+
+.hayne-dashboard-hero__lamp-arm::after {
+  position: absolute;
+  top: -4px;
+  left: -5px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid #777772;
+  border-radius: 50%;
+  background: #fff;
+  content: "";
+}
+
+.hayne-dashboard-hero__lamp-shade {
+  position: absolute;
+  top: 7px;
+  right: 1px;
+  width: 58px;
+  height: 38px;
+  border: 2px solid #777772;
+  border-radius: 5px 25px 25px 5px;
+  background: #fff;
+  transform: rotate(42deg);
+}
+
+.hayne-dashboard-hero__calendar {
+  right: 0;
+  display: block;
+  width: 214px;
+  height: 146px;
+  padding: 24px 18px 16px;
+  border: 2px solid #686864;
+  border-radius: 8px 8px 5px 5px;
+}
+
+.hayne-dashboard-hero__calendar::before {
+  position: absolute;
+  top: -9px;
+  right: 15px;
+  left: 15px;
+  height: 18px;
+  background: repeating-linear-gradient(90deg, transparent 0 20px, #686864 20px 22px, transparent 22px 28px);
+  content: "";
+}
+
+.hayne-dashboard-hero__calendar-grid {
+  display: grid;
+  width: 100%;
+  height: 88px;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  border-top: 1px solid #d4d4cf;
+  border-left: 1px solid #d4d4cf;
+}
+
+.hayne-dashboard-hero__calendar-grid > span {
+  border-right: 1px solid #d4d4cf;
+  border-bottom: 1px solid #d4d4cf;
+}
+
+.hayne-dashboard-hero__calendar-check {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 2px solid #111;
+  border-radius: 50%;
+  background: #fff;
+  color: #111;
+}
+
+.hayne-dashboard-hero__calendar-check svg {
+  width: 19px;
+  height: 19px;
+  stroke-width: 2;
+}
+
+.hayne-kpi-grid {
+  margin-top: 18px;
+}
+
+.hayne-dashboard-grid {
+  margin-top: 22px;
+}
+
+@media (min-width: 1100px) {
+  .hayne-dashboard-hero {
+    grid-template-columns: minmax(0, 1.15fr) minmax(340px, .85fr);
+    gap: 28px;
+  }
+
+  #wrap .hayne-dashboard-hero h1 {
+    max-width: none;
+    font-size: 48px;
+    white-space: nowrap;
+  }
+
+  .hayne-home {
+    width: min(100%, 1062px);
+    margin-right: auto;
+    margin-left: 0;
+    padding-top: 2px;
+  }
+}
+
+@media (max-width: 1100px) {
+  #wrap > .container-fluid {
+    padding-right: 32px;
+  }
+
+  #wrap .nav-responsive > .nav.pull-right {
+    right: 32px !important;
+  }
+}
+
+@media (max-width: 979px) {
+  #wrap .nav-responsive > .nav.pull-right {
+    width: 100% !important;
+  }
+
+  #wrap .nav-responsive > .nav.pull-right > .hayne-user-menu > .hayne-user-toggle {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .hayne-dashboard-hero {
+    padding: 28px 22px;
+  }
+
+  .hayne-dashboard-hero__copy {
+    padding-top: 0;
+  }
+}

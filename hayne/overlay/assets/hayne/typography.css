@@ -1,0 +1,31 @@
+/* HAYNE typography foundation.
+ * Figtree is the default UI typeface across legacy Jorani and HAYNE surfaces.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap");
+
+html,
+body,
+button,
+input,
+select,
+textarea,
+.btn,
+.navbar,
+.dropdown-menu,
+.select2-container,
+.dataTables_wrapper,
+table {
+  font-family: "Figtree", "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  font-weight: 400;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
