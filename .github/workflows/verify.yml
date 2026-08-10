@@ -54,6 +54,11 @@ jobs:
             grep -F "my-requests-v2" legacy/application/views/leaves/index.php
             grep -F "Moje wnioski" legacy/application/views/leaves/index.php
             grep -F "assets/hayne/requests-list.css" legacy/application/views/templates/header.php
+            grep -F "assets/hayne/requests.js" legacy/application/views/templates/header.php
+            grep -F "hayneRequestsEnhanced === '\''target-v1'\''" assets/hayne/requests.js
+            grep -F "Szukaj wniosków..." assets/hayne/requests.js
+            grep -F ".hayne-requests-target-toolbar" assets/hayne/requests-list.css
+            grep -F ".hayne-status-tab" assets/hayne/requests-list.css
           '
 
       - name: Verify PR-UI-06 source in built image
@@ -152,6 +157,7 @@ jobs:
           grep -F 'Moje wnioski' artifacts/hayne-leaves.html
           grep -F 'Rodzaj nieobecności' artifacts/hayne-leaves.html
           grep -F 'Nowy wniosek' artifacts/hayne-leaves.html
+          grep -F 'assets/hayne/requests.js' artifacts/hayne-leaves.html
           grep -F 'data-hayne-view="leave-balance-v1"' artifacts/hayne-balance.html
           grep -F 'Saldo urlopowe' artifacts/hayne-balance.html
           grep -F 'Stan na dzień' artifacts/hayne-balance.html
@@ -169,6 +175,7 @@ jobs:
           curl -fsS http://localhost:8080/assets/hayne/request.css -o artifacts/hayne-request.css
           curl -fsS http://localhost:8080/assets/hayne/request.js -o artifacts/hayne-request.js
           curl -fsS http://localhost:8080/assets/hayne/requests-list.css -o artifacts/hayne-requests-list.css
+          curl -fsS http://localhost:8080/assets/hayne/requests.js -o artifacts/hayne-requests.js
           curl -fsS http://localhost:8080/assets/hayne/balance.css -o artifacts/hayne-balance.css
           grep -F '#wrap .table' artifacts/hayne-app.css
           grep -F '#wrap input[type="text"]' artifacts/hayne-app.css
@@ -178,7 +185,9 @@ jobs:
           grep -F "hayneRequestEnhanced = 'target-v1'" artifacts/hayne-request.js
           grep -F 'Wyślij wniosek' artifacts/hayne-request.js
           grep -F '.hayne-requests-page' artifacts/hayne-requests-list.css
-          grep -F '.hayne-status-chip' artifacts/hayne-requests-list.css
+          grep -F '.hayne-requests-target-toolbar' artifacts/hayne-requests-list.css
+          grep -F "hayneRequestsEnhanced === 'target-v1'" artifacts/hayne-requests.js
+          grep -F 'Szukaj wniosków...' artifacts/hayne-requests.js
           grep -F '.hayne-balance-page' artifacts/hayne-balance.css
           grep -F '.hayne-balance-table' artifacts/hayne-balance.css
 
