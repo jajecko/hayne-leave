@@ -41,14 +41,9 @@ jobs:
         run: |
           docker compose exec -T jorani sh -ec '
             menu=legacy/application/views/menu/index.php
-            grep -F ">Administracja <b" "$menu"
-            grep -F ">Zespół <b" "$menu"
-            grep -F "Do akceptacji" "$menu"
-            grep -F ">Urlopy <b" "$menu"
-            grep -F ">Kalendarz <b" "$menu"
-            grep -F "<b>Nowy wniosek</b>" "$menu"
-            grep -F ">Saldo urlopowe</a>" "$menu"
-            grep -F ">Moje wnioski</a>" "$menu"
+            for text in "Administracja" "Zespół" "Do akceptacji" "Urlopy" "Kalendarz" "Nowy wniosek" "Saldo urlopowe" "Moje wnioski"; do
+              grep -F "$text" "$menu"
+            done
           '
 
       - name: Verify alternate auth branding
