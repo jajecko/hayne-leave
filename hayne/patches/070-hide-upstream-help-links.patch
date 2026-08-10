@@ -1,0 +1,17 @@
+--- a/legacy/application/libraries/Help.php
++++ b/legacy/application/libraries/Help.php
+@@ -44,11 +44,12 @@
+     public function create_help_link($page)
+     {
+-        if (lang($page) != "") {
++        $url = lang($page);
++        if (($url != "") && (stripos($url, 'jorani.org') === FALSE)) {
+             return '&nbsp;' .
+-                '<a href="' . lang($page) . '"' .
++                '<a href="' . $url . '"' .
+                 ' title="' . lang('global_link_tooltip_documentation') . '"' .
+                 ' target="_blank" rel="nofollow"><sup><i class="mdi mdi-help-circle-outline mdi-18px nolink"></i></sup></a>';
+         } else {
+             return '';
+         }
+     }
