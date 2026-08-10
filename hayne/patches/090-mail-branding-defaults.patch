@@ -1,0 +1,8 @@
+--- a/legacy/application/config/config.php
++++ b/legacy/application/config/config.php
+@@ -479,3 +479,3 @@
+ $config['from_mail'] = $env_str('FROM_MAIL', 'do.not@reply.me');
+-$config['from_name'] = $env_str('FROM_NAME', 'Jorani');
+-$config['subject_prefix'] = $env_str('SUBJECT_PREFIX', '[Jorani] ');
++$config['from_name'] = $env_str('FROM_NAME', 'HAYNE Leave');
++$config['subject_prefix'] = $env_str('SUBJECT_PREFIX', '[HAYNE Leave] ');
