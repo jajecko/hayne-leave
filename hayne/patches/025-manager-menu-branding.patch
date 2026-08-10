@@ -1,0 +1,5 @@
+--- a/legacy/application/views/menu/index.php
++++ b/legacy/application/views/menu/index.php
+@@ -102 +102 @@
+-                <?php echo lang('menu_validation_title'); ?>&nbsp;
++                Do akceptacji&nbsp;
