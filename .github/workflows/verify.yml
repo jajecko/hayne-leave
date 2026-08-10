@@ -1,0 +1,35 @@
+name: verify
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  branding-shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+
+      - name: Download pinned Jorani source
+        env:
+          JORANI_VERSION: v1.0.4
+        run: |
+          mkdir -p /tmp/jorani
+          curl -fsSL "https://github.com/jorani/jorani/archive/refs/tags/${JORANI_VERSION}.tar.gz" \
+            | tar -xz --strip-components=1 -C /tmp/jorani
+
+      - name: Verify HAYNE patches
+        run: |
+          cd /tmp/jorani
+          for patch_file in "$GITHUB_WORKSPACE"/hayne/patches/*.patch; do
+            echo "Checking ${patch_file}"
+            patch --dry-run --batch --forward -p1 < "${patch_file}"
+          done
