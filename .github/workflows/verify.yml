@@ -42,6 +42,10 @@ jobs:
           docker compose exec -T jorani sh -ec '
             grep -F "leave-create-v2" legacy/application/views/leaves/create.php
             grep -F "assets/hayne/request.css" legacy/application/views/templates/header.php
+            grep -F "assets/hayne/request.js" legacy/application/views/templates/header.php
+            grep -F "hayneRequestEnhanced = '\''target-v1'\''" assets/hayne/request.js
+            grep -F "Część dnia (od)" assets/hayne/request.js
+            grep -F "Wyślij wniosek" assets/hayne/request.js
           '
 
       - name: Verify PR-UI-02 source in built image
@@ -140,6 +144,7 @@ jobs:
           grep -F 'table table-bordered table-hover' artifacts/hayne-balance.html
           grep -F 'id="frmLeaveForm"' artifacts/hayne-create-leave.html
           grep -F 'data-hayne-view="leave-create-v2"' artifacts/hayne-create-leave.html
+          grep -F 'assets/hayne/request.js' artifacts/hayne-create-leave.html
           for file in artifacts/hayne-leaves.html artifacts/hayne-balance.html artifacts/hayne-create-leave.html; do
             grep -F 'assets/hayne/app.css' "$file"
             ! grep -F 'jorani.org' "$file"
@@ -147,11 +152,15 @@ jobs:
           grep -F 'assets/hayne/requests-list.css' artifacts/hayne-leaves.html
           curl -fsS http://localhost:8080/assets/hayne/app.css -o artifacts/hayne-app.css
           curl -fsS http://localhost:8080/assets/hayne/request.css -o artifacts/hayne-request.css
+          curl -fsS http://localhost:8080/assets/hayne/request.js -o artifacts/hayne-request.js
           curl -fsS http://localhost:8080/assets/hayne/requests-list.css -o artifacts/hayne-requests-list.css
           grep -F '#wrap .table' artifacts/hayne-app.css
           grep -F '#wrap input[type="text"]' artifacts/hayne-app.css
           grep -F '.hayne-request-page' artifacts/hayne-request.css
-          grep -F '.hayne-request-actions' artifacts/hayne-request.css
+          grep -F '.hayne-request-grid' artifacts/hayne-request.css
+          grep -F '.hayne-request-actions--target' artifacts/hayne-request.css
+          grep -F "hayneRequestEnhanced = 'target-v1'" artifacts/hayne-request.js
+          grep -F 'Wyślij wniosek' artifacts/hayne-request.js
           grep -F '.hayne-requests-page' artifacts/hayne-requests-list.css
           grep -F '.hayne-status-chip' artifacts/hayne-requests-list.css
 
