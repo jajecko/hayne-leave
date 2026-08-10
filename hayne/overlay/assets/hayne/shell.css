@@ -240,7 +240,7 @@
   top: 22px !important;
   right: 34px !important;
   min-height: 50px;
-  padding: 0 5px 0 14px;
+  padding: 0 5px 0 8px;
   border: 1px solid #dfdfda;
   border-radius: 12px;
   background: #fff !important;
@@ -248,10 +248,38 @@
 }
 
 #wrap .nav-responsive > .nav.pull-right > .brand {
+  display: flex !important;
   max-width: 220px;
+  min-height: 40px;
+  align-items: center;
+  gap: 10px;
   margin-right: 5px;
   font-size: 13px;
   font-weight: 500;
+}
+
+#wrap .hayne-user-avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: #eeeeeb;
+  color: #20201e;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+#wrap .hayne-user-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#wrap .nav-responsive > .nav.pull-right > li:first-of-type {
+  display: none;
 }
 
 #wrap .nav-responsive > .nav.pull-right > li > a {
