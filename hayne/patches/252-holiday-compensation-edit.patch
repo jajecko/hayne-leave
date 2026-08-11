@@ -1,6 +1,15 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -543,2 +543,78 @@
+@@ -534,11 +534,87 @@
+             // Calculate length using the model logic
+             $calculationResult = $this->leaves_model->actualLengthAndDaysOff(
+                 $startDate,
+                 $endDate,
+                 $startDateType,
+                 $endDateType,
+                 $listDaysOff,
+                 $deductDayOff
+             );
              // Overwrite the submitted duration with the server-calculated value
              $duration = $calculationResult['length'];
 +            $hayneHolidayCompensation = $this->hayne_holiday_compensation_model->isHolidayCompensationType((int) $leaveTypeId);
