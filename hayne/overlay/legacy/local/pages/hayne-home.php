@@ -1,4 +1,8 @@
 <?php
+$hayneCI =& get_instance();
+$hayneFirstName = trim((string) $hayneCI->session->userdata('firstname'));
+$hayneGreeting = $hayneFirstName === '' ? 'Cześć!' : 'Cześć ' . $hayneFirstName . '!';
+
 $hayneIcons = [
     'leave' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c1-4 4-6 8-6s7 2 8 6c-1-1-2-1.5-4-1.5S13 11 12 12c-1-1.5-2.5-1.5-4 0-1.5-1.5-3-1.5-4 0Z"/><path d="M12 6V3M12 12v7c0 1.1-.9 2-2 2"/></svg>',
     'clock' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
@@ -12,7 +16,7 @@ $hayneIcons = [
 <main class="hayne-home" data-hayne-home="v1">
     <section class="hayne-dashboard-hero" aria-labelledby="hayne-home-title">
         <div class="hayne-dashboard-hero__copy">
-            <h1 id="hayne-home-title">Time off, in one place.</h1>
+            <h1 id="hayne-home-title"><?php echo htmlspecialchars($hayneGreeting, ENT_QUOTES, 'UTF-8'); ?></h1>
             <p>Zarządzaj wnioskami urlopowymi i nieobecnościami w jednym miejscu — szybko, przejrzyście i bez zbędnych formalności.</p>
             <a class="btn btn-primary hayne-dashboard-hero__action" href="<?php echo base_url(); ?>leaves/create">Nowy wniosek</a>
         </div>
