@@ -1,0 +1,21 @@
+--- a/legacy/application/views/leaves/create.php
++++ b/legacy/application/views/leaves/create.php
+@@ -36,1 +36,4 @@
++        <?php $this->load->view('leaves/occasion_fields', [
++            'hayneOccasionState' => $hayneOccasionState,
++        ]); ?>
+         <label for="viz_startdate"><?php echo lang('leaves_create_field_start'); ?></label>
+--- a/legacy/application/views/leaves/edit.php
++++ b/legacy/application/views/leaves/edit.php
+@@ -42,1 +42,4 @@
++                <?php $this->load->view('leaves/occasion_fields', [
++                    'hayneOccasionState' => $hayneOccasionState,
++                ]); ?>
+                 <label for="viz_startdate"><?php echo lang('leaves_edit_field_start'); ?></label>
+--- a/legacy/application/views/leaves/view.php
++++ b/legacy/application/views/leaves/view.php
+@@ -44,1 +44,4 @@
++        <?php $this->load->view('leaves/occasion_details', [
++          'hayneOccasionDetails' => $hayneOccasionDetails,
++        ]); ?>
+         <?php $style = "dropdown-rejected";
