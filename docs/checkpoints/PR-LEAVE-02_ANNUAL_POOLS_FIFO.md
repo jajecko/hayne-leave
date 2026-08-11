@@ -85,9 +85,16 @@ Rerunning initialization updates existing carry-over rows and removes stale rows
 
 Fractional legacy balances are not silently rounded. They are skipped and logged because HAYNE v1 explicitly supports whole days only.
 
-## UI
+## UI and routing
 
 `Administracja → Urlopy → Limity urlopowe` now points to `/haynelimits`.
+
+Jorani v1.0.4 ends its route table with a generic `(:any) -> pages/view/$1` catch-all, so HAYNE registers explicit routes before that catch-all:
+
+- `/haynelimits` → `haynelimits/index`,
+- `/haynelimits/save` → `haynelimits/save`.
+
+This prevents the custom administration page from being mistaken for a static Jorani page.
 
 The page allows HR/admin to:
 
@@ -120,7 +127,7 @@ Dedicated workflow `verify-pr-leave-02` must prove:
 
 - application builds,
 - custom PHP files lint,
-- `/haynelimits` is reachable as admin,
+- `/haynelimits` is reachable as admin through the explicit HAYNE route,
 - profile save creates 26-day annual entitlement,
 - five accepted days leave 21,
 - next year gets carry-over 21 + annual 26,
