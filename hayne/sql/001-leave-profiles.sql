@@ -1,8 +1,8 @@
 -- HAYNE Leave persistent annual vacation settings.
--- The application model also runs CREATE TABLE IF NOT EXISTS so existing
--- installations with a persistent MySQL volume self-upgrade safely.
-
-USE jorani;
+-- The official MySQL entrypoint runs init files in MYSQL_DATABASE, so this
+-- script intentionally does not hardcode a database name.
+-- Existing persistent installations self-upgrade through the application
+-- model's matching CREATE TABLE IF NOT EXISTS guard.
 
 CREATE TABLE IF NOT EXISTS `hayne_leave_profiles` (
     `employee_id` int(11) NOT NULL,
