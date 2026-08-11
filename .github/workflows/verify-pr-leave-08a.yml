@@ -45,10 +45,10 @@ jobs:
           docker compose exec -T jorani php -l legacy/application/views/hayneholidays/index.php
           docker compose exec -T jorani sh -ec '
             grep -F "private function getActiveEmployeeIds(): array" legacy/application/controllers/Hayneholidays.php
-            grep -F "foreach ($employeeIds as $employeeId)" legacy/application/controllers/Hayneholidays.php
-            grep -F "$this->db->trans_begin();" legacy/application/controllers/Hayneholidays.php
-            grep -F "$this->db->trans_commit();" legacy/application/controllers/Hayneholidays.php
-            grep -F "$this->db->trans_rollback();" legacy/application/controllers/Hayneholidays.php
+            grep -F "foreach (\$employeeIds as \$employeeId)" legacy/application/controllers/Hayneholidays.php
+            grep -F "\$this->db->trans_begin();" legacy/application/controllers/Hayneholidays.php
+            grep -F "\$this->db->trans_commit();" legacy/application/controllers/Hayneholidays.php
+            grep -F "\$this->db->trans_rollback();" legacy/application/controllers/Hayneholidays.php
             grep -F "Przyznaj 1 dzień wszystkim" legacy/application/views/hayneholidays/index.php
             grep -F "Przyznaj wszystkim aktywnym pracownikom" legacy/application/views/hayneholidays/index.php
             if grep -F "name=\"employee_id\"" legacy/application/views/hayneholidays/index.php; then exit 1; fi
