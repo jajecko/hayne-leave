@@ -24,3 +24,25 @@ CREATE TABLE IF NOT EXISTS `hayne_leave_request_meta` (
     PRIMARY KEY (`leave_id`),
     KEY `on_demand` (`on_demand`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `hayne_statutory_leave_policies` (
+    `policy_code` varchar(32) NOT NULL,
+    `leave_type_id` int(11) NOT NULL,
+    `enabled` tinyint(1) NOT NULL DEFAULT 1,
+    `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`policy_code`),
+    KEY `leave_type_id` (`leave_type_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `hayne_caregiver_request_meta` (
+    `leave_id` int(11) NOT NULL,
+    `person_name` varchar(190) NOT NULL,
+    `relation_code` varchar(32) NOT NULL,
+    `household_address` varchar(255) DEFAULT NULL,
+    `care_reason` text NOT NULL,
+    `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`leave_id`),
+    KEY `relation_code` (`relation_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

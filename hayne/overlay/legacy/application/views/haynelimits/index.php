@@ -13,10 +13,15 @@ $editingAutoRenew = $edit_profile ? ((int) $edit_profile['auto_renew'] === 1) : 
         <div class="span12">
             <div class="page-header">
                 <h1>Limity urlopowe</h1>
-                <p class="muted">Ustaw stały roczny wymiar urlopu. HAYNE tworzy kolejne lata automatycznie i rozlicza wykorzystanie od najstarszej puli.</p>
+                <p class="muted">Ustaw stały roczny wymiar urlopu oraz ustawowe pule obsługiwane automatycznie przez HAYNE.</p>
             </div>
 
             <?php echo $flash_partial_view; ?>
+
+            <?php $this->load->view('haynelimits/caregiver', [
+                'caregiver_policy' => $caregiver_policy,
+                'types' => $types,
+            ]); ?>
 
             <div class="row-fluid">
                 <div class="span5">
@@ -52,7 +57,7 @@ $editingAutoRenew = $edit_profile ? ((int) $edit_profile['auto_renew'] === 1) : 
                                 </option>
                             <?php } ?>
                         </select>
-                        <span class="help-block">Ten typ będzie wspólną pulą dla urlopu zwykłego i później także „na żądanie”.</span>
+                        <span class="help-block">Ten typ jest wspólną pulą dla urlopu zwykłego i urlopu na żądanie.</span>
 
                         <label for="annual_days">Roczny wymiar</label>
                         <div class="input-append">
@@ -81,7 +86,7 @@ $editingAutoRenew = $edit_profile ? ((int) $edit_profile['auto_renew'] === 1) : 
                     <div class="well">
                         <div class="row-fluid">
                             <div class="span7">
-                                <h3 style="margin-top: 0;">Pule <?php echo $selected_year; ?></h3>
+                                <h3 style="margin-top: 0;">Pule wypoczynkowe <?php echo $selected_year; ?></h3>
                                 <p class="muted">Wykorzystanie jest przypisywane FIFO — najpierw najstarszy rok.</p>
                             </div>
                             <div class="span5">

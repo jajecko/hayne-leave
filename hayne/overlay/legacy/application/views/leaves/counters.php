@@ -60,9 +60,16 @@
                                     $simulated -= (float) $value[4];
                                 if (!empty($value[5]))
                                     $simulated -= (float) $value[5];
+                                $isCaregiverRow = !empty($hayneCaregiverSummary)
+                                    && (int) $value[3] === (int) $hayneCaregiverSummary['leave_type_id'];
                                 ?>
-                                <tr>
-                                    <td><strong><?php echo $key; ?></strong></td>
+                                <tr<?php if ($isCaregiverRow) { ?> class="hayne-caregiver-balance" data-hayne-caregiver-summary="v1" data-used="<?php echo (float) $hayneCaregiverSummary['used']; ?>" data-remaining="<?php echo (float) $hayneCaregiverSummary['remaining']; ?>"<?php } ?>>
+                                    <td>
+                                        <strong><?php echo $key; ?></strong>
+                                        <?php if ($isCaregiverRow) { ?>
+                                            <br /><small class="muted">Pozostało: <?php echo (float) $hayneCaregiverSummary['remaining']; ?> dni.</small>
+                                        <?php } ?>
+                                    </td>
                                     <td class="hayne-balance-value hayne-balance-value--primary"><?php echo $estimated; ?></td>
                                     <td class="hayne-balance-value"><?php echo $simulated; ?></td>
                                     <td class="hayne-balance-value"><?php echo ((float) $value[1]); ?></td>
