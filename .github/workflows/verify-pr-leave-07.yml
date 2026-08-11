@@ -135,11 +135,26 @@ jobs:
       - name: Verify request form exposes event fields
         run: |
           curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/create -o artifacts/create.html
-          grep -F 'id="hayneOccasionFields"' artifacts/create.html
-          grep -F 'data-occasion-type-id="3"' artifacts/create.html
-          grep -F 'Ślub pracownika — 2 dni' artifacts/create.html
-          grep -F 'Ślub dziecka pracownika — 1 dzień' artifacts/create.html
-          grep -F 'Dla zgonu i pogrzebu wpisz datę zgonu' artifacts/create.html
+
+          assert_contains() {
+            label="$1"
+            needle="$2"
+            if grep -F "$needle" artifacts/create.html >/dev/null; then
+              echo "PASS: $label"
+              return 0
+            fi
+            echo "::error title=Occasion form assertion failed::$label — missing: $needle"
+            grep -n -A80 -B20 'hayneOccasion\|occasion\|okoliczności' artifacts/create.html || true
+            return 1
+          }
+
+          assert_contains 'occasion panel root' 'id="hayneOccasionFields"'
+          assert_contains 'occasion configured type' 'data-occasion-type-id="3"'
+          assert_contains 'two-day event code' 'value="employee_marriage"'
+          assert_contains 'two-day event quota' 'data-max-days="2"'
+          assert_contains 'one-day event code' 'value="child_marriage"'
+          assert_contains 'one-day event quota' 'data-max-days="1"'
+          assert_contains 'death canonical date help' 'Dla zgonu i pogrzebu wpisz datę zgonu'
 
       - name: Prepare occasion request helper
         shell: bash
@@ -291,6 +306,19 @@ jobs:
             test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_occasion_events")" -ge "4"
             test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_occasion_request_meta")" -ge "7"
           '
+
+      - name: Upload occasion render diagnostic
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-leave-07-render-diagnostic
+          path: |
+            artifacts/create.html
+            artifacts/limits.html
+            artifacts/occasion-policy.html
+            artifacts/collision.html
+          if-no-files-found: ignore
+          retention-days: 2
 
       - name: Show logs on failure
         if: failure()
