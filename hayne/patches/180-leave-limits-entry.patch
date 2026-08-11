@@ -1,6 +1,6 @@
 --- a/legacy/application/views/menu/index.php
 +++ b/legacy/application/views/menu/index.php
-@@ -60,6 +60,7 @@
+@@ -60,4 +60,5 @@
                  <li class="nav-header">Urlopy</li>
                  <li><a href="<?php echo base_url(); ?>leavetypes">Rodzaje nieobecności</a></li>
 +                <li><a href="<?php echo base_url(); ?>hr/employees">Limity urlopowe</a></li>
@@ -8,7 +8,7 @@
                  <li class="nav-header">System</li>
 --- a/legacy/application/controllers/Entitleddays.php
 +++ b/legacy/application/controllers/Entitleddays.php
-@@ -113,6 +113,10 @@
+@@ -113,4 +113,8 @@
              $days = $this->input->post('days', TRUE);
              $type = $this->input->post('type', TRUE);
              $description = sanitize($this->input->post('description', TRUE));
@@ -17,7 +17,7 @@
 +                return;
 +            }
              if (isset($startdate) && isset($enddate) && isset($days) && isset($type) && isset($user_id)) {
-@@ -138,6 +142,10 @@
+@@ -138,4 +142,8 @@
              $days = $this->input->post('days', TRUE);
              $type = $this->input->post('type', TRUE);
              $description = sanitize($this->input->post('description', TRUE));
@@ -26,7 +26,7 @@
 +                return;
 +            }
              if (isset($startdate) && isset($enddate) && isset($days) && isset($type) && isset($contract_id)) {
-@@ -168,6 +176,12 @@
+@@ -168,3 +176,7 @@
              if (isset($id) && isset($operation)) {
                  $this->output->set_content_type('text/plain');
                  $days = $this->input->post('days', TRUE);
