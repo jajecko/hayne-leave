@@ -2,9 +2,9 @@
 /**
  * HAYNE caregiver leave policy (Polish Labour Code art. 1731).
  *
- * The statutory five-day credit is represented with Jorani entitleddays so
- * the existing balance engine remains the source of truth. HAYNE adds only
- * policy mapping, request metadata and authoritative annual-limit validation.
+ * Jorani entitleddays stays the source of truth for granted credit. HAYNE adds
+ * the statutory policy mapping, required request metadata and annual-limit
+ * validation for the whole-day-only product scope.
  */
 if (!defined('BASEPATH')) {
     exit('No direct script access allowed');
@@ -137,8 +137,8 @@ class Hayne_caregiver_leave_model extends CI_Model
     }
 
     /**
-     * Idempotently grant the statutory five-day credit for one calendar year.
-     * There is intentionally no carry-over path for this policy.
+     * Idempotently grants five days for one calendar year. There is no
+     * carry-over path for this statutory pool.
      */
     public function ensureYear(int $employeeId, int $year): void
     {
@@ -180,6 +180,34 @@ class Hayne_caregiver_leave_model extends CI_Model
             $this->db
                 ->where('id', (int) $existing['id'])
                 ->update('entitleddays', ['days' => self::ANNUAL_LIMIT_DAYS]);
+        }
+    }
+
+    /**
+     * Serialize annual-limit checks per employee/year. Caller must already be
+     * inside a DB transaction and must keep it open until the leave/meta write.
+     */
+    public function lockEmployeeYear(int $employeeId, int $year): void
+    {
+        $this->ensureYear($employeeId, $year);
+        $policy = $this->getPolicy();
+        if (empty($policy) || (int) $policy['enabled'] !== 1) {
+            throw new InvalidArgumentException('Urlop opiekuńczy nie jest skonfigurowany.');
+        }
+
+        $row = $this->db->query(
+            'SELECT id FROM entitleddays WHERE employee = ? AND type = ? AND startdate = ? AND enddate = ? AND description = ? FOR UPDATE',
+            [
+                $employeeId,
+                (int) $policy['leave_type_id'],
+                sprintf('%04d-01-01', $year),
+                sprintf('%04d-12-31', $year),
+                $this->entitlementMarker($year),
+            ]
+        )->row_array();
+
+        if (empty($row)) {
+            throw new RuntimeException('Nie udało się zablokować rocznej puli urlopu opiekuńczego.');
         }
     }
 
@@ -253,11 +281,7 @@ class Hayne_caregiver_leave_model extends CI_Model
         return empty($row) ? NULL : $row;
     }
 
-    /**
-     * Validate statutory fields and return their normalized representation.
-     *
-     * @return array<string, string|null>
-     */
+    /** @return array<string, string|null> */
     public function normalizeDetails(array $details): array
     {
         $personName = trim((string) ($details['person_name'] ?? ''));
@@ -296,9 +320,10 @@ class Hayne_caregiver_leave_model extends CI_Model
     }
 
     /**
-     * Authoritative validation for create/edit and Planned -> Requested.
-     * Planned records keep the details but reserve no annual credit; the annual
-     * cap and one-day advance requirement are rechecked before submission.
+     * Authoritative create/edit/plan validation. Planned records do not reserve
+     * the annual limit; submission rechecks the limit and one-day deadline.
+     *
+     * @return array<string, string|null>
      */
     public function assertRequestAllowed(
         int $employeeId,
@@ -308,7 +333,8 @@ class Hayne_caregiver_leave_model extends CI_Model
         float $duration,
         int $status,
         array $details,
-        ?int $excludeLeaveId = NULL
+        ?int $excludeLeaveId = NULL,
+        bool $enforceAdvance = TRUE
     ): array {
         $policy = $this->getPolicy();
         if (empty($policy) || (int) $policy['enabled'] !== 1) {
@@ -337,7 +363,11 @@ class Hayne_caregiver_leave_model extends CI_Model
         $this->ensureYear($employeeId, $startYear);
 
         if ($this->statusReservesLimit($status)) {
-            if (($status === LMS_REQUESTED || $status === LMS_ACCEPTED) && $startDate <= date('Y-m-d')) {
+            if (
+                $enforceAdvance &&
+                ($status === LMS_REQUESTED || $status === LMS_ACCEPTED) &&
+                $startDate <= date('Y-m-d')
+            ) {
                 throw new InvalidArgumentException('Wniosek o urlop opiekuńczy złóż co najmniej 1 dzień przed jego rozpoczęciem.');
             }
 
