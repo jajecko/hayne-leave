@@ -1,0 +1,301 @@
+name: verify-pr-leave-07
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/overlay/legacy/application/models/Hayne_occasion_leave_model.php'
+      - 'hayne/overlay/legacy/application/controllers/Haynelimits.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/**'
+      - 'hayne/overlay/legacy/application/views/leaves/occasion_fields.php'
+      - 'hayne/overlay/legacy/application/views/leaves/occasion_details.php'
+      - 'hayne/patches/240-occasion-controller-base.patch'
+      - 'hayne/patches/241-occasion-create.patch'
+      - 'hayne/patches/242-occasion-edit.patch'
+      - 'hayne/patches/243-occasion-plan-transition.patch'
+      - 'hayne/patches/244-occasion-views.patch'
+      - 'hayne/sql/001-leave-profiles.sql'
+      - '.github/workflows/verify-pr-leave-07.yml'
+      - 'docs/checkpoints/PR-LEAVE-07_OCCASION_LEAVE.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'hayne/overlay/legacy/application/models/Hayne_occasion_leave_model.php'
+      - 'hayne/overlay/legacy/application/controllers/Haynelimits.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/**'
+      - 'hayne/overlay/legacy/application/views/leaves/occasion_fields.php'
+      - 'hayne/overlay/legacy/application/views/leaves/occasion_details.php'
+      - 'hayne/patches/240-occasion-controller-base.patch'
+      - 'hayne/patches/241-occasion-create.patch'
+      - 'hayne/patches/242-occasion-edit.patch'
+      - 'hayne/patches/243-occasion-plan-transition.patch'
+      - 'hayne/patches/244-occasion-views.patch'
+      - 'hayne/sql/001-leave-profiles.sql'
+      - '.github/workflows/verify-pr-leave-07.yml'
+      - 'docs/checkpoints/PR-LEAVE-07_OCCASION_LEAVE.md'
+
+jobs:
+  occasion-leave:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build and start HAYNE Leave
+        run: docker compose up --build -d
+
+      - name: Wait for application
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/session/login >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Syntax and source checks
+        run: |
+          docker compose exec -T jorani php -l legacy/application/models/Hayne_occasion_leave_model.php
+          docker compose exec -T jorani php -l legacy/application/controllers/Haynelimits.php
+          docker compose exec -T jorani php -l legacy/application/controllers/Leaves.php
+          docker compose exec -T jorani php -l legacy/application/views/leaves/occasion_fields.php
+          docker compose exec -T jorani php -l legacy/application/views/leaves/occasion_details.php
+          docker compose exec -T jorani php -l legacy/application/views/haynelimits/occasion.php
+          docker compose exec -T jorani sh -ec '
+            grep -F "POLICY_CODE = '\''occasion'\''" legacy/application/models/Hayne_occasion_leave_model.php
+            grep -F "hayne_occasion_leave_model" legacy/application/controllers/Leaves.php
+            grep -F "occasion_fields" legacy/application/views/leaves/create.php
+            grep -F "occasion_fields" legacy/application/views/leaves/edit.php
+            grep -F "occasion_details" legacy/application/views/leaves/view.php
+            test "$(grep -Fc "if (\$disallowRequestsWithoutCredit === true && !\$hayneOccasion)" legacy/application/controllers/Leaves.php)" = "2"
+          '
+
+      - name: Authenticate as administrator
+        run: |
+          mkdir -p artifacts
+          curl -fsS -c artifacts/cookies.txt http://localhost:8080/session/login -o artifacts/login.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/login.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jorani' \
+            --data-urlencode 'password=jorani' \
+            --data-urlencode 'language=en' \
+            http://localhost:8080/session/login \
+            -o artifacts/home.html
+          grep -F 'Cześć Admin!' artifacts/home.html
+
+      - name: Configure occasion policy without annual credit
+        run: |
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/haynelimits -o artifacts/limits.html
+          grep -F 'Urlop okolicznościowy' artifacts/limits.html
+          grep -F '1 albo 2 dni na konkretne zdarzenie' artifacts/limits.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/limits.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'occasion_type_id=3' \
+            --data-urlencode 'occasion_enabled=1' \
+            http://localhost:8080/haynelimits/saveOccasionPolicy \
+            -o artifacts/occasion-policy.html
+          grep -F 'Urlop okolicznościowy został włączony.' artifacts/occasion-policy.html
+
+          docker compose exec -T mysql sh -ec '
+            mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "DELETE FROM entitleddays WHERE type=3;"
+            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT CONCAT(leave_type_id,':',enabled) FROM hayne_statutory_leave_policies WHERE policy_code='occasion'")" = "3:1"
+            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM entitleddays WHERE type=3")" = "0"
+          '
+
+      - name: Reject statutory type collision
+        run: |
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/haynelimits -o artifacts/limits-collision.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/limits-collision.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'force_majeure_type_id=3' \
+            --data-urlencode 'force_majeure_enabled=1' \
+            http://localhost:8080/haynelimits/saveForceMajeurePolicy \
+            -o artifacts/collision.html
+          grep -F 'Ten rodzaj nieobecności jest już używany dla polityki: urlop okolicznościowy.' artifacts/collision.html
+          docker compose exec -T mysql sh -ec '
+            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_statutory_leave_policies WHERE policy_code='force_majeure' AND enabled=1")" = "0"
+          '
+
+      - name: Verify request form exposes event fields
+        run: |
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/create -o artifacts/create.html
+          grep -F 'id="hayneOccasionFields"' artifacts/create.html
+          grep -F 'data-occasion-type-id="3"' artifacts/create.html
+          grep -F 'Ślub pracownika — 2 dni' artifacts/create.html
+          grep -F 'Ślub dziecka pracownika — 1 dzień' artifacts/create.html
+          grep -F 'Dla zgonu i pogrzebu wpisz datę zgonu' artifacts/create.html
+
+      - name: Prepare occasion request helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="$(date -d 'next Monday +14 days' +%F)"
+          if [ "$(date -d "$base +40 days" +%Y)" != "$(date +%Y)" ]; then
+            base="$(date +%Y)-10-05"
+          fi
+          {
+            echo "OC_D1=$base"
+            echo "OC_D2=$(date -d "$base +1 day" +%F)"
+            echo "OC_D3=$(date -d "$base +2 day" +%F)"
+            echo "OC_D4=$(date -d "$base +3 day" +%F)"
+            echo "OC_D8=$(date -d "$base +7 day" +%F)"
+            echo "OC_D9=$(date -d "$base +8 day" +%F)"
+            echo "OC_D15=$(date -d "$base +14 day" +%F)"
+            echo "OC_D16=$(date -d "$base +15 day" +%F)"
+            echo "OC_D22=$(date -d "$base +21 day" +%F)"
+            echo "OC_D23=$(date -d "$base +22 day" +%F)"
+          } >> "$GITHUB_ENV"
+
+          cat > artifacts/submit-occasion.sh <<'SH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          start="$1"
+          end="$2"
+          duration="$3"
+          status="$4"
+          cause="$5"
+          event_code="$6"
+          event_date="$7"
+          output="$8"
+
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/create -o artifacts/form.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/form.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode "startdate=${start}" \
+            --data-urlencode 'startdatetype=Morning' \
+            --data-urlencode "enddate=${end}" \
+            --data-urlencode 'enddatetype=Afternoon' \
+            --data-urlencode "duration=${duration}" \
+            --data-urlencode 'type=3' \
+            --data-urlencode "cause=${cause}" \
+            --data-urlencode "status=${status}" \
+            --data-urlencode "hayne_occasion_event=${event_code}" \
+            --data-urlencode "hayne_occasion_event_date=${event_date}" \
+            http://localhost:8080/leaves/create \
+            -o "$output"
+          SH
+          chmod +x artifacts/submit-occasion.sh
+
+      - name: Split a two-day event and reject a third day
+        run: |
+          artifacts/submit-occasion.sh "$OC_D1" "$OC_D1" 1 2 'CI OCCASION SPLIT ONE' employee_marriage "$OC_D1" artifacts/split-one.html
+          first_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI OCCASION SPLIT ONE' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$first_id"
+
+          artifacts/submit-occasion.sh "$OC_D2" "$OC_D2" 1 2 'CI OCCASION SPLIT TWO' employee_marriage "$OC_D1" artifacts/split-two.html
+          second_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI OCCASION SPLIT TWO' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$second_id"
+
+          artifacts/submit-occasion.sh "$OC_D3" "$OC_D3" 1 2 'CI OCCASION THIRD REJECT' employee_marriage "$OC_D1" artifacts/third.html
+          test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM leaves WHERE cause='CI OCCASION THIRD REJECT'\"")" = "0"
+          grep -F 'Przekroczony limit dla tego zdarzenia. Pozostało: 0 dni.' artifacts/third.html
+
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM hayne_occasion_request_meta m JOIN leaves l ON l.id=m.leave_id WHERE l.employee=1 AND m.event_code='employee_marriage' AND m.event_date='${OC_D1}' AND l.status IN (2,3,4)\")\" = \"2\"
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT max_days FROM hayne_occasion_events WHERE employee_id=1 AND event_code='employee_marriage' AND event_date='${OC_D1}'\")\" = \"2\"
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM entitleddays WHERE description LIKE '[HAYNE\\_STATUTORY|occasion|%'\")\" = \"0\"
+          "
+
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/leaves/view/${first_id}" -o artifacts/details.html
+          grep -F 'data-hayne-occasion-details="v1"' artifacts/details.html
+          grep -F 'Ślub pracownika' artifacts/details.html
+          grep -F "$OC_D1" artifacts/details.html
+          grep -F 'Limit dla zdarzenia:' artifacts/details.html
+
+      - name: Treat a different event date as a separate event
+        run: |
+          artifacts/submit-occasion.sh "$OC_D4" "$OC_D4" 1 2 'CI OCCASION OTHER EVENT' employee_marriage "$OC_D4" artifacts/other-event.html
+          other_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI OCCASION OTHER EVENT' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$other_id"
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT event_date FROM hayne_occasion_request_meta WHERE leave_id=${other_id}\")\" = \"${OC_D4}\"
+          "
+
+      - name: Allow one two-day request and enforce one-day events
+        run: |
+          artifacts/submit-occasion.sh "$OC_D8" "$OC_D9" 2 2 'CI OCCASION BIRTH TWO' child_birth "$OC_D8" artifacts/birth-two.html
+          birth_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI OCCASION BIRTH TWO' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$birth_id"
+
+          artifacts/submit-occasion.sh "$OC_D15" "$OC_D16" 2 2 'CI OCCASION CHILD MARRIAGE TWO REJECT' child_marriage "$OC_D15" artifacts/one-day-reject.html
+          test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM leaves WHERE cause='CI OCCASION CHILD MARRIAGE TWO REJECT'\"")" = "0"
+          grep -F 'To zdarzenie uprawnia maksymalnie do 1 dnia zwolnienia.' artifacts/one-day-reject.html
+
+      - name: Edit planned occasion metadata
+        run: |
+          artifacts/submit-occasion.sh "$OC_D22" "$OC_D22" 1 1 'CI OCCASION PLAN' employee_marriage "$OC_D22" artifacts/plan.html
+          plan_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI OCCASION PLAN' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$plan_id"
+          echo "OC_PLAN_ID=${plan_id}" >> "$GITHUB_ENV"
+
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/leaves/edit/${plan_id}" -o artifacts/edit.html
+          grep -F 'id="hayneOccasionFields"' artifacts/edit.html
+          grep -F "value=\"${OC_D22}\"" artifacts/edit.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/edit.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode "startdate=${OC_D22}" \
+            --data-urlencode 'startdatetype=Morning' \
+            --data-urlencode "enddate=${OC_D22}" \
+            --data-urlencode 'enddatetype=Afternoon' \
+            --data-urlencode 'duration=1' \
+            --data-urlencode 'type=3' \
+            --data-urlencode 'cause=CI OCCASION PLAN' \
+            --data-urlencode 'status=1' \
+            --data-urlencode 'comment=' \
+            --data-urlencode 'hayne_occasion_event=sister_death' \
+            --data-urlencode "hayne_occasion_event_date=${OC_D22}" \
+            "http://localhost:8080/leaves/edit/${plan_id}" \
+            -o artifacts/edit-result.html
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CONCAT(event_code,':',event_date) FROM hayne_occasion_request_meta WHERE leave_id=${plan_id}\")\" = \"sister_death:${OC_D22}\"
+          "
+
+      - name: Planned request must recheck concrete event quota
+        run: |
+          artifacts/submit-occasion.sh "$OC_D23" "$OC_D23" 1 2 'CI OCCASION SISTER FILL' sister_death "$OC_D22" artifacts/sister-fill.html
+          fill_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI OCCASION SISTER FILL' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$fill_id"
+
+          curl -fsS -L -b artifacts/cookies.txt -c artifacts/cookies.txt "http://localhost:8080/leaves/request/${OC_PLAN_ID}" -o artifacts/plan-request.html
+          test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT status FROM leaves WHERE id=${OC_PLAN_ID}\"")" = "1"
+          grep -F 'Przekroczony limit dla tego zdarzenia. Pozostało: 0 dni.' artifacts/plan-request.html
+
+      - name: Keep occasion leave out of annual entitlements
+        run: |
+          docker compose exec -T mysql sh -ec '
+            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM entitleddays WHERE description LIKE '[HAYNE\\_STATUTORY|occasion|%'")" = "0"
+            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_occasion_events")" -ge "4"
+            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_occasion_request_meta")" -ge "7"
+          '
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
