@@ -56,8 +56,8 @@ jobs:
             grep -F "class=\"lnkCancellationReject\"" "$view"
             grep -F "requests/accept/" "$view"
             grep -F "requests/reject/" "$view"
-            grep -F "requests/acceptCancellation/" "$view"
-            grep -F "requests/rejectCancellation/" "$view"
+            grep -F "requests/cancellation/accept/" "$view"
+            grep -F "requests/cancellation/reject/" "$view"
             grep -F "assets/hayne/approvals.css" legacy/application/views/templates/header.php
             grep -F "assets/hayne/approvals.js" legacy/application/views/templates/header.php
             grep -F "hayne-approvals-page" assets/hayne/approvals.js
