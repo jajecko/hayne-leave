@@ -45,11 +45,12 @@
 #wrap input[type="number"],
 #wrap input[type="date"],
 #wrap input[type="search"],
-#wrap select,
-#wrap textarea {
+#wrap select {
+  box-sizing: border-box;
+  height: var(--hayne-control-height);
   min-height: var(--hayne-control-height);
   margin-bottom: 0;
-  padding: 10px 12px;
+  padding: 0 12px;
   border: 1px solid #d7d7d2;
   border-radius: var(--hayne-radius-sm);
   background: #fff;
@@ -61,8 +62,18 @@
 }
 
 #wrap textarea {
+  box-sizing: border-box;
   min-height: 112px;
+  margin-bottom: 0;
+  padding: 10px 12px;
+  border: 1px solid #d7d7d2;
+  border-radius: var(--hayne-radius-sm);
+  background: #fff;
+  box-shadow: none;
+  color: var(--hayne-ink);
+  font-size: 14px;
   line-height: 1.5;
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
 }
 
 #wrap input[type="text"]:focus,
@@ -80,6 +91,8 @@
 }
 
 #wrap .select2-container .select2-choice {
+  box-sizing: border-box;
+  height: var(--hayne-control-height);
   min-height: var(--hayne-control-height);
   border: 1px solid #d7d7d2;
   border-radius: var(--hayne-radius-sm);
@@ -99,9 +112,11 @@
 }
 
 #wrap .btn {
-  min-height: 40px;
+  box-sizing: border-box;
+  height: var(--hayne-control-height);
+  min-height: var(--hayne-control-height);
   margin: 0;
-  padding: 9px 14px;
+  padding: 0 13px;
   border: 1px solid #d7d7d2;
   border-radius: var(--hayne-radius-sm);
   background: #fff;
@@ -110,7 +125,7 @@
   color: var(--hayne-ink);
   font-size: 13px;
   font-weight: 600;
-  line-height: 20px;
+  line-height: 1;
   text-shadow: none;
   transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms ease;
 }
@@ -205,7 +220,9 @@
 
 #wrap .dataTables_wrapper .dataTables_filter input,
 #wrap .dataTables_wrapper .dataTables_length select {
-  min-height: 40px;
+  box-sizing: border-box;
+  height: var(--hayne-control-height);
+  min-height: var(--hayne-control-height);
   border-radius: var(--hayne-radius-sm);
 }
 
@@ -241,9 +258,5 @@
 
   #wrap > .container-fluid {
     width: auto;
-  }
-
-  #wrap .btn {
-    min-height: 42px;
   }
 }
