@@ -1,0 +1,128 @@
+name: verify-pr-dash-01
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/overlay/legacy/local/pages/hayne-home.php'
+      - 'hayne/overlay/legacy/local/pages/en/home.php'
+      - 'hayne/overlay/legacy/local/pages/pl/home.php'
+      - '.github/workflows/verify-pr-dash-01.yml'
+      - 'docs/checkpoints/PR-DASH-01_POLISH_DASHBOARD_ENTRY.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'hayne/overlay/legacy/local/pages/hayne-home.php'
+      - 'hayne/overlay/legacy/local/pages/en/home.php'
+      - 'hayne/overlay/legacy/local/pages/pl/home.php'
+      - '.github/workflows/verify-pr-dash-01.yml'
+      - 'docs/checkpoints/PR-DASH-01_POLISH_DASHBOARD_ENTRY.md'
+
+jobs:
+  polish-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Guard shared dashboard source
+        run: |
+          test -f hayne/overlay/legacy/local/pages/hayne-home.php
+          test -f hayne/overlay/legacy/local/pages/en/home.php
+          test -f hayne/overlay/legacy/local/pages/pl/home.php
+          grep -F "require FCPATH . 'local/pages/hayne-home.php';" hayne/overlay/legacy/local/pages/en/home.php
+          grep -F "require FCPATH . 'local/pages/hayne-home.php';" hayne/overlay/legacy/local/pages/pl/home.php
+          grep -F 'data-hayne-home="v1"' hayne/overlay/legacy/local/pages/hayne-home.php
+          grep -F 'Time off, in one place.' hayne/overlay/legacy/local/pages/hayne-home.php
+          grep -F 'hayne-kpi-grid' hayne/overlay/legacy/local/pages/hayne-home.php
+          ! grep -F 'Leave and Overtime Management System' hayne/overlay/legacy/local/pages/hayne-home.php
+
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+
+      - name: Build and start HAYNE Leave
+        run: docker compose up --build -d
+
+      - name: Guard dashboard files in built image
+        run: |
+          docker compose exec -T jorani sh -ec '
+            test -f legacy/local/pages/hayne-home.php
+            test -f legacy/local/pages/en/home.php
+            test -f legacy/local/pages/pl/home.php
+            grep -F "require FCPATH . '\''local/pages/hayne-home.php'\'';" legacy/local/pages/en/home.php
+            grep -F "require FCPATH . '\''local/pages/hayne-home.php'\'';" legacy/local/pages/pl/home.php
+            grep -F "data-hayne-home=\"v1\"" legacy/local/pages/hayne-home.php
+          '
+
+      - name: Login explicitly in Polish
+        run: |
+          mkdir -p artifacts
+          for attempt in $(seq 1 60); do
+            if curl -fsS \
+              -c artifacts/hayne-cookies.txt \
+              http://127.0.0.1:8080/session/login \
+              -o artifacts/hayne-login.html; then
+              break
+            fi
+            echo "Waiting for HAYNE Leave (${attempt}/60)..."
+            sleep 2
+          done
+
+          test -s artifacts/hayne-login.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/hayne-login.html | head -n 1)"
+          test -n "$csrf_token"
+
+          curl -fsS -L \
+            -c artifacts/hayne-cookies.txt \
+            -b artifacts/hayne-cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jorani' \
+            --data-urlencode 'password=jorani' \
+            --data-urlencode 'language=pl' \
+            http://127.0.0.1:8080/session/login \
+            -o artifacts/hayne-home-pl.html
+
+          test -s artifacts/hayne-home-pl.html
+          grep -F 'data-hayne-home="v1"' artifacts/hayne-home-pl.html
+          grep -F 'Time off, in one place.' artifacts/hayne-home-pl.html
+          grep -F 'Pozostało dni' artifacts/hayne-home-pl.html
+          grep -F 'Nadchodzące nieobecności' artifacts/hayne-home-pl.html
+          grep -F 'Szybkie akcje' artifacts/hayne-home-pl.html
+          ! grep -F 'Leave and Overtime Management System' artifacts/hayne-home-pl.html
+          ! grep -F 'Witamy w Jorani' artifacts/hayne-home-pl.html
+
+      - name: Capture Polish dashboard screenshot
+        run: |
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome \
+              --headless \
+              --no-sandbox \
+              --disable-gpu \
+              --hide-scrollbars \
+              --allow-file-access-from-files \
+              --run-all-compositor-stages-before-draw \
+              --window-size=1440,1000 \
+              --screenshot=artifacts/hayne-home-pl.png \
+              "file://${GITHUB_WORKSPACE}/artifacts/hayne-home-pl.html"
+          else
+            echo "google-chrome unavailable; HTML smoke remains authoritative"
+          fi
+
+      - name: Upload PR-DASH-01 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-dash-01-evidence
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
