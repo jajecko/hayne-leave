@@ -4,9 +4,11 @@
          $this->load->model('types_model');
 +        $this->load->model('hayne_caregiver_leave_model');
 +        $this->hayne_caregiver_leave_model->ensureCurrentYear((int) $this->user_id);
-@@ -132,1 +134,2 @@
-+        $data['hayneCaregiverSummary'] = $this->hayne_caregiver_leave_model->getSummary((int) $this->user_id, (int) substr($refDate, 0, 4));
+@@ -132,3 +134,4 @@
          $data['summary'] = $this->leaves_model->getLeaveBalanceForEmployee($this->user_id, $refDate);
++        $data['hayneCaregiverSummary'] = $this->hayne_caregiver_leave_model->getSummary((int) $this->user_id, (int) substr($refDate, 0, 4));
+ 
+         if (!is_null($data['summary'])) {
 @@ -167,1 +170,2 @@
 +        $data['hayneCaregiverDetails'] = $this->hayne_caregiver_leave_model->getMetadata((int) $id);
          //If the user is not its not HR, not manager and not the creator of the leave
