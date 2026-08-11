@@ -5,7 +5,7 @@
 -    <title><?php echo $title ?> - Jorani</title>
 +    <title><?php echo $title ?> - HAYNE Leave</title>
      <?php echo debugbar_head(); ?>
-@@ -20 +20,13 @@
+@@ -20 +20,14 @@
      <link rel="stylesheet" href="<?php echo base_url(); ?>assets/dist/legacy.css">
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/typography.css">
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/hayne.css">
@@ -13,19 +13,20 @@
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/app.css">
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/shell.css">
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/foundation.css">
++    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/legacy-compat.css">
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/request.css">
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/requests-list.css">
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/target.css">
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/balance.css">
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/login.css">
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/calendar.css">
-@@ -28,2 +40,6 @@
+@@ -28,2 +41,6 @@
      <script type="text/javascript" src="<?php echo base_url(); ?>assets/dist/legacy.js"></script>
      <script type="text/javascript" src="<?php echo base_url(); ?>assets/bootstrap/js/bootstrap.min.js"></script>
 +    <script defer type="text/javascript" src="<?php echo base_url(); ?>assets/hayne/navigation.js"></script>
 +    <script defer type="text/javascript" src="<?php echo base_url(); ?>assets/hayne/request.js"></script>
 +    <script defer type="text/javascript" src="<?php echo base_url(); ?>assets/hayne/requests.js"></script>
 +    <script defer type="text/javascript" src="<?php echo base_url(); ?>assets/hayne/login.js"></script>
-@@ -30 +46 @@
+@@ -30 +47 @@
 -    <link rel="icon" type="image/x-icon" href="<?php echo base_url(); ?>assets/favicon.ico" sizes="32x32">
 +    <link rel="icon" type="image/svg+xml" href="<?php echo base_url(); ?>assets/hayne/favicon.svg">
