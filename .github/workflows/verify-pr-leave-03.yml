@@ -112,11 +112,10 @@ jobs:
           grep -F 'data-vacation-type-id="1"' artifacts/create.html
           grep -F 'pozostało' artifacts/create.html
 
-      - name: Exercise four-day sublimit and same vacation pool
+      - name: Prepare on-demand test dates and helper
         shell: bash
         run: |
           set -euo pipefail
-          set -x
           year="$(date +%Y)"
           d1="$(date -d "${year}-03-01 next monday" +%F)"
           d3="$(date -d "${d1} +2 days" +%F)"
@@ -126,7 +125,18 @@ jobs:
           d22="$(date -d "${d1} +21 days" +%F)"
           d29="$(date -d "${d1} +28 days" +%F)"
           d36="$(date -d "${d1} +35 days" +%F)"
-
+          cat > artifacts/on-demand-env.sh <<EOF
+          export year='${year}'
+          export d1='${d1}'
+          export d3='${d3}'
+          export d8='${d8}'
+          export d9='${d9}'
+          export d15='${d15}'
+          export d22='${d22}'
+          export d29='${d29}'
+          export d36='${d36}'
+          EOF
+          cat > artifacts/submit-leave.sh <<'EOF'
           submit_leave() {
             local start="$1"
             local end="$2"
@@ -141,7 +151,7 @@ jobs:
             csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/form.html | head -n 1)"
             test -n "$csrf_token"
 
-            args=(
+            local args=(
               -fsS -L
               -c artifacts/cookies.txt
               -b artifacts/cookies.txt
@@ -160,42 +170,75 @@ jobs:
             fi
             curl "${args[@]}" http://localhost:8080/leaves/create -o "$output"
           }
+          EOF
 
+      - name: Submit first three on-demand days
+        shell: bash
+        run: |
+          set -euo pipefail
+          source artifacts/on-demand-env.sh
+          source artifacts/submit-leave.sh
           submit_leave "$d1" "$d3" 3 2 'CI ONDEMAND THREE' 1 artifacts/three.html
-          echo '=== FIRST RESPONSE FLASH/ERROR MARKERS ==='
-          grep -E 'alert|Przekroczony|pełne dni|Nie udało|brak|Brak' artifacts/three.html | head -n 30 || true
-          echo '=== FIRST LEAVE DB STATE ==='
-          docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -e \"SELECT id,startdate,enddate,status,employee,cause,startdatetype,enddatetype,duration,type FROM leaves WHERE cause LIKE 'CI ONDEMAND%'; SELECT * FROM hayne_leave_request_meta;\""
           first_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI ONDEMAND THREE' ORDER BY id DESC LIMIT 1\"")"
-          test -n "$first_id"
-          docker compose exec -T mysql sh -ec "
-            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM hayne_leave_request_meta WHERE leave_id=${first_id} AND on_demand=1\")\" = \"1\"
-            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CONCAT(type,':',CAST(duration AS UNSIGNED),':',status) FROM leaves WHERE id=${first_id}\")\" = \"1:3:2\"
-          "
+          if [ -z "$first_id" ]; then
+            echo 'First three-day on-demand request was not inserted.'
+            grep -E 'alert|Przekroczony|pełne dni|Nie udało|brak|Brak' artifacts/three.html | head -n 40 || true
+            docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -e \"SELECT id,startdate,enddate,status,employee,cause,duration,type FROM leaves ORDER BY id DESC LIMIT 10; SELECT * FROM hayne_leave_request_meta;\""
+            exit 1
+          fi
+          test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM hayne_leave_request_meta WHERE leave_id=${first_id} AND on_demand=1\"")" = "1"
+          test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CONCAT(type,':',CAST(duration AS UNSIGNED),':',status) FROM leaves WHERE id=${first_id}\"")" = "1:3:2"
 
+      - name: Reject request that would exceed four days
+        shell: bash
+        run: |
+          set -euo pipefail
+          source artifacts/on-demand-env.sh
+          source artifacts/submit-leave.sh
           before_two="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM leaves WHERE cause='CI ONDEMAND TWO REJECT'\"")"
           submit_leave "$d8" "$d9" 2 2 'CI ONDEMAND TWO REJECT' 1 artifacts/two-reject.html
-          echo '=== SECOND REQUEST RESPONSE ==='
-          grep -E 'Przekroczony|Pozostało|alert' artifacts/two-reject.html | head -n 30 || true
           after_two="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM leaves WHERE cause='CI ONDEMAND TWO REJECT'\"")"
           test "$before_two" = "$after_two"
           grep -F 'Przekroczony limit urlopu na żądanie' artifacts/two-reject.html
 
+      - name: Accept fourth on-demand day
+        shell: bash
+        run: |
+          set -euo pipefail
+          source artifacts/on-demand-env.sh
+          source artifacts/submit-leave.sh
           submit_leave "$d15" "$d15" 1 2 'CI ONDEMAND FOURTH' 1 artifacts/fourth.html
           fourth_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI ONDEMAND FOURTH' ORDER BY id DESC LIMIT 1\"")"
           test -n "$fourth_id"
+          test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM hayne_leave_request_meta WHERE leave_id=${fourth_id} AND on_demand=1\"")" = "1"
 
+      - name: Reject fifth on-demand day
+        shell: bash
+        run: |
+          set -euo pipefail
+          source artifacts/on-demand-env.sh
+          source artifacts/submit-leave.sh
           submit_leave "$d22" "$d22" 1 2 'CI ONDEMAND FIFTH REJECT' 1 artifacts/fifth-reject.html
           test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM leaves WHERE cause='CI ONDEMAND FIFTH REJECT'\"")" = "0"
           grep -F 'Pozostało: 0 dni' artifacts/fifth-reject.html
 
-          # Ordinary vacation uses the same type/pool but is not blocked by 4/4.
+      - name: Allow ordinary vacation after four on-demand days
+        shell: bash
+        run: |
+          set -euo pipefail
+          source artifacts/on-demand-env.sh
+          source artifacts/submit-leave.sh
           submit_leave "$d29" "$d29" 1 2 'CI NORMAL VACATION AFTER FOUR' 0 artifacts/normal.html
           normal_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI NORMAL VACATION AFTER FOUR' ORDER BY id DESC LIMIT 1\"")"
           test -n "$normal_id"
           test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM hayne_leave_request_meta WHERE leave_id=${normal_id}\"")" = "0"
 
-          # A plan may be marked on-demand, but conversion to Requested must recheck the sublimit.
+      - name: Block planned on-demand promotion when limit is full
+        shell: bash
+        run: |
+          set -euo pipefail
+          source artifacts/on-demand-env.sh
+          source artifacts/submit-leave.sh
           submit_leave "$d36" "$d36" 1 1 'CI ONDEMAND PLAN' 1 artifacts/plan.html
           plan_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI ONDEMAND PLAN' ORDER BY id DESC LIMIT 1\"")"
           test -n "$plan_id"
