@@ -1,0 +1,17 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -46,1 +46,3 @@
+         $this->load->model('types_model');
++        $this->load->model('hayne_caregiver_leave_model');
++        $this->hayne_caregiver_leave_model->ensureCurrentYear((int) $this->user_id);
+@@ -132,1 +134,2 @@
++        $data['hayneCaregiverSummary'] = $this->hayne_caregiver_leave_model->getSummary((int) $this->user_id, (int) substr($refDate, 0, 4));
+         $data['summary'] = $this->leaves_model->getLeaveBalanceForEmployee($this->user_id, $refDate);
+@@ -276,1 +279,3 @@
+             $data['types'] = $leaveTypesDetails->types;
++            $data['hayneCaregiverState'] = $this->hayne_caregiver_leave_model
++                ->getFormState((int) $this->session->userdata('id'));
+@@ -465,1 +470,3 @@
+             $data['types'] = $leaveTypesDetails->types;
++            $data['hayneCaregiverState'] = $this->hayne_caregiver_leave_model
++                ->getFormState((int) $data['leave']['employee'], (int) $id);
