@@ -1,6 +1,6 @@
 # PR-DASH-01 — Polish dashboard entry
 
-Status: implementation branch
+Status: verified on PR branch
 Date: 2026-08-11
 
 ## Root cause
@@ -45,6 +45,39 @@ This PR only fixes locale routing into the already implemented HAYNE dashboard p
 - standard `verify` remains green,
 - dedicated `verify-pr-dash-01` is green,
 - screenshot artifact is visually reviewed before merge.
+
+## Verification evidence
+
+PR: #23
+
+Verified head before this checkpoint update: `cfd53788a9ac8262113f70c4b2fd15b2f9a3393d`.
+
+GitHub Actions:
+
+- `verify` run #126 / `31484446610` — PASS,
+- `verify-pr-dash-01` run #2 / `31484446600` — PASS.
+
+The first dedicated run exposed only a CI host mismatch: the login smoke used `127.0.0.1` while Jorani redirected to the configured `localhost` base URL, dropping the authenticated curl session across the redirect. The workflow was corrected to use `localhost` consistently; no application/runtime code was changed for that fix.
+
+Dedicated verification confirmed:
+
+- shared dashboard source is present,
+- English and Polish wrappers both require the same shared view,
+- full HAYNE image build succeeds,
+- built image contains the Polish local dashboard entry,
+- login with `language=pl` reaches the HAYNE dashboard,
+- rendered HTML contains `data-hayne-home="v1"`, hero, KPI cards, `Nadchodzące nieobecności` and `Szybkie akcje`,
+- rendered HTML does not contain the legacy `Leave and Overtime Management System` / `Witamy w Jorani` content.
+
+Visual review of `pr-dash-01-evidence` / `hayne-home-pl.png` confirmed:
+
+- HAYNE sidebar and account shell remain intact,
+- the central dashboard renders the intended hero and line-art illustration,
+- all three KPI cards render in the expected row,
+- `Nadchodzące nieobecności` and `Szybkie akcje` render below,
+- the current em-dash KPI placeholders are expected and remain intentionally out of scope for this PR.
+
+A final CI rerun is required after this checkpoint-only update before merge.
 
 ## Follow-up
 
