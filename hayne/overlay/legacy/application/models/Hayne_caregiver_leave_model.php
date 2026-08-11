@@ -421,15 +421,16 @@ class Hayne_caregiver_leave_model extends CI_Model
         $startDate = sprintf('%04d-01-01', $year);
         $endDate = sprintf('%04d-12-31', $year);
 
-        $this->db->select('COALESCE(SUM(duration), 0) AS used', FALSE);
-        $this->db->from('leaves');
-        $this->db->where('employee', $employeeId);
-        $this->db->where('type', $leaveTypeId);
-        $this->db->where_in('status', [LMS_REQUESTED, LMS_ACCEPTED, LMS_CANCELLATION]);
-        $this->db->where('startdate >=', $startDate);
-        $this->db->where('enddate <=', $endDate);
+        $this->db->select('COALESCE(SUM(l.duration), 0) AS used', FALSE);
+        $this->db->from('leaves l');
+        $this->db->join(self::META_TABLE . ' m', 'm.leave_id = l.id', 'inner');
+        $this->db->where('l.employee', $employeeId);
+        $this->db->where('l.type', $leaveTypeId);
+        $this->db->where_in('l.status', [LMS_REQUESTED, LMS_ACCEPTED, LMS_CANCELLATION]);
+        $this->db->where('l.startdate >=', $startDate);
+        $this->db->where('l.enddate <=', $endDate);
         if ($excludeLeaveId !== NULL) {
-            $this->db->where('id !=', $excludeLeaveId);
+            $this->db->where('l.id !=', $excludeLeaveId);
         }
         $row = $this->db->get()->row_array();
 
