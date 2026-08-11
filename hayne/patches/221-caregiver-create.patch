@@ -1,6 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -374,1 +374,35 @@
+@@ -374,1 +374,33 @@
 +            $hayneCaregiver = $this->hayne_caregiver_leave_model->isCaregiverType((int) $leaveTypeId);
 +            $hayneCaregiverDetails = [];
 +            if ($hayneCaregiver) {
@@ -34,7 +34,7 @@
 +            }
 +
              if (function_exists('triggerCreateLeaveRequest')) {
-@@ -389,1 +423,11 @@
+@@ -389,1 +421,11 @@
 +            if ($hayneCaregiver) {
 +                $this->hayne_caregiver_leave_model->setMetadata((int) $leave_id, $hayneCaregiverDetails);
 +                if ($this->db->trans_status() === FALSE) {
