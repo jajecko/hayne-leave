@@ -8,7 +8,7 @@
      <script defer type="text/javascript" src="<?php echo base_url(); ?>assets/hayne/login.js"></script>
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -181,7 +181,11 @@
+@@ -299,7 +299,11 @@
              $employeeId = $this->session->userdata('id');
              $leaveTypeId = $this->input->post('type');
              $startDate = $this->input->post('startdate');
@@ -38,7 +38,7 @@
  
              // Check if the leave request is valid regarding the leave balance
              $disallowRequestsWithoutCredit = filter_var($this->config->item('disallow_requests_without_credit'), FILTER_VALIDATE_BOOLEAN, ['' => FILTER_NULL_ON_FAILURE]);
-@@ -351,7 +363,11 @@
+@@ -495,7 +507,11 @@
              $employeeId = $this->session->userdata('id');
              $leaveTypeId = $this->input->post('type');
              $startDate = $this->input->post('startdate');
