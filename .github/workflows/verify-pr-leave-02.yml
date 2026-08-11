@@ -1,0 +1,151 @@
+name: verify-pr-leave-02
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/overlay/legacy/application/models/Hayne_leave_policy_model.php'
+      - 'hayne/overlay/legacy/application/controllers/Haynelimits.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/index.php'
+      - 'hayne/patches/180-leave-limits-entry.patch'
+      - 'hayne/patches/190-leave-pools-fifo.patch'
+      - 'hayne/patches/195-balance-fifo-breakdown.patch'
+      - 'hayne/sql/001-leave-profiles.sql'
+      - 'docker/mysql/Dockerfile'
+      - '.github/workflows/verify-pr-leave-02.yml'
+      - 'docs/checkpoints/PR-LEAVE-02_ANNUAL_POOLS_FIFO.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'hayne/overlay/legacy/application/models/Hayne_leave_policy_model.php'
+      - 'hayne/overlay/legacy/application/controllers/Haynelimits.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/index.php'
+      - 'hayne/patches/180-leave-limits-entry.patch'
+      - 'hayne/patches/190-leave-pools-fifo.patch'
+      - 'hayne/patches/195-balance-fifo-breakdown.patch'
+      - 'hayne/sql/001-leave-profiles.sql'
+      - 'docker/mysql/Dockerfile'
+      - '.github/workflows/verify-pr-leave-02.yml'
+      - 'docs/checkpoints/PR-LEAVE-02_ANNUAL_POOLS_FIFO.md'
+
+jobs:
+  annual-pools-fifo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build and start HAYNE Leave
+        run: docker compose up --build -d
+
+      - name: Wait for application
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/session/login >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+
+      - name: PHP syntax checks
+        run: |
+          docker compose exec -T jorani php -l legacy/application/models/Hayne_leave_policy_model.php
+          docker compose exec -T jorani php -l legacy/application/controllers/Haynelimits.php
+          docker compose exec -T jorani php -l legacy/application/views/haynelimits/index.php
+          docker compose exec -T jorani php -l legacy/application/controllers/Leaves.php
+
+      - name: Authenticate as administrator
+        run: |
+          mkdir -p artifacts
+          curl -fsS -c artifacts/cookies.txt http://localhost:8080/session/login -o artifacts/login.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/login.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jorani' \
+            --data-urlencode 'password=jorani' \
+            --data-urlencode 'language=en' \
+            http://localhost:8080/session/login \
+            -o artifacts/home.html
+          grep -F 'Cześć Admin!' artifacts/home.html
+
+      - name: Verify limits administration and save profile
+        run: |
+          year="$(date +%Y)"
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${year}" -o artifacts/limits-empty.html
+          grep -F 'data-hayne-view="leave-limits-v1"' artifacts/limits-empty.html
+          grep -F 'Limity urlopowe' artifacts/limits-empty.html
+          grep -F 'Automatycznie odnawiaj pulę' artifacts/limits-empty.html
+
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/limits-empty.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'employee_id=1' \
+            --data-urlencode 'vacation_type_id=1' \
+            --data-urlencode 'annual_days=26' \
+            --data-urlencode 'auto_renew=1' \
+            http://localhost:8080/haynelimits/save \
+            -o artifacts/limits-saved.html
+          grep -F 'Limit urlopowy został zapisany.' artifacts/limits-saved.html
+
+          docker compose exec -T mysql sh -ec '
+            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT annual_days FROM hayne_leave_profiles WHERE employee_id=1")" = "26"
+          '
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CAST(days AS UNSIGNED) FROM entitleddays WHERE employee=1 AND type=1 AND description='[HAYNE_POOL|annual|${year}]'\")\" = \"26\"
+          "
+
+      - name: Verify FIFO and yearly rollover
+        run: |
+          year="$(date +%Y)"
+          next_year="$((year + 1))"
+
+          docker compose exec -T mysql sh -ec "
+            mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -e \"INSERT INTO leaves (startdate,enddate,status,employee,cause,startdatetype,enddatetype,duration,type) VALUES ('${year}-06-01','${year}-06-05',3,1,'CI FIFO current year','Morning','Afternoon',5,1);\"
+          "
+
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${year}" -o artifacts/limits-current.html
+          grep -F 'data-used="5"' artifacts/limits-current.html
+          grep -F 'data-remaining="21"' artifacts/limits-current.html
+
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${next_year}" -o artifacts/limits-next.html
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CAST(days AS UNSIGNED) FROM entitleddays WHERE employee=1 AND type=1 AND description='[HAYNE_POOL|carryover|${year}]' AND startdate='${next_year}-01-01'\")\" = \"21\"
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CAST(days AS UNSIGNED) FROM entitleddays WHERE employee=1 AND type=1 AND description='[HAYNE_POOL|annual|${next_year}]' AND startdate='${next_year}-01-01'\")\" = \"26\"
+          "
+
+          docker compose exec -T mysql sh -ec "
+            mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -e \"INSERT INTO leaves (startdate,enddate,status,employee,cause,startdatetype,enddatetype,duration,type) VALUES ('${next_year}-02-02','${next_year}-02-04',3,1,'CI FIFO carryover','Morning','Afternoon',3,1);\"
+          "
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${next_year}" -o artifacts/limits-next-used.html
+          grep -A4 -F "data-source-year=\"${year}\"" artifacts/limits-next-used.html | grep -F 'data-used="3"'
+          grep -A4 -F "data-source-year=\"${year}\"" artifacts/limits-next-used.html | grep -F 'data-remaining="18"'
+          grep -A4 -F "data-source-year=\"${next_year}\"" artifacts/limits-next-used.html | grep -F 'data-used="0"'
+          grep -A4 -F "data-source-year=\"${next_year}\"" artifacts/limits-next-used.html | grep -F 'data-remaining="26"'
+
+          # Re-running synchronization must not duplicate pool rows.
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${next_year}" >/dev/null
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM entitleddays WHERE employee=1 AND type=1 AND startdate='${next_year}-01-01' AND description LIKE '[HAYNE\\_POOL|%'\")\" = \"2\"
+          "
+
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/leaves/counters/${next_year}-06-15" -o artifacts/balance-next.html
+          grep -F 'data-hayne-fifo-summary="v1"' artifacts/balance-next.html
+          grep -F "data-source-year=\"${year}\"" artifacts/balance-next.html
+          grep -F 'Najstarsza pula jest rozliczana jako pierwsza.' artifacts/balance-next.html
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

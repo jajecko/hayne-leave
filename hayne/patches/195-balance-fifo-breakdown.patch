@@ -1,0 +1,24 @@
+--- a/legacy/application/views/leaves/counters.php
++++ b/legacy/application/views/leaves/counters.php
+@@ -36,3 +36,21 @@
+         </div>
+ 
++        <?php if (isset($hayneVacationPools) && !empty($hayneVacationPools['configured']) && !empty($hayneVacationPools['rows'])) { ?>
++            <div class="alert alert-info" data-hayne-fifo-summary="v1">
++                <strong>Urlop wypoczynkowy — FIFO:</strong>
++                <?php foreach ($hayneVacationPools['rows'] as $poolIndex => $pool) {
++                    $sourceYear = (int) $pool['source_year'];
++                    $poolLabel = $sourceYear < (int) $hayneVacationPools['year'] ? 'zaległy z ' . $sourceYear : 'bieżący ' . $sourceYear;
++                    ?>
++                    <span data-source-year="<?php echo $sourceYear; ?>"
++                        data-used="<?php echo (float) $pool['used']; ?>"
++                        data-remaining="<?php echo (float) $pool['remaining']; ?>">
++                        <?php echo $poolLabel; ?>: <strong><?php echo (float) $pool['remaining']; ?> dni</strong>
++                    </span>
++                    <?php if ($poolIndex < count($hayneVacationPools['rows']) - 1) { ?> <span aria-hidden="true">→</span> <?php } ?>
++                <?php } ?>
++                <span class="muted">Najstarsza pula jest rozliczana jako pierwsza.</span>
++            </div>
++        <?php } ?>
++
+         <div class="hayne-balance-table-wrap">
