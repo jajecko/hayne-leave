@@ -23,6 +23,11 @@ $editingAutoRenew = $edit_profile ? ((int) $edit_profile['auto_renew'] === 1) : 
                 'types' => $types,
             ]); ?>
 
+            <?php $this->load->view('haynelimits/force_majeure', [
+                'force_majeure_policy' => $force_majeure_policy,
+                'types' => $types,
+            ]); ?>
+
             <div class="row-fluid">
                 <div class="span5">
                     <div class="well">

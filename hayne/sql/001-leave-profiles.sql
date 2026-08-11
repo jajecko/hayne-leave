@@ -46,3 +46,13 @@ CREATE TABLE IF NOT EXISTS `hayne_caregiver_request_meta` (
     PRIMARY KEY (`leave_id`),
     KEY `relation_code` (`relation_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `hayne_force_majeure_request_meta` (
+    `leave_id` int(11) NOT NULL,
+    `event_code` varchar(16) NOT NULL,
+    `immediate_presence` tinyint(1) NOT NULL DEFAULT 1,
+    `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`leave_id`),
+    KEY `event_code` (`event_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

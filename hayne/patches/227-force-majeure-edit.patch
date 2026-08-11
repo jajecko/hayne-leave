@@ -1,0 +1,84 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -548,3 +548,28 @@
++            $hayneForceMajeure = $this->hayne_force_majeure_model->isForceMajeureType((int) $leaveTypeId);
++            $wasHayneForceMajeure = $this->hayne_force_majeure_model->isForceMajeureLeave((int) $id);
++            $hayneCaregiverEdit = $this->hayne_caregiver_leave_model->isCaregiverType((int) $leaveTypeId);
++            $wasHayneCaregiver = $this->hayne_caregiver_leave_model->isCaregiverLeave((int) $id);
++            $hayneOnDemandEdit = $this->input->post('hayne_on_demand', TRUE) === '1';
++            $wasHayneOnDemand = $this->hayne_on_demand_model->isOnDemand((int) $id);
++
++            if (
++                ($hayneForceMajeure && ($hayneCaregiverEdit || $wasHayneCaregiver || $wasHayneOnDemand)) ||
++                ($wasHayneForceMajeure && ($hayneCaregiverEdit || $hayneOnDemandEdit))
++            ) {
++                $this->session->set_flashdata('msg', 'Nie można bezpośrednio zmienić rodzaju wniosku pomiędzy ustawowymi pulami HAYNE.');
++                redirect('leaves/edit/' . (int) $id);
++                return;
++            }
++
++            $targetYear = (int) substr((string) $startDate, 0, 4);
++            if ($hayneCaregiverEdit) {
++                $this->hayne_caregiver_leave_model->ensureYear((int) $employeeId, $targetYear);
++            }
++            if ($hayneForceMajeure) {
++                $this->hayne_force_majeure_model->ensureYear((int) $employeeId, $targetYear);
++            }
++
+             // Check if the leave request is valid regarding the leave balance
+             $disallowRequestsWithoutCredit = filter_var($this->config->item('disallow_requests_without_credit'), FILTER_VALIDATE_BOOLEAN, ['' => FILTER_NULL_ON_FAILURE]);
+@@ -590,3 +615,42 @@
++            $hayneForceMajeureTransaction = $hayneForceMajeure || $wasHayneForceMajeure;
++            $hayneForceMajeureDetails = [];
++            if ($hayneForceMajeureTransaction) {
++                $this->db->trans_begin();
++            }
++            if ($hayneForceMajeure) {
++                $hayneForceMajeureDetails = [
++                    'event_code' => $this->input->post('hayne_force_majeure_event', TRUE),
++                    'immediate_presence' => $this->input->post('hayne_force_majeure_immediate_presence', TRUE),
++                ];
++                try {
++                    $this->hayne_force_majeure_model->lockEmployeeYear(
++                        (int) $data['leave']['employee'],
++                        (int) substr((string) $this->input->post('startdate'), 0, 4)
++                    );
++                    $hayneForceMajeureDetails = $this->hayne_force_majeure_model->assertRequestAllowed(
++                        (int) $data['leave']['employee'],
++                        (int) $this->input->post('type'),
++                        (string) $this->input->post('startdate'),
++                        (string) $this->input->post('enddate'),
++                        (float) abs($duration),
++                        (int) $this->input->post('status'),
++                        $hayneForceMajeureDetails,
++                        (int) $id,
++                        !$wasHayneForceMajeure || (int) $data['leave']['status'] === LMS_PLANNED
++                    );
++                } catch (Throwable $exception) {
++                    $this->db->trans_rollback();
++                    $this->session->set_flashdata('msg', $exception->getMessage());
++                    redirect('leaves/edit/' . (int) $id);
++                    return;
++                }
++            }
++
+             $this->leaves_model->updateLeaves(
+                 $id,
+                 $this->session->userdata('id'),
+@@ -608,3 +672,17 @@
++            if ($hayneForceMajeureTransaction) {
++                if ($hayneForceMajeure) {
++                    $this->hayne_force_majeure_model->setMetadata((int) $id, $hayneForceMajeureDetails);
++                } else {
++                    $this->hayne_force_majeure_model->deleteMetadata((int) $id);
++                }
++                if ($this->db->trans_status() === FALSE) {
++                    $this->db->trans_rollback();
++                    $this->session->set_flashdata('msg', 'Nie udało się zaktualizować danych zwolnienia z powodu siły wyższej.');
++                    redirect('leaves/edit/' . (int) $id);
++                    return;
++                }
++                $this->db->trans_commit();
++            }
+             $this->session->set_flashdata('msg', lang('leaves_edit_flash_msg_success'));
+             //If the status is requested or cancellation, send an email to the manager

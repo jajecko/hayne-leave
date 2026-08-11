@@ -16,6 +16,7 @@ class Haynelimits extends CI_Controller
         $this->load->helper('form');
         $this->load->model('hayne_leave_policy_model');
         $this->load->model('hayne_caregiver_leave_model');
+        $this->load->model('hayne_force_majeure_model');
     }
 
     public function index(): void
@@ -41,12 +42,17 @@ class Haynelimits extends CI_Controller
         $data['current_year'] = $currentYear;
         $data['default_type'] = (int) $this->config->item('default_leave_type');
         $data['caregiver_policy'] = $this->hayne_caregiver_leave_model->getPolicy();
+        $data['force_majeure_policy'] = $this->hayne_force_majeure_model->getPolicy();
 
-        if (!empty($data['caregiver_policy']) && (int) $data['caregiver_policy']['enabled'] === 1) {
-            foreach ($data['employees'] as $employee) {
-                if ((int) $employee['active'] === 1) {
-                    $this->hayne_caregiver_leave_model->ensureYear((int) $employee['id'], (int) $year);
-                }
+        foreach ($data['employees'] as $employee) {
+            if ((int) $employee['active'] !== 1) {
+                continue;
+            }
+            if (!empty($data['caregiver_policy']) && (int) $data['caregiver_policy']['enabled'] === 1) {
+                $this->hayne_caregiver_leave_model->ensureYear((int) $employee['id'], (int) $year);
+            }
+            if (!empty($data['force_majeure_policy']) && (int) $data['force_majeure_policy']['enabled'] === 1) {
+                $this->hayne_force_majeure_model->ensureYear((int) $employee['id'], (int) $year);
             }
         }
 
@@ -94,6 +100,16 @@ class Haynelimits extends CI_Controller
             return;
         }
 
+        $collision = $this->activeStatutoryPolicyForType((int) $vacationTypeId);
+        if ($collision !== NULL) {
+            $this->session->set_flashdata(
+                'msg',
+                'Ten rodzaj nieobecności jest już używany dla polityki: ' . $collision . '. Wybierz inny typ urlopu wypoczynkowego.'
+            );
+            redirect('haynelimits');
+            return;
+        }
+
         try {
             $this->hayne_leave_policy_model->saveProfile(
                 (int) $employeeId,
@@ -128,6 +144,20 @@ class Haynelimits extends CI_Controller
             return;
         }
 
+        if ($enabled) {
+            if ($this->isVacationTypeInUse((int) $leaveTypeId)) {
+                $this->session->set_flashdata('msg', 'Ten rodzaj nieobecności jest już używany jako urlop wypoczynkowy.');
+                redirect('haynelimits');
+                return;
+            }
+            $collision = $this->activeStatutoryPolicyForType((int) $leaveTypeId, 'caregiver');
+            if ($collision !== NULL) {
+                $this->session->set_flashdata('msg', 'Ten rodzaj nieobecności jest już używany dla polityki: ' . $collision . '.');
+                redirect('haynelimits');
+                return;
+            }
+        }
+
         try {
             $this->hayne_caregiver_leave_model->savePolicy((int) $leaveTypeId, $enabled);
 
@@ -155,6 +185,108 @@ class Haynelimits extends CI_Controller
         }
 
         redirect('haynelimits');
+    }
+
+    public function saveForceMajeurePolicy(): void
+    {
+        $leaveTypeId = filter_var($this->input->post('force_majeure_type_id', TRUE), FILTER_VALIDATE_INT);
+        $enabled = $this->input->post('force_majeure_enabled', TRUE) === '1';
+
+        if ($leaveTypeId === FALSE || $leaveTypeId <= 0) {
+            $this->session->set_flashdata('msg', 'Wybierz prawidłowy rodzaj zwolnienia z powodu siły wyższej.');
+            redirect('haynelimits');
+            return;
+        }
+
+        $this->load->model('types_model');
+        if (empty($this->types_model->getTypes((int) $leaveTypeId))) {
+            $this->session->set_flashdata('msg', 'Nie znaleziono wybranego rodzaju zwolnienia z powodu siły wyższej.');
+            redirect('haynelimits');
+            return;
+        }
+
+        if ($enabled) {
+            if ($this->isVacationTypeInUse((int) $leaveTypeId)) {
+                $this->session->set_flashdata('msg', 'Ten rodzaj nieobecności jest już używany jako urlop wypoczynkowy.');
+                redirect('haynelimits');
+                return;
+            }
+            $collision = $this->activeStatutoryPolicyForType((int) $leaveTypeId, 'force_majeure');
+            if ($collision !== NULL) {
+                $this->session->set_flashdata('msg', 'Ten rodzaj nieobecności jest już używany dla polityki: ' . $collision . '.');
+                redirect('haynelimits');
+                return;
+            }
+        }
+
+        try {
+            $this->hayne_force_majeure_model->savePolicy((int) $leaveTypeId, $enabled);
+
+            if ($enabled) {
+                $this->load->model('users_model');
+                foreach ($this->users_model->getUsers() as $employee) {
+                    if ((int) $employee['active'] === 1) {
+                        $this->hayne_force_majeure_model->ensureCurrentYear((int) $employee['id']);
+                    }
+                }
+            }
+
+            $this->session->set_flashdata(
+                'msg',
+                $enabled
+                    ? 'Siła wyższa: zapisano limit 2 dni rocznie.'
+                    : 'Zwolnienie z powodu siły wyższej zostało wyłączone.'
+            );
+        } catch (Throwable $exception) {
+            log_message('error', 'HAYNE force-majeure policy save failed: ' . $exception->getMessage());
+            $this->session->set_flashdata(
+                'msg',
+                'Nie udało się zapisać ustawień siły wyższej: ' . $exception->getMessage()
+            );
+        }
+
+        redirect('haynelimits');
+    }
+
+    private function activeStatutoryPolicyForType(int $leaveTypeId, ?string $excludePolicy = NULL): ?string
+    {
+        $policies = [
+            'caregiver' => [
+                'policy' => $this->hayne_caregiver_leave_model->getPolicy(),
+                'label' => 'urlop opiekuńczy',
+            ],
+            'force_majeure' => [
+                'policy' => $this->hayne_force_majeure_model->getPolicy(),
+                'label' => 'siła wyższa',
+            ],
+        ];
+
+        foreach ($policies as $code => $item) {
+            if ($excludePolicy === $code) {
+                continue;
+            }
+            $policy = $item['policy'];
+            if (
+                !empty($policy) &&
+                (int) $policy['enabled'] === 1 &&
+                (int) $policy['leave_type_id'] === $leaveTypeId
+            ) {
+                return (string) $item['label'];
+            }
+        }
+
+        return NULL;
+    }
+
+    private function isVacationTypeInUse(int $leaveTypeId): bool
+    {
+        if (!$this->db->table_exists('hayne_leave_profiles')) {
+            return FALSE;
+        }
+
+        return $this->db
+            ->where('vacation_type_id', $leaveTypeId)
+            ->count_all_results('hayne_leave_profiles') > 0;
     }
 
     private function assertAccess(): void

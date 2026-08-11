@@ -1,0 +1,30 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -47,3 +47,5 @@
+         $this->lang->load('leaves', $this->language);
+         $this->lang->load('global', $this->language);
++        $this->load->model('hayne_force_majeure_model');
++        $this->hayne_force_majeure_model->ensureCurrentYear((int) $this->user_id);
+     }
+@@ -134,4 +136,5 @@
++        $data['hayneForceMajeureSummary'] = $this->hayne_force_majeure_model->getSummary((int) $this->user_id, (int) substr($refDate, 0, 4));
+         if (!is_null($data['summary'])) {
+             $data['title'] = lang('leaves_summary_title');
+             $data['help'] = $this->help->create_help_link('global_link_doc_page_my_summary');
+@@ -184,3 +187,4 @@
+         } //Current employee
++        $data['hayneForceMajeureDetails'] = $this->hayne_force_majeure_model->getMetadata((int) $id);
+         $data['source'] = $source;
+         //overwrite source (for taking into account the tabular calendar)
+@@ -277,4 +281,6 @@
++            $data['hayneForceMajeureState'] = $this->hayne_force_majeure_model
++                ->getFormState((int) $this->session->userdata('id'));
+             $this->load->view('templates/header', $data);
+             $this->load->view('menu/index', $data);
+             $this->load->view('leaves/create');
+@@ -466,4 +472,6 @@
++            $data['hayneForceMajeureState'] = $this->hayne_force_majeure_model
++                ->getFormState((int) $data['leave']['employee'], (int) $id);
+             $this->load->model('users_model');
+             $data['name'] = $this->users_model->getName($data['leave']['employee']);
+             if (isset($data["leave"]["comments"])) {
