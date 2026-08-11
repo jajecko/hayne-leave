@@ -56,3 +56,13 @@ CREATE TABLE IF NOT EXISTS `hayne_force_majeure_request_meta` (
     PRIMARY KEY (`leave_id`),
     KEY `event_code` (`event_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `hayne_childcare_year_allocations` (
+    `employee_id` int(11) NOT NULL,
+    `year` smallint(4) NOT NULL,
+    `granted_days` tinyint(1) NOT NULL,
+    `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`employee_id`, `year`),
+    KEY `year` (`year`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
