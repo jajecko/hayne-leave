@@ -1,0 +1,325 @@
+name: verify-pr-leave-06
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/overlay/legacy/application/models/Hayne_childcare_model.php'
+      - 'hayne/overlay/legacy/application/controllers/Haynelimits.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/**'
+      - 'hayne/overlay/legacy/application/views/leaves/childcare_fields.php'
+      - 'hayne/overlay/legacy/application/views/leaves/counters.php'
+      - 'hayne/patches/230-childcare-controller-base.patch'
+      - 'hayne/patches/231-childcare-create.patch'
+      - 'hayne/patches/232-childcare-edit.patch'
+      - 'hayne/patches/233-childcare-plan-transition.patch'
+      - 'hayne/patches/234-childcare-views.patch'
+      - 'hayne/sql/001-leave-profiles.sql'
+      - '.github/workflows/verify-pr-leave-06.yml'
+      - 'docs/checkpoints/PR-LEAVE-06_CHILDCARE_ART188.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'hayne/overlay/legacy/application/models/Hayne_childcare_model.php'
+      - 'hayne/overlay/legacy/application/controllers/Haynelimits.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/**'
+      - 'hayne/overlay/legacy/application/views/leaves/childcare_fields.php'
+      - 'hayne/overlay/legacy/application/views/leaves/counters.php'
+      - 'hayne/patches/230-childcare-controller-base.patch'
+      - 'hayne/patches/231-childcare-create.patch'
+      - 'hayne/patches/232-childcare-edit.patch'
+      - 'hayne/patches/233-childcare-plan-transition.patch'
+      - 'hayne/patches/234-childcare-views.patch'
+      - 'hayne/sql/001-leave-profiles.sql'
+      - '.github/workflows/verify-pr-leave-06.yml'
+      - 'docs/checkpoints/PR-LEAVE-06_CHILDCARE_ART188.md'
+
+jobs:
+  childcare-art188:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build and start HAYNE Leave
+        run: docker compose up --build -d
+
+      - name: Wait for application
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/session/login >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Syntax and source checks
+        run: |
+          docker compose exec -T jorani php -l legacy/application/models/Hayne_childcare_model.php
+          docker compose exec -T jorani php -l legacy/application/controllers/Haynelimits.php
+          docker compose exec -T jorani php -l legacy/application/controllers/Leaves.php
+          docker compose exec -T jorani php -l legacy/application/views/leaves/childcare_fields.php
+          docker compose exec -T jorani php -l legacy/application/views/haynelimits/childcare.php
+          docker compose exec -T jorani sh -ec '
+            grep -F "MAX_ANNUAL_DAYS = 2" legacy/application/models/Hayne_childcare_model.php
+            grep -F "hayne_childcare_model" legacy/application/controllers/Leaves.php
+            grep -F "childcare_fields" legacy/application/views/leaves/create.php
+            grep -F "childcare_fields" legacy/application/views/leaves/edit.php
+            grep -F "data-hayne-childcare-summary" legacy/application/views/leaves/counters.php
+            grep -F "Wariant godzinowy jest obsługiwany poza HAYNE przez HR" legacy/application/views/leaves/childcare_fields.php
+          '
+
+      - name: Authenticate as administrator
+        run: |
+          mkdir -p artifacts
+          curl -fsS -c artifacts/cookies.txt http://localhost:8080/session/login -o artifacts/login.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/login.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jorani' \
+            --data-urlencode 'password=jorani' \
+            --data-urlencode 'language=en' \
+            http://localhost:8080/session/login \
+            -o artifacts/home.html
+          grep -F 'Cześć Admin!' artifacts/home.html
+
+      - name: Configure childcare policy
+        run: |
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/haynelimits -o artifacts/limits.html
+          grep -F 'Opieka nad dzieckiem do 14 lat' artifacts/limits.html
+          grep -F '0, 1 albo 2 dni' artifacts/limits.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/limits.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'childcare_type_id=3' \
+            --data-urlencode 'childcare_enabled=1' \
+            http://localhost:8080/haynelimits/saveChildcarePolicy \
+            -o artifacts/childcare-policy.html
+          grep -F 'Opieka nad dzieckiem: polityka art. 188 została włączona.' artifacts/childcare-policy.html
+
+          year="$(date +%Y)"
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CONCAT(leave_type_id,':',enabled) FROM hayne_statutory_leave_policies WHERE policy_code='childcare'\")\" = \"3:1\"
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM entitleddays WHERE employee=1 AND description='[HAYNE_STATUTORY|childcare|${year}]'\")\" = \"0\"
+          "
+
+      - name: Reject statutory type collisions
+        run: |
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/haynelimits -o artifacts/limits-collision.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/limits-collision.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'force_majeure_type_id=3' \
+            --data-urlencode 'force_majeure_enabled=1' \
+            http://localhost:8080/haynelimits/saveForceMajeurePolicy \
+            -o artifacts/collision.html
+          grep -F 'Ten rodzaj nieobecności jest już używany dla polityki: opieka nad dzieckiem do 14 lat.' artifacts/collision.html
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM hayne_statutory_leave_policies WHERE policy_code='force_majeure' AND enabled=1\")\" = \"0\"
+          "
+
+      - name: Assign one day for parent split
+        run: |
+          year="$(date +%Y)"
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${year}" -o artifacts/limits-allocation.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/limits-allocation.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'employee_id=1' \
+            --data-urlencode "year=${year}" \
+            --data-urlencode 'childcare_days=1' \
+            http://localhost:8080/haynelimits/saveChildcareAllocation \
+            -o artifacts/allocation-one.html
+          grep -F "Opieka nad dzieckiem: zapisano limit 1 dni na ${year} rok." artifacts/allocation-one.html
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT granted_days FROM hayne_childcare_year_allocations WHERE employee_id=1 AND year=${year}\")\" = \"1\"
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CAST(days AS UNSIGNED) FROM entitleddays WHERE employee=1 AND type=3 AND description='[HAYNE_STATUTORY|childcare|${year}]'\")\" = \"1\"
+          "
+
+      - name: Verify request form exposes day-only childcare state
+        run: |
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/create -o artifacts/create.html
+          grep -F 'id="hayneChildcareFields"' artifacts/create.html
+          grep -F 'data-childcare-type-id="3"' artifacts/create.html
+          grep -F 'pozostało <strong>1 z 1 dni</strong>' artifacts/create.html
+          grep -F 'Pierwszy wniosek złożony w HAYNE w danym roku' artifacts/create.html
+          grep -F 'Wariant godzinowy jest obsługiwany poza HAYNE przez HR.' artifacts/create.html
+
+      - name: Prepare request helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="$(date -d '+20 days' +%F)"
+          if [ "$(date -d "$base +10 days" +%Y)" != "$(date +%Y)" ]; then
+            base="$(date +%Y)-12-01"
+          fi
+          {
+            echo "CC_FUTURE_1=$base"
+            echo "CC_FUTURE_2=$(date -d "$base +2 days" +%F)"
+            echo "CC_FUTURE_3=$(date -d "$base +4 days" +%F)"
+            echo "CC_FUTURE_4=$(date -d "$base +6 days" +%F)"
+          } >> "$GITHUB_ENV"
+
+          cat > artifacts/submit-childcare.sh <<'SH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          start="$1"
+          end="$2"
+          duration="$3"
+          status="$4"
+          cause="$5"
+          output="$6"
+
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/create -o artifacts/form.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/form.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode "startdate=${start}" \
+            --data-urlencode 'startdatetype=Morning' \
+            --data-urlencode "enddate=${end}" \
+            --data-urlencode 'enddatetype=Afternoon' \
+            --data-urlencode "duration=${duration}" \
+            --data-urlencode 'type=3' \
+            --data-urlencode "cause=${cause}" \
+            --data-urlencode "status=${status}" \
+            http://localhost:8080/leaves/create \
+            -o "$output"
+          SH
+          chmod +x artifacts/submit-childcare.sh
+
+      - name: Reject request above one-day assigned limit
+        run: |
+          end="$(date -d "$CC_FUTURE_1 +1 day" +%F)"
+          artifacts/submit-childcare.sh "$CC_FUTURE_1" "$end" 2 2 'CI CHILDCARE TWO REJECT' artifacts/two-reject.html
+          test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM leaves WHERE cause='CI CHILDCARE TWO REJECT'\"")" = "0"
+          grep -F 'Wniosek przekracza przyznany limit opieki nad dzieckiem: 1 dni.' artifacts/two-reject.html
+
+      - name: Allow same-day one-day request
+        run: |
+          today="$(date +%F)"
+          artifacts/submit-childcare.sh "$today" "$today" 1 2 'CI CHILDCARE SAME DAY' artifacts/same-day.html
+          first_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI CHILDCARE SAME DAY' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$first_id"
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CONCAT(type,':',CAST(duration AS UNSIGNED),':',status) FROM leaves WHERE id=${first_id}\")\" = \"3:1:2\"
+          "
+
+      - name: Block lowering allocation below reserved usage
+        run: |
+          year="$(date +%Y)"
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${year}" -o artifacts/limits-lower.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/limits-lower.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'employee_id=1' \
+            --data-urlencode "year=${year}" \
+            --data-urlencode 'childcare_days=0' \
+            http://localhost:8080/haynelimits/saveChildcareAllocation \
+            -o artifacts/lower.html
+          grep -F 'Nie można ustawić limitu niższego niż już wykorzystane lub zarezerwowane 1 dni.' artifacts/lower.html
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT granted_days FROM hayne_childcare_year_allocations WHERE employee_id=1 AND year=${year}\")\" = \"1\"
+          "
+
+      - name: Increase annual allocation to two days
+        run: |
+          year="$(date +%Y)"
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${year}" -o artifacts/limits-raise.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/limits-raise.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'employee_id=1' \
+            --data-urlencode "year=${year}" \
+            --data-urlencode 'childcare_days=2' \
+            http://localhost:8080/haynelimits/saveChildcareAllocation \
+            -o artifacts/raise.html
+          grep -F "Opieka nad dzieckiem: zapisano limit 2 dni na ${year} rok." artifacts/raise.html
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CAST(days AS UNSIGNED) FROM entitleddays WHERE employee=1 AND type=3 AND description='[HAYNE_STATUTORY|childcare|${year}]'\")\" = \"2\"
+          "
+
+      - name: Reach two of two and reject third day
+        run: |
+          artifacts/submit-childcare.sh "$CC_FUTURE_2" "$CC_FUTURE_2" 1 2 'CI CHILDCARE SECOND' artifacts/second.html
+          second_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI CHILDCARE SECOND' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$second_id"
+
+          artifacts/submit-childcare.sh "$CC_FUTURE_3" "$CC_FUTURE_3" 1 2 'CI CHILDCARE THIRD REJECT' artifacts/third.html
+          test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM leaves WHERE cause='CI CHILDCARE THIRD REJECT'\"")" = "0"
+          grep -F 'Przekroczony limit opieki nad dzieckiem. Pozostało: 0 dni.' artifacts/third.html
+
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/counters -o artifacts/balance.html
+          grep -F 'data-hayne-childcare-summary="v1"' artifacts/balance.html
+          grep -F 'data-used="2"' artifacts/balance.html
+          grep -F 'data-remaining="0"' artifacts/balance.html
+
+      - name: Planned childcare request must recheck annual limit
+        run: |
+          artifacts/submit-childcare.sh "$CC_FUTURE_4" "$CC_FUTURE_4" 1 1 'CI CHILDCARE PLAN' artifacts/plan.html
+          plan_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI CHILDCARE PLAN' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$plan_id"
+          curl -fsS -L -b artifacts/cookies.txt -c artifacts/cookies.txt "http://localhost:8080/leaves/request/${plan_id}" -o artifacts/plan-request.html
+          test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT status FROM leaves WHERE id=${plan_id}\"")" = "1"
+          grep -F 'Przekroczony limit opieki nad dzieckiem. Pozostało: 0 dni.' artifacts/plan-request.html
+
+      - name: Verify no automatic carry-over and explicit next-year allocation
+        run: |
+          year="$(date +%Y)"
+          next_year="$((year + 1))"
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${next_year}" -o artifacts/next-year.html
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM hayne_childcare_year_allocations WHERE employee_id=1 AND year=${next_year}\")\" = \"0\"
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM entitleddays WHERE employee=1 AND description='[HAYNE_STATUTORY|childcare|${next_year}]'\")\" = \"0\"
+          "
+
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/next-year.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'employee_id=1' \
+            --data-urlencode "year=${next_year}" \
+            --data-urlencode 'childcare_days=2' \
+            http://localhost:8080/haynelimits/saveChildcareAllocation \
+            -o artifacts/next-year-save.html
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT granted_days FROM hayne_childcare_year_allocations WHERE employee_id=1 AND year=${next_year}\")\" = \"2\"
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CAST(days AS UNSIGNED) FROM entitleddays WHERE employee=1 AND type=3 AND description='[HAYNE_STATUTORY|childcare|${next_year}]'\")\" = \"2\"
+          "
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/leaves/counters/${next_year}-06-15" -o artifacts/balance-next.html
+          grep -F 'data-hayne-childcare-summary="v1"' artifacts/balance-next.html
+          grep -F 'data-used="0"' artifacts/balance-next.html
+          grep -F 'data-remaining="2"' artifacts/balance-next.html
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

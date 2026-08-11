@@ -28,6 +28,15 @@ $editingAutoRenew = $edit_profile ? ((int) $edit_profile['auto_renew'] === 1) : 
                 'types' => $types,
             ]); ?>
 
+            <?php $this->load->view('haynelimits/childcare', [
+                'childcare_policy' => $childcare_policy,
+                'childcare_allocations' => $childcare_allocations,
+                'employees' => $employees,
+                'types' => $types,
+                'selected_year' => $selected_year,
+                'current_year' => $current_year,
+            ]); ?>
+
             <div class="row-fluid">
                 <div class="span5">
                     <div class="well">

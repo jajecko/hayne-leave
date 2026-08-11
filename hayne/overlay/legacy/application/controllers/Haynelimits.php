@@ -17,6 +17,7 @@ class Haynelimits extends CI_Controller
         $this->load->model('hayne_leave_policy_model');
         $this->load->model('hayne_caregiver_leave_model');
         $this->load->model('hayne_force_majeure_model');
+        $this->load->model('hayne_childcare_model');
     }
 
     public function index(): void
@@ -43,6 +44,8 @@ class Haynelimits extends CI_Controller
         $data['default_type'] = (int) $this->config->item('default_leave_type');
         $data['caregiver_policy'] = $this->hayne_caregiver_leave_model->getPolicy();
         $data['force_majeure_policy'] = $this->hayne_force_majeure_model->getPolicy();
+        $data['childcare_policy'] = $this->hayne_childcare_model->getPolicy();
+        $data['childcare_allocations'] = $this->hayne_childcare_model->getAllocationMap((int) $year);
 
         foreach ($data['employees'] as $employee) {
             if ((int) $employee['active'] !== 1) {
@@ -54,6 +57,9 @@ class Haynelimits extends CI_Controller
             if (!empty($data['force_majeure_policy']) && (int) $data['force_majeure_policy']['enabled'] === 1) {
                 $this->hayne_force_majeure_model->ensureYear((int) $employee['id'], (int) $year);
             }
+        }
+        if (!empty($data['childcare_policy']) && (int) $data['childcare_policy']['enabled'] === 1) {
+            $this->hayne_childcare_model->ensureConfiguredYearForAll((int) $year);
         }
 
         $editEmployeeId = filter_var($this->input->get('edit', TRUE), FILTER_VALIDATE_INT);
@@ -248,6 +254,99 @@ class Haynelimits extends CI_Controller
         redirect('haynelimits');
     }
 
+    public function saveChildcarePolicy(): void
+    {
+        $leaveTypeId = filter_var($this->input->post('childcare_type_id', TRUE), FILTER_VALIDATE_INT);
+        $enabled = $this->input->post('childcare_enabled', TRUE) === '1';
+
+        if ($leaveTypeId === FALSE || $leaveTypeId <= 0) {
+            $this->session->set_flashdata('msg', 'Wybierz prawidłowy rodzaj opieki nad dzieckiem do 14 lat.');
+            redirect('haynelimits');
+            return;
+        }
+
+        $this->load->model('types_model');
+        if (empty($this->types_model->getTypes((int) $leaveTypeId))) {
+            $this->session->set_flashdata('msg', 'Nie znaleziono wybranego rodzaju opieki nad dzieckiem.');
+            redirect('haynelimits');
+            return;
+        }
+
+        if ($enabled) {
+            if ($this->isVacationTypeInUse((int) $leaveTypeId)) {
+                $this->session->set_flashdata('msg', 'Ten rodzaj nieobecności jest już używany jako urlop wypoczynkowy.');
+                redirect('haynelimits');
+                return;
+            }
+            $collision = $this->activeStatutoryPolicyForType((int) $leaveTypeId, 'childcare');
+            if ($collision !== NULL) {
+                $this->session->set_flashdata('msg', 'Ten rodzaj nieobecności jest już używany dla polityki: ' . $collision . '.');
+                redirect('haynelimits');
+                return;
+            }
+        }
+
+        try {
+            $this->hayne_childcare_model->savePolicy((int) $leaveTypeId, $enabled);
+            if ($enabled) {
+                $this->hayne_childcare_model->ensureConfiguredYearForAll((int) date('Y'));
+            }
+            $this->session->set_flashdata(
+                'msg',
+                $enabled
+                    ? 'Opieka nad dzieckiem: polityka art. 188 została włączona.'
+                    : 'Opieka nad dzieckiem została wyłączona.'
+            );
+        } catch (Throwable $exception) {
+            log_message('error', 'HAYNE childcare policy save failed: ' . $exception->getMessage());
+            $this->session->set_flashdata(
+                'msg',
+                'Nie udało się zapisać ustawień opieki nad dzieckiem: ' . $exception->getMessage()
+            );
+        }
+
+        redirect('haynelimits');
+    }
+
+    public function saveChildcareAllocation(): void
+    {
+        $employeeId = filter_var($this->input->post('employee_id', TRUE), FILTER_VALIDATE_INT);
+        $year = filter_var($this->input->post('year', TRUE), FILTER_VALIDATE_INT);
+        $days = filter_var($this->input->post('childcare_days', TRUE), FILTER_VALIDATE_INT);
+        $currentYear = (int) date('Y');
+
+        if (
+            $employeeId === FALSE || $employeeId <= 0 ||
+            $year === FALSE || $year < ($currentYear - 5) || $year > ($currentYear + 1) ||
+            $days === FALSE || $days < 0 || $days > 2
+        ) {
+            $this->session->set_flashdata('msg', 'Nieprawidłowy limit opieki nad dzieckiem.');
+            redirect('haynelimits');
+            return;
+        }
+
+        $this->load->model('users_model');
+        $employee = $this->users_model->getUsers((int) $employeeId);
+        if (empty($employee) || (int) $employee['active'] !== 1) {
+            $this->session->set_flashdata('msg', 'Nie znaleziono aktywnego pracownika.');
+            redirect('haynelimits?year=' . (int) $year);
+            return;
+        }
+
+        try {
+            $this->hayne_childcare_model->saveAllocation((int) $employeeId, (int) $year, (int) $days);
+            $this->session->set_flashdata(
+                'msg',
+                'Opieka nad dzieckiem: zapisano limit ' . (int) $days . ' dni na ' . (int) $year . ' rok.'
+            );
+        } catch (Throwable $exception) {
+            log_message('error', 'HAYNE childcare allocation save failed: ' . $exception->getMessage());
+            $this->session->set_flashdata('msg', $exception->getMessage());
+        }
+
+        redirect('haynelimits?year=' . (int) $year);
+    }
+
     private function activeStatutoryPolicyForType(int $leaveTypeId, ?string $excludePolicy = NULL): ?string
     {
         $policies = [
@@ -258,6 +357,10 @@ class Haynelimits extends CI_Controller
             'force_majeure' => [
                 'policy' => $this->hayne_force_majeure_model->getPolicy(),
                 'label' => 'siła wyższa',
+            ],
+            'childcare' => [
+                'policy' => $this->hayne_childcare_model->getPolicy(),
+                'label' => 'opieka nad dzieckiem do 14 lat',
             ],
         ];
 

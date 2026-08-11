@@ -1,0 +1,18 @@
+--- a/legacy/application/views/leaves/create.php
++++ b/legacy/application/views/leaves/create.php
+@@ -36,3 +36,6 @@
++        <?php $this->load->view('leaves/childcare_fields', [
++            'hayneChildcareState' => $hayneChildcareState,
++        ]); ?>
+         <label for="viz_startdate"><?php echo lang('leaves_create_field_start'); ?></label>
+         <input type="text" name="viz_startdate" id="viz_startdate" value="<?php echo set_value('startdate'); ?>"
+             autocomplete="off" />
+--- a/legacy/application/views/leaves/edit.php
++++ b/legacy/application/views/leaves/edit.php
+@@ -42,3 +42,6 @@
++                <?php $this->load->view('leaves/childcare_fields', [
++                    'hayneChildcareState' => $hayneChildcareState,
++                ]); ?>
+                 <label for="viz_startdate"><?php echo lang('leaves_edit_field_start'); ?></label>
+                 <input type="text" name="viz_startdate" id="viz_startdate" value="<?php $date = new DateTime($leave['startdate']);
+                 echo $date->format(lang('global_date_format')); ?>" autocomplete="off" />

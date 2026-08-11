@@ -1,0 +1,47 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -606,6 +606,36 @@
+         if (empty($leave)) {
+             redirect('notfound');
+         } else {
++            $hayneChildcareTransition = FALSE;
++            if (
++                $this->user_id == $leave['employee'] &&
++                $leave['status'] == LMS_PLANNED &&
++                $this->hayne_childcare_model->isChildcareLeave((int) $id)
++            ) {
++                try {
++                    $this->db->trans_begin();
++                    $this->hayne_childcare_model->lockEmployeeYear(
++                        (int) $leave['employee'],
++                        (int) substr((string) $leave['startdate'], 0, 4)
++                    );
++                    $this->hayne_childcare_model->assertRequestAllowed(
++                        (int) $leave['employee'],
++                        (int) $leave['type'],
++                        (string) $leave['startdate'],
++                        (string) $leave['enddate'],
++                        (float) $leave['duration'],
++                        LMS_REQUESTED,
++                        (int) $id
++                    );
++                    $hayneChildcareTransition = TRUE;
++                } catch (Throwable $exception) {
++                    $this->db->trans_rollback();
++                    $this->session->set_flashdata('msg', $exception->getMessage());
++                    redirect('leaves');
++                    return;
++                }
++            }
++
+             //Only the connected user can reject its own requests
+             if ($this->user_id != $leave['employee']) {
+                 $this->session->set_flashdata('msg', lang('leaves_cancellation_flash_msg_error'));
+@@ -622,3 +648,7 @@
++                if ($hayneChildcareTransition) {
++                    $this->db->trans_commit();
++                    $hayneChildcareTransition = FALSE;
++                }
+                 $this->sendMailOnLeaveRequestCreation($id);
+                 $this->session->set_flashdata('msg', lang('leaves_cancellation_flash_msg_success'));
+                 redirect('leaves');
