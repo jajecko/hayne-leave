@@ -1,0 +1,10 @@
+--- a/legacy/application/config/routes.php
++++ b/legacy/application/config/routes.php
+@@ -346,5 +346,8 @@
+ //Default controllers
+ $route['default_controller'] = 'leaves';
+ $route['404_override'] = 'pages/notfound';
++
++// HAYNE holiday compensation administration
++$route['hayneholidays'] = 'hayneholidays/index';
+ $route['(:any)'] = 'pages/view/$1';
