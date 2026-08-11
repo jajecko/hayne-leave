@@ -1,0 +1,155 @@
+name: verify-pr-leave-08a
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/overlay/legacy/application/controllers/Hayneholidays.php'
+      - 'hayne/overlay/legacy/application/views/hayneholidays/**'
+      - '.github/workflows/verify-pr-leave-08a.yml'
+      - 'docs/checkpoints/PR-LEAVE-08A_HOLIDAY_COMPENSATION_BULK_GRANT.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'hayne/overlay/legacy/application/controllers/Hayneholidays.php'
+      - 'hayne/overlay/legacy/application/views/hayneholidays/**'
+      - '.github/workflows/verify-pr-leave-08a.yml'
+      - 'docs/checkpoints/PR-LEAVE-08A_HOLIDAY_COMPENSATION_BULK_GRANT.md'
+
+jobs:
+  holiday-compensation-bulk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build and start HAYNE Leave
+        run: docker compose up --build -d
+
+      - name: Wait for application
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/session/login >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Syntax and source checks
+        run: |
+          docker compose exec -T jorani php -l legacy/application/controllers/Hayneholidays.php
+          docker compose exec -T jorani php -l legacy/application/views/hayneholidays/index.php
+          docker compose exec -T jorani sh -ec '
+            grep -F "private function getActiveEmployeeIds(): array" legacy/application/controllers/Hayneholidays.php
+            grep -F "foreach ($employeeIds as $employeeId)" legacy/application/controllers/Hayneholidays.php
+            grep -F "$this->db->trans_begin();" legacy/application/controllers/Hayneholidays.php
+            grep -F "$this->db->trans_commit();" legacy/application/controllers/Hayneholidays.php
+            grep -F "$this->db->trans_rollback();" legacy/application/controllers/Hayneholidays.php
+            grep -F "Przyznaj 1 dzień wszystkim" legacy/application/views/hayneholidays/index.php
+            grep -F "Przyznaj wszystkim aktywnym pracownikom" legacy/application/views/hayneholidays/index.php
+            if grep -F "name=\"employee_id\"" legacy/application/views/hayneholidays/index.php; then exit 1; fi
+          '
+
+      - name: Authenticate as administrator
+        run: |
+          mkdir -p artifacts
+          curl -fsS -c artifacts/cookies.txt http://localhost:8080/session/login -o artifacts/login.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/login.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jorani' \
+            --data-urlencode 'password=jorani' \
+            --data-urlencode 'language=en' \
+            http://localhost:8080/session/login \
+            -o artifacts/home.html
+          grep -F 'Cześć Admin!' artifacts/home.html
+
+      - name: Enable DWS policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/hayneholidays -o artifacts/holidays.html
+          grep -F 'Przyznaj 1 dzień wszystkim' artifacts/holidays.html
+          grep -F 'wszyscy aktywni pracownicy' artifacts/holidays.html
+          if grep -F 'name="employee_id"' artifacts/holidays.html; then exit 1; fi
+
+          holiday_type_id="$(docker compose exec -T mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT id FROM types WHERE name=0x447a6965c58420776f6c6e79207a6120c59b7769c499746f ORDER BY id LIMIT 1"')"
+          test -n "$holiday_type_id"
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/holidays.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode "holiday_compensation_type_id=${holiday_type_id}" \
+            --data-urlencode 'holiday_compensation_enabled=1' \
+            http://localhost:8080/hayneholidays/savePolicy \
+            -o artifacts/policy.html
+          grep -F 'Obsługa dnia wolnego za święto została włączona.' artifacts/policy.html
+
+      - name: Bulk grant matches all active employees
+        shell: bash
+        run: |
+          set -euo pipefail
+          active_count="$(docker compose exec -T mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM users WHERE active=1"')"
+          test "$active_count" -gt 0
+
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/hayneholidays -o artifacts/grant-form.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/grant-form.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'source_holiday_date=2026-08-15' \
+            --data-urlencode 'period_start=2026-08-01' \
+            --data-urlencode 'period_end=2026-08-31' \
+            http://localhost:8080/hayneholidays/saveGrant \
+            -o artifacts/grant.html
+
+          grep -F "wszystkim aktywnym pracownikom (${active_count})" artifacts/grant.html
+          grant_count="$(docker compose exec -T mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_holiday_compensation_grants WHERE source_holiday_date=0x323032362d30382d3135"')"
+          test "$grant_count" = "$active_count"
+          missing_count="$(docker compose exec -T mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM users u LEFT JOIN hayne_holiday_compensation_grants g ON g.employee_id=u.id AND g.source_holiday_date=0x323032362d30382d3135 WHERE u.active=1 AND g.id IS NULL"')"
+          test "$missing_count" = "0"
+
+      - name: Bulk grant is idempotent
+        shell: bash
+        run: |
+          set -euo pipefail
+          before="$(docker compose exec -T mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_holiday_compensation_grants WHERE source_holiday_date=0x323032362d30382d3135"')"
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/hayneholidays -o artifacts/grant-form-2.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/grant-form-2.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'source_holiday_date=2026-08-15' \
+            --data-urlencode 'period_start=2026-08-01' \
+            --data-urlencode 'period_end=2026-08-31' \
+            http://localhost:8080/hayneholidays/saveGrant \
+            -o artifacts/grant-2.html
+          after="$(docker compose exec -T mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_holiday_compensation_grants WHERE source_holiday_date=0x323032362d30382d3135"')"
+          test "$after" = "$before"
+
+      - name: Reject runtime regressions
+        run: |
+          if docker compose logs --no-color | grep -E 'Undefined variable|Fatal error|Uncaught|Parse error'; then
+            exit 1
+          fi
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
