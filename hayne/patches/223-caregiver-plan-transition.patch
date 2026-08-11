@@ -1,0 +1,39 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -1,1 +1,30 @@
++            $hayneCaregiverTransition = FALSE;
++            if ($leave['status'] == LMS_PLANNED && $this->hayne_caregiver_leave_model->isCaregiverLeave((int) $id)) {
++                $hayneCaregiverDetails = $this->hayne_caregiver_leave_model->getMetadata((int) $id);
++                try {
++                    $this->db->trans_begin();
++                    $this->hayne_caregiver_leave_model->lockEmployeeYear(
++                        (int) $leave['employee'],
++                        (int) substr((string) $leave['startdate'], 0, 4)
++                    );
++                    $this->hayne_caregiver_leave_model->assertRequestAllowed(
++                        (int) $leave['employee'],
++                        (int) $leave['type'],
++                        (string) $leave['startdate'],
++                        (string) $leave['enddate'],
++                        (float) $leave['duration'],
++                        LMS_REQUESTED,
++                        is_array($hayneCaregiverDetails) ? $hayneCaregiverDetails : [],
++                        (int) $id,
++                        TRUE
++                    );
++                    $hayneCaregiverTransition = TRUE;
++                } catch (Throwable $exception) {
++                    $this->db->trans_rollback();
++                    $this->session->set_flashdata('msg', $exception->getMessage());
++                    redirect('leaves');
++                    return;
++                }
++            }
++
+             //We can cancel a leave request only with a status 'Accepted'
+@@ -5,1 +34,5 @@
++                if ($hayneCaregiverTransition) {
++                    $this->db->trans_commit();
++                    $hayneCaregiverTransition = FALSE;
++                }
+                 $this->sendMailOnLeaveRequestCreation($id);
