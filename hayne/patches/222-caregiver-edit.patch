@@ -1,6 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -590,1 +590,42 @@
+@@ -590,1 +590,39 @@
 +            $hayneCaregiver = $this->hayne_caregiver_leave_model->isCaregiverType((int) $this->input->post('type'));
 +            $wasHayneCaregiver = $this->hayne_caregiver_leave_model->isCaregiverLeave((int) $id);
 +            $hayneCaregiverTransaction = $hayneCaregiver || $wasHayneCaregiver;
@@ -40,7 +40,7 @@
 +            }
 +
              $this->leaves_model->updateLeaves(
-@@ -608,1 +649,17 @@
+@@ -608,1 +646,15 @@
 +            if ($hayneCaregiverTransaction) {
 +                if ($hayneCaregiver) {
 +                    $this->hayne_caregiver_leave_model->setMetadata((int) $id, $hayneCaregiverDetails);
