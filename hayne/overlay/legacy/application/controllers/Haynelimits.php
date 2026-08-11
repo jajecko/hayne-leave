@@ -1,6 +1,6 @@
 <?php
 /**
- * HAYNE administration surface for persistent annual vacation settings.
+ * HAYNE administration surface for annual vacation and statutory leave settings.
  */
 if (!defined('BASEPATH')) {
     exit('No direct script access allowed');
@@ -15,6 +15,7 @@ class Haynelimits extends CI_Controller
         $this->assertAccess();
         $this->load->helper('form');
         $this->load->model('hayne_leave_policy_model');
+        $this->load->model('hayne_caregiver_leave_model');
     }
 
     public function index(): void
@@ -39,6 +40,15 @@ class Haynelimits extends CI_Controller
         $data['selected_year'] = (int) $year;
         $data['current_year'] = $currentYear;
         $data['default_type'] = (int) $this->config->item('default_leave_type');
+        $data['caregiver_policy'] = $this->hayne_caregiver_leave_model->getPolicy();
+
+        if (!empty($data['caregiver_policy']) && (int) $data['caregiver_policy']['enabled'] === 1) {
+            foreach ($data['employees'] as $employee) {
+                if ((int) $employee['active'] === 1) {
+                    $this->hayne_caregiver_leave_model->ensureYear((int) $employee['id'], (int) $year);
+                }
+            }
+        }
 
         $editEmployeeId = filter_var($this->input->get('edit', TRUE), FILTER_VALIDATE_INT);
         $data['edit_profile'] = $editEmployeeId === FALSE
@@ -98,6 +108,53 @@ class Haynelimits extends CI_Controller
         }
 
         redirect('haynelimits?edit=' . (int) $employeeId);
+    }
+
+    public function saveCaregiverPolicy(): void
+    {
+        $leaveTypeId = filter_var($this->input->post('caregiver_type_id', TRUE), FILTER_VALIDATE_INT);
+        $enabled = $this->input->post('caregiver_enabled', TRUE) === '1';
+
+        if ($leaveTypeId === FALSE || $leaveTypeId <= 0) {
+            $this->session->set_flashdata('msg', 'Wybierz prawidłowy rodzaj urlopu opiekuńczego.');
+            redirect('haynelimits');
+            return;
+        }
+
+        $this->load->model('types_model');
+        if (empty($this->types_model->getTypes((int) $leaveTypeId))) {
+            $this->session->set_flashdata('msg', 'Nie znaleziono wybranego rodzaju urlopu opiekuńczego.');
+            redirect('haynelimits');
+            return;
+        }
+
+        try {
+            $this->hayne_caregiver_leave_model->savePolicy((int) $leaveTypeId, $enabled);
+
+            if ($enabled) {
+                $this->load->model('users_model');
+                foreach ($this->users_model->getUsers() as $employee) {
+                    if ((int) $employee['active'] === 1) {
+                        $this->hayne_caregiver_leave_model->ensureCurrentYear((int) $employee['id']);
+                    }
+                }
+            }
+
+            $this->session->set_flashdata(
+                'msg',
+                $enabled
+                    ? 'Urlop opiekuńczy: zapisano limit 5 dni rocznie.'
+                    : 'Urlop opiekuńczy został wyłączony.'
+            );
+        } catch (Throwable $exception) {
+            log_message('error', 'HAYNE caregiver policy save failed: ' . $exception->getMessage());
+            $this->session->set_flashdata(
+                'msg',
+                'Nie udało się zapisać ustawień urlopu opiekuńczego: ' . $exception->getMessage()
+            );
+        }
+
+        redirect('haynelimits');
     }
 
     private function assertAccess(): void
