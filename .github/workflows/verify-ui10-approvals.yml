@@ -107,10 +107,15 @@ jobs:
       - name: Capture approvals screenshot
         run: |
           if command -v google-chrome >/dev/null 2>&1; then
-            google-chrome \
-              --headless --no-sandbox --disable-gpu --hide-scrollbars \
-              --allow-file-access-from-files --run-all-compositor-stages-before-draw \
-              --window-size=1440,1000 \
+            chrome_flags="--headless --no-sandbox --disable-gpu --hide-scrollbars --allow-file-access-from-files --run-all-compositor-stages-before-draw --virtual-time-budget=3000 --window-size=1440,1000"
+            google-chrome $chrome_flags \
+              --dump-dom \
+              "file://${GITHUB_WORKSPACE}/artifacts/hayne-approvals.html" \
+              > artifacts/hayne-approvals-rendered.html
+            grep -F 'data-hayne-view="approvals-v1"' artifacts/hayne-approvals-rendered.html
+            grep -F '>Do akceptacji<' artifacts/hayne-approvals-rendered.html
+            grep -F 'Brak wniosków wymagających działania' artifacts/hayne-approvals-rendered.html
+            google-chrome $chrome_flags \
               --screenshot=artifacts/hayne-approvals.png \
               "file://${GITHUB_WORKSPACE}/artifacts/hayne-approvals.html"
           else
