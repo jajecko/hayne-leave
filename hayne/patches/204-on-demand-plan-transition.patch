@@ -1,0 +1,31 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -1,4 +1,27 @@
+             //We can cancel a leave request only with a status 'Accepted'
+             if ($leave['status'] == LMS_PLANNED) {
+-                $this->leaves_model->switchStatus($id, LMS_REQUESTED);
++                if ($this->hayne_on_demand_model->isOnDemand((int) $id)) {
++                    try {
++                        $this->db->trans_begin();
++                        $this->hayne_on_demand_model->lockEmployeeProfile((int) $leave['employee']);
++                        $this->hayne_on_demand_model->assertRequestAllowed(
++                            (int) $leave['employee'],
++                            (int) $leave['type'],
++                            (string) $leave['startdate'],
++                            (string) $leave['enddate'],
++                            (float) $leave['duration'],
++                            LMS_REQUESTED,
++                            (int) $id
++                        );
++                    } catch (Throwable $exception) {
++                        $this->db->trans_rollback();
++                        $this->session->set_flashdata('msg', $exception->getMessage());
++                        redirect('leaves');
++                        return;
++                    }
++                    $this->leaves_model->switchStatus($id, LMS_REQUESTED);
++                    $this->db->trans_commit();
++                } else {
++                    $this->leaves_model->switchStatus($id, LMS_REQUESTED);
++                }
+                 $this->sendMailOnLeaveRequestCreation($id);
