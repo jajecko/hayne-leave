@@ -22,10 +22,7 @@
 +            $_POST['startdatetype'] = 'Morning';
 +            $_POST['enddatetype'] = 'Afternoon';
              $duration = (float) $this->input->post('duration');
-@@ -219,4 +223,12 @@
-             $calculatedDuration = $calculationResult['length'];
- 
-             // Overwrite the submitted duration with the server-calculated value
+@@ -222,1 +226,9 @@
              $duration = $calculatedDuration;
 +
 +            if (floor($duration) != $duration) {
