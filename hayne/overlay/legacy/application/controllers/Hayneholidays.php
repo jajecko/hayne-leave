@@ -30,11 +30,11 @@ class Hayneholidays extends CI_Controller
         }
 
         $data = getUserContext($this);
-        $data['employees'] = $this->users_model->getUsers();
         $data['policy'] = $this->hayne_holiday_compensation_model->getPolicy();
         $data['managed_type_id'] = $managedTypeId;
         $data['managed_type'] = $this->types_model->getTypes($managedTypeId);
         $data['grants'] = $this->hayne_holiday_compensation_model->getGrants();
+        $data['active_employee_count'] = $this->getActiveEmployeeIdsCount();
         $data['title'] = 'Dzień wolny za święto';
         $data['help'] = '';
         $data['flash_partial_view'] = $this->load->view('templates/flash', $data, TRUE);
@@ -96,40 +96,65 @@ class Hayneholidays extends CI_Controller
 
     public function saveGrant(): void
     {
-        $employeeId = filter_var($this->input->post('employee_id', TRUE), FILTER_VALIDATE_INT);
         $sourceHolidayDate = trim((string) $this->input->post('source_holiday_date', TRUE));
         $periodStart = trim((string) $this->input->post('period_start', TRUE));
         $periodEnd = trim((string) $this->input->post('period_end', TRUE));
 
-        if ($employeeId === FALSE || $employeeId <= 0) {
-            $this->session->set_flashdata('msg', 'Wybierz prawidłowego pracownika.');
-            redirect('hayneholidays');
-            return;
-        }
-        $employee = $this->users_model->getUsers((int) $employeeId);
-        if (empty($employee) || (int) $employee['active'] !== 1) {
-            $this->session->set_flashdata('msg', 'Nie znaleziono aktywnego pracownika.');
+        $employeeIds = $this->getActiveEmployeeIds();
+        if (empty($employeeIds)) {
+            $this->session->set_flashdata('msg', 'Nie znaleziono aktywnych pracowników.');
             redirect('hayneholidays');
             return;
         }
 
+        $this->db->trans_begin();
         try {
-            $this->hayne_holiday_compensation_model->saveGrant(
-                (int) $employeeId,
-                $sourceHolidayDate,
-                $periodStart,
-                $periodEnd
-            );
+            foreach ($employeeIds as $employeeId) {
+                $this->hayne_holiday_compensation_model->saveGrant(
+                    $employeeId,
+                    $sourceHolidayDate,
+                    $periodStart,
+                    $periodEnd
+                );
+            }
+            if ($this->db->trans_status() === FALSE) {
+                throw new RuntimeException('Nie udało się zapisać wszystkich grantów dnia wolnego za święto.');
+            }
+            $this->db->trans_commit();
+
             $this->session->set_flashdata(
                 'msg',
                 'Przyznano 1 dzień wolny za święto ' . $sourceHolidayDate .
+                ' wszystkim aktywnym pracownikom (' . count($employeeIds) . ')' .
                 ' do wykorzystania w okresie ' . $periodStart . ' – ' . $periodEnd . '.'
             );
         } catch (Throwable $exception) {
-            log_message('error', 'HAYNE holiday grant save failed: ' . $exception->getMessage());
+            $this->db->trans_rollback();
+            log_message('error', 'HAYNE bulk holiday grant save failed: ' . $exception->getMessage());
             $this->session->set_flashdata('msg', $exception->getMessage());
         }
         redirect('hayneholidays');
+    }
+
+    private function getActiveEmployeeIds(): array
+    {
+        $employees = $this->users_model->getUsers();
+        $ids = [];
+        foreach ($employees as $employee) {
+            if ((int) $employee['active'] !== 1) {
+                continue;
+            }
+            $employeeId = (int) $employee['id'];
+            if ($employeeId > 0) {
+                $ids[] = $employeeId;
+            }
+        }
+        return array_values(array_unique($ids));
+    }
+
+    private function getActiveEmployeeIdsCount(): int
+    {
+        return count($this->getActiveEmployeeIds());
     }
 
     private function otherActivePolicyForType(int $leaveTypeId): ?string
