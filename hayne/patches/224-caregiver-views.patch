@@ -1,0 +1,29 @@
+--- a/legacy/application/views/leaves/create.php
++++ b/legacy/application/views/leaves/create.php
+@@ -35,1 +35,4 @@
+         </select>
++        <?php $this->load->view('leaves/caregiver_fields', [
++            'hayneCaregiverState' => $hayneCaregiverState,
++        ]); ?>
+--- a/legacy/application/views/leaves/edit.php
++++ b/legacy/application/views/leaves/edit.php
+@@ -41,1 +41,4 @@
+                 </select>
++                <?php $this->load->view('leaves/caregiver_fields', [
++                    'hayneCaregiverState' => $hayneCaregiverState,
++                ]); ?>
+--- a/legacy/application/views/leaves/counters.php
++++ b/legacy/application/views/leaves/counters.php
+@@ -48,1 +48,12 @@
+             <tbody>
++                <?php if (!empty($hayneCaregiverSummary)) { ?>
++                    <tr class="hayne-caregiver-balance" data-hayne-caregiver-summary="v1"
++                        data-used="<?php echo (float) $hayneCaregiverSummary['used']; ?>"
++                        data-remaining="<?php echo (float) $hayneCaregiverSummary['remaining']; ?>">
++                        <td colspan="7">
++                            <strong>Urlop opiekuńczy:</strong>
++                            <?php echo (float) $hayneCaregiverSummary['used']; ?> / <?php echo (int) $hayneCaregiverSummary['limit']; ?> dni wykorzystane lub oczekujące.
++                            <span class="muted">Pozostało: <?php echo (float) $hayneCaregiverSummary['remaining']; ?> dni.</span>
++                        </td>
++                    </tr>
++                <?php } ?>
