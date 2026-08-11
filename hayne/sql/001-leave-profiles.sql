@@ -87,3 +87,25 @@ CREATE TABLE IF NOT EXISTS `hayne_occasion_events` (
     PRIMARY KEY (`employee_id`, `event_code`, `event_date`),
     KEY `event_date` (`event_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `hayne_holiday_compensation_grants` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `employee_id` int(11) NOT NULL,
+    `source_holiday_date` date NOT NULL,
+    `period_start` date NOT NULL,
+    `period_end` date NOT NULL,
+    `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `employee_holiday` (`employee_id`, `source_holiday_date`),
+    KEY `period_end` (`period_end`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `hayne_holiday_compensation_request_meta` (
+    `leave_id` int(11) NOT NULL,
+    `grant_id` int(11) NOT NULL,
+    `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`leave_id`),
+    KEY `grant_id` (`grant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
