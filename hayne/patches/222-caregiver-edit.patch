@@ -1,6 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -590,1 +590,38 @@
+@@ -590,1 +590,42 @@
 +            $hayneCaregiver = $this->hayne_caregiver_leave_model->isCaregiverType((int) $this->input->post('type'));
 +            $wasHayneCaregiver = $this->hayne_caregiver_leave_model->isCaregiverLeave((int) $id);
 +            $hayneCaregiverTransaction = $hayneCaregiver || $wasHayneCaregiver;
@@ -16,6 +16,10 @@
 +                    'care_reason' => $this->input->post('hayne_caregiver_reason', TRUE),
 +                ];
 +                try {
++                    $this->hayne_caregiver_leave_model->lockEmployeeYear(
++                        (int) $data['leave']['employee'],
++                        (int) substr((string) $this->input->post('startdate'), 0, 4)
++                    );
 +                    $hayneCaregiverDetails = $this->hayne_caregiver_leave_model->assertRequestAllowed(
 +                        (int) $data['leave']['employee'],
 +                        (int) $this->input->post('type'),
@@ -36,7 +40,7 @@
 +            }
 +
              $this->leaves_model->updateLeaves(
-@@ -608,1 +645,17 @@
+@@ -608,1 +649,17 @@
 +            if ($hayneCaregiverTransaction) {
 +                if ($hayneCaregiver) {
 +                    $this->hayne_caregiver_leave_model->setMetadata((int) $id, $hayneCaregiverDetails);
