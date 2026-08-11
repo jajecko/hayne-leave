@@ -110,7 +110,7 @@ jobs:
 
           docker compose exec -T mysql sh -ec '
             mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "DELETE FROM entitleddays WHERE type=3;"
-            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT CONCAT(leave_type_id,':',enabled) FROM hayne_statutory_leave_policies WHERE policy_code='occasion'")" = "3:1"
+            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT CONCAT(leave_type_id,0x3a,enabled) FROM hayne_statutory_leave_policies WHERE policy_code=0x6f63636173696f6e")" = "3:1"
             test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM entitleddays WHERE type=3")" = "0"
           '
 
@@ -129,7 +129,7 @@ jobs:
             -o artifacts/collision.html
           grep -F 'Ten rodzaj nieobecności jest już używany dla polityki: urlop okolicznościowy.' artifacts/collision.html
           docker compose exec -T mysql sh -ec '
-            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_statutory_leave_policies WHERE policy_code='force_majeure' AND enabled=1")" = "0"
+            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_statutory_leave_policies WHERE policy_code=0x666f7263655f6d616a65757265 AND enabled=1")" = "0"
           '
 
       - name: Verify request form exposes event fields
@@ -211,7 +211,7 @@ jobs:
           grep -F 'Przekroczony limit dla tego zdarzenia. Pozostało: 0 dni.' artifacts/third.html
 
           docker compose exec -T mysql sh -ec "
-            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM hayne_occasion_request_meta m JOIN leaves l ON l.id=m.leave_id WHERE l.employee=1 AND m.event_code='employee_marriage' AND m.event_date='${OC_D1}' AND l.status IN (2,3,4)\")\" = \"2\"
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM hayne_occasion_request_meta m JOIN leaves l ON l.id=m.leave_id WHERE l.employee=1 AND m.event_code='employee_marriage' AND m.event_date='${OC_D1}' AND l.status=2\")\" = \"2\"
             test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT max_days FROM hayne_occasion_events WHERE employee_id=1 AND event_code='employee_marriage' AND event_date='${OC_D1}'\")\" = \"2\"
             test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM entitleddays WHERE description LIKE '[HAYNE\\_STATUTORY|occasion|%'\")\" = \"0\"
           "
@@ -287,7 +287,7 @@ jobs:
       - name: Keep occasion leave out of annual entitlements
         run: |
           docker compose exec -T mysql sh -ec '
-            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM entitleddays WHERE description LIKE '[HAYNE\\_STATUTORY|occasion|%'")" = "0"
+            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM entitleddays WHERE LOCATE(0x6f63636173696f6e, description) > 0")" = "0"
             test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_occasion_events")" -ge "4"
             test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_occasion_request_meta")" -ge "7"
           '
