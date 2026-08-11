@@ -1,0 +1,10 @@
+--- a/legacy/application/config/routes.php
++++ b/legacy/application/config/routes.php
+@@ -326,6 +326,6 @@ $route['api/authorization/userinfo'] = 'authorization/userinfo';
+ 
+ //_______________________________________________
+ //Default controllers
+-$route['default_controller'] = 'leaves';
++$route['default_controller'] = 'pages/view/home';
+ $route['404_override'] = 'pages/notfound';
+ $route['(:any)'] = 'pages/view/$1';
