@@ -50,11 +50,15 @@ HAYNE nie przechowuje imienia/nazwiska członka rodziny ani kopii dokumentów. D
 
 Dwa dni jednego zdarzenia mogą być wykorzystane w jednym albo dwóch wnioskach. HAYNE sumuje aktywne wykorzystanie po `(employee_id, event_code, event_date)`.
 
-## Statusy
+## Statusy i edycja
 
 - `Requested`, `Accepted`, `Cancellation` rezerwują limit konkretnego zdarzenia.
 - `Planned` przechowuje metadane, ale nie rezerwuje limitu.
 - przejście `Planned -> Requested` ponownie sprawdza limit pod blokadą transakcyjną.
+- w `Planned` i `Rejected` można skorygować rodzaj/datę zdarzenia.
+- po wysłaniu wniosku (`Requested`, `Accepted`, `Cancellation`) nie można przepiąć go do/z urlopu okolicznościowego ani zmienić `event_code` / `event_date`; korekta wymaga anulowania/odrzucenia i utworzenia właściwego wniosku.
+
+Ta blokada chroni rezerwację limitu przed przeniesieniem już wysłanego dnia na inne zdarzenie.
 
 ## Współbieżność
 
@@ -94,6 +98,7 @@ Nie wprowadzamy arbitralnego okna typu ±7 dni. Przepisy wskazują zdarzenie upr
 - brak logiki godzinowej,
 - brak zmian płacowych,
 - dedykowany typ nie może kolidować z urlopem wypoczynkowym ani innymi politykami HAYNE,
+- po wysłaniu tożsamość zdarzenia jest niezmienna,
 - każdy patch musi niezależnie dry-runować na pristine Jorani v1.0.4,
 - produkcyjny NAS pozostaje poza zakresem tego PR.
 
@@ -111,5 +116,7 @@ Workflow `verify-pr-leave-07` sprawdza m.in.:
 8. odrzucenie 2 dni dla zdarzenia 1-dniowego,
 9. edycję metadanych planowanego wniosku,
 10. ponowną walidację `Planned -> Requested`,
-11. widok szczegółów,
-12. brak rekordów `[HAYNE_STATUTORY|occasion|...]` w `entitleddays`.
+11. blokadę zmiany zdarzenia po wysłaniu wniosku,
+12. widok szczegółów,
+13. brak rekordów `[HAYNE_STATUTORY|occasion|...]` w `entitleddays`,
+14. brak regresji `Undefined variable $id` / `$hayneOccasion` w runtime logach.
