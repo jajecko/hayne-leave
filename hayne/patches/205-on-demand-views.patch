@@ -1,9 +1,14 @@
 --- a/legacy/application/views/leaves/create.php
 +++ b/legacy/application/views/leaves/create.php
-@@ -2,4 +2,20 @@
+@@ -28,8 +28,24 @@
+         <select class="input-xxlarge" name="type" id="type">
+             <?php foreach ($types as $typeId => $TypeName): ?>
+                 <option value="<?php echo $typeId; ?>" <?php if ($typeId == $defaultType)
+                        echo "selected"; ?>>
+                     <?php echo $TypeName; ?>
+                 </option>
              <?php endforeach ?>
          </select>
- 
 +        <?php if (!empty($hayneOnDemandState['enabled'])) { ?>
 +            <div id="hayneOnDemandOption" class="hayne-on-demand-option"
 +                data-vacation-type-id="<?php echo (int) $hayneOnDemandState['vacation_type_id']; ?>">
@@ -19,14 +24,17 @@
 +                </span>
 +            </div>
 +        <?php } ?>
-+
-         <label for="viz_startdate">Data rozpoczęcia</label>
 --- a/legacy/application/views/leaves/edit.php
 +++ b/legacy/application/views/leaves/edit.php
-@@ -2,4 +2,20 @@
+@@ -34,8 +34,24 @@
+                 <select class="input-xxlarge" name="type" id="type">
+                     <?php foreach ($types as $typeId => $TypeName): ?>
+                         <option value="<?php echo $typeId; ?>" <?php if ($typeId == $leave['type'])
+                                echo "selected"; ?>>
+                             <?php echo $TypeName; ?>
+                         </option>
                      <?php endforeach ?>
                  </select>
- 
 +                <?php if (!empty($hayneOnDemandState['enabled'])) { ?>
 +                    <div id="hayneOnDemandOption" class="hayne-on-demand-option"
 +                        data-vacation-type-id="<?php echo (int) $hayneOnDemandState['vacation_type_id']; ?>">
@@ -42,19 +50,18 @@
 +                        </span>
 +                    </div>
 +                <?php } ?>
-+
-                 <label for="viz_startdate"><?php echo lang('leaves_edit_field_start'); ?></label>
 --- a/legacy/application/views/leaves/counters.php
 +++ b/legacy/application/views/leaves/counters.php
-@@ -1,1 +1,11 @@
-+        <?php if (isset($hayneOnDemandSummary)) { ?>
-+            <div class="alert hayne-on-demand-balance" data-hayne-on-demand-summary="v1"
-+                data-used="<?php echo (float) $hayneOnDemandSummary['used']; ?>"
-+                data-remaining="<?php echo (float) $hayneOnDemandSummary['remaining']; ?>">
-+                <strong>Urlop na żądanie:</strong>
-+                <?php echo (float) $hayneOnDemandSummary['used']; ?> / <?php echo (int) $hayneOnDemandSummary['limit']; ?> dni wykorzystane lub oczekujące.
-+                <span class="muted">Pozostało: <?php echo (float) $hayneOnDemandSummary['remaining']; ?> dni.</span>
-+            </div>
-+        <?php } ?>
-+
-         <div class="hayne-balance-table-wrap">
+@@ -48,1 +48,12 @@
+             <tbody>
++                <?php if (isset($hayneOnDemandSummary)) { ?>
++                    <tr class="hayne-on-demand-balance" data-hayne-on-demand-summary="v1"
++                        data-used="<?php echo (float) $hayneOnDemandSummary['used']; ?>"
++                        data-remaining="<?php echo (float) $hayneOnDemandSummary['remaining']; ?>">
++                        <td colspan="7">
++                            <strong>Urlop na żądanie:</strong>
++                            <?php echo (float) $hayneOnDemandSummary['used']; ?> / <?php echo (int) $hayneOnDemandSummary['limit']; ?> dni wykorzystane lub oczekujące.
++                            <span class="muted">Pozostało: <?php echo (float) $hayneOnDemandSummary['remaining']; ?> dni.</span>
++                        </td>
++                    </tr>
++                <?php } ?>
