@@ -1,6 +1,9 @@
 --- a/legacy/application/views/leaves/create.php
 +++ b/legacy/application/views/leaves/create.php
-@@ -35,1 +35,16 @@
+@@ -20,1 +20,2 @@
++        <?php $this->load->view('templates/flash'); ?>
+         <?php echo validation_errors(); ?>
+@@ -35,1 +36,16 @@
          </select>
 +        <?php if (!empty($hayneOnDemandState['enabled'])) { ?>
 +            <div id="hayneOnDemandOption" class="hayne-on-demand-option"
@@ -19,7 +22,10 @@
 +        <?php } ?>
 --- a/legacy/application/views/leaves/edit.php
 +++ b/legacy/application/views/leaves/edit.php
-@@ -41,1 +41,16 @@
+@@ -22,1 +22,2 @@
++                <?php $this->load->view('templates/flash'); ?>
+                 <?php echo validation_errors(); ?>
+@@ -41,1 +42,16 @@
                  </select>
 +                <?php if (!empty($hayneOnDemandState['enabled'])) { ?>
 +                    <div id="hayneOnDemandOption" class="hayne-on-demand-option"
