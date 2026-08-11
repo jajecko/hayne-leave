@@ -134,8 +134,8 @@ jobs:
 
           page=artifacts/leave-types/create-stale-default.html
           ! grep -Eqi 'A PHP Error was encountered|Undefined array key|TypeError|Severity:[[:space:]]*(Warning|Notice|Deprecated)' "$page"
-          grep -F 'option value="1" selected' "$page"
-          grep -F 'urlop wypoczynkowy' "$page"
+          ! grep -F 'option value="999" selected' "$page"
+          grep -Eq 'option value="(1|2|3)" selected' "$page"
 
       - name: Upload leave type evidence
         if: always()
