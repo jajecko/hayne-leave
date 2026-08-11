@@ -1,21 +1,30 @@
 --- a/legacy/application/views/leaves/create.php
 +++ b/legacy/application/views/leaves/create.php
-@@ -35,1 +35,4 @@
+@@ -33,4 +33,7 @@
+             <?php endforeach ?>
          </select>
+ 
 +        <?php $this->load->view('leaves/caregiver_fields', [
 +            'hayneCaregiverState' => $hayneCaregiverState,
 +        ]); ?>
+         <label for="viz_startdate"><?php echo lang('leaves_create_field_start'); ?></label>
 --- a/legacy/application/views/leaves/edit.php
 +++ b/legacy/application/views/leaves/edit.php
-@@ -41,1 +41,4 @@
+@@ -39,4 +39,7 @@
+                     <?php endforeach ?>
                  </select>
+ 
 +                <?php $this->load->view('leaves/caregiver_fields', [
 +                    'hayneCaregiverState' => $hayneCaregiverState,
 +                ]); ?>
+                 <label for="viz_startdate"><?php echo lang('leaves_edit_field_start'); ?></label>
 --- a/legacy/application/views/leaves/view.php
 +++ b/legacy/application/views/leaves/view.php
-@@ -44,1 +44,4 @@
+@@ -41,4 +41,7 @@
+         <label for="cause"><?php echo lang('leaves_view_field_cause'); ?></label>
          <textarea name="cause" readonly><?php echo $leave['cause']; ?></textarea>
+ 
 +        <?php $this->load->view('leaves/caregiver_details', [
 +          'hayneCaregiverDetails' => $hayneCaregiverDetails,
 +        ]); ?>
+         <?php $style = "dropdown-rejected";
