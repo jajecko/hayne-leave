@@ -22,10 +22,13 @@
 +            $_POST['startdatetype'] = 'Morning';
 +            $_POST['enddatetype'] = 'Afternoon';
              $duration = (float) $this->input->post('duration');
-@@ -219,1 +223,9 @@
+@@ -219,4 +223,12 @@
              $calculatedDuration = $calculationResult['length'];
+ 
+             // Overwrite the submitted duration with the server-calculated value
+             $duration = $calculatedDuration;
 +
-+            if (floor($calculatedDuration) != $calculatedDuration) {
++            if (floor($duration) != $duration) {
 +                $this->session->set_flashdata('msg', 'HAYNE Leave obsługuje wyłącznie pełne dni nieobecności.');
 +                if (isset($_GET['source'])) {
 +                    redirect($_GET['source']);
