@@ -1,6 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -548,3 +548,28 @@
+@@ -548,2 +548,26 @@
 +            $hayneForceMajeure = $this->hayne_force_majeure_model->isForceMajeureType((int) $leaveTypeId);
 +            $wasHayneForceMajeure = $this->hayne_force_majeure_model->isForceMajeureLeave((int) $id);
 +            $hayneCaregiverEdit = $this->hayne_caregiver_leave_model->isCaregiverType((int) $leaveTypeId);
@@ -27,7 +27,7 @@
 +
              // Check if the leave request is valid regarding the leave balance
              $disallowRequestsWithoutCredit = filter_var($this->config->item('disallow_requests_without_credit'), FILTER_VALIDATE_BOOLEAN, ['' => FILTER_NULL_ON_FAILURE]);
-@@ -590,3 +615,42 @@
+@@ -590,3 +614,37 @@
 +            $hayneForceMajeureTransaction = $hayneForceMajeure || $wasHayneForceMajeure;
 +            $hayneForceMajeureDetails = [];
 +            if ($hayneForceMajeureTransaction) {
@@ -65,7 +65,7 @@
              $this->leaves_model->updateLeaves(
                  $id,
                  $this->session->userdata('id'),
-@@ -608,3 +672,17 @@
+@@ -608,2 +666,16 @@
 +            if ($hayneForceMajeureTransaction) {
 +                if ($hayneForceMajeure) {
 +                    $this->hayne_force_majeure_model->setMetadata((int) $id, $hayneForceMajeureDetails);
