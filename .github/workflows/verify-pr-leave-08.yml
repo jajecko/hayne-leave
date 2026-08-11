@@ -100,12 +100,12 @@ jobs:
           grep -F 'Dzień wolny za święto' artifacts/holidays.html
           grep -F 'data-hayne-holiday-policy="v1"' artifacts/holidays.html
 
-          holiday_type_id="$(docker compose exec -T mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT id FROM types WHERE name=0x447a6965c58220776f6c6e79207a6120c59b7769c499746f ORDER BY id LIMIT 1"')"
+          holiday_type_id="$(docker compose exec -T mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT id FROM types WHERE name=0x447a6965c58420776f6c6e79207a6120c59b7769c499746f ORDER BY id LIMIT 1"')"
           test -n "$holiday_type_id"
           test "$holiday_type_id" -gt 0
           echo "HOLIDAY_TYPE_ID=${holiday_type_id}" >> "$GITHUB_ENV"
           docker compose exec -T mysql sh -ec "
-            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM types WHERE name=0x447a6965c58220776f6c6e79207a6120c59b7769c499746f\")\" = \"1\"
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM types WHERE name=0x447a6965c58420776f6c6e79207a6120c59b7769c499746f\")\" = \"1\"
             test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CONCAT(acronym,':',deduct_days_off) FROM types WHERE id=${holiday_type_id}\")\" = \"DWS:1\"
             mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -e \"DELETE FROM entitleddays WHERE type=${holiday_type_id};\"
           "
@@ -124,6 +124,24 @@ jobs:
           docker compose exec -T mysql sh -ec "
             test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CONCAT(leave_type_id,0x3a,enabled) FROM hayne_statutory_leave_policies WHERE policy_code=0x686f6c696461795f636f6d70656e736174696f6e\")\" = \"${holiday_type_id}:1\"
             test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM entitleddays WHERE type=${holiday_type_id}\")\" = \"0\"
+          "
+
+      - name: Reject collision with other HAYNE policies
+        run: |
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/haynelimits -o artifacts/limits-collision.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/limits-collision.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode "force_majeure_type_id=${HOLIDAY_TYPE_ID}" \
+            --data-urlencode 'force_majeure_enabled=1' \
+            http://localhost:8080/haynelimits/saveForceMajeurePolicy \
+            -o artifacts/collision.html
+          grep -F 'Ten rodzaj nieobecności jest już używany dla polityki: dzień wolny za święto.' artifacts/collision.html
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM hayne_statutory_leave_policies WHERE policy_code=0x666f7263655f6d616a65757265 AND leave_type_id=${HOLIDAY_TYPE_ID} AND enabled=1\")\" = \"0\"
           "
 
       - name: Grant August replacement day
@@ -212,7 +230,7 @@ jobs:
           test "$(docker compose exec -T mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM leaves WHERE cause=0x434920484f4c49444159205245555345"')" = "0"
           grep -F 'Ten dzień wolny za święto został już wykorzystany lub zarezerwowany.' artifacts/reuse.html
 
-      - name: Verify details and lock submitted grant identity
+      - name: Verify request details
         run: |
           curl -fsS -b artifacts/cookies.txt "http://localhost:8080/leaves/view/${HOLIDAY_VALID_ID}" -o artifacts/details.html
           grep -F 'data-hayne-holiday-compensation-details="v1"' artifacts/details.html
@@ -220,24 +238,57 @@ jobs:
           grep -F '2026-08-01' artifacts/details.html
           grep -F '2026-08-31' artifacts/details.html
 
-      - name: Planned request rechecks grant reservation
+      - name: Grant December replacement day
         run: |
           curl -fsS -b artifacts/cookies.txt http://localhost:8080/hayneholidays -o artifacts/dec-grant-form.html
           csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/dec-grant-form.html | head -n 1)"
-          curl -fsS -L -c artifacts/cookies.txt -b artifacts/cookies.txt \
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
             --data-urlencode "csrf_test_jorani=${csrf_token}" \
             --data-urlencode 'employee_id=1' \
             --data-urlencode 'source_holiday_date=2026-12-26' \
             --data-urlencode 'period_start=2026-12-01' \
             --data-urlencode 'period_end=2026-12-31' \
-            http://localhost:8080/hayneholidays/saveGrant -o artifacts/dec-grant.html
+            http://localhost:8080/hayneholidays/saveGrant \
+            -o artifacts/dec-grant.html
           dec_grant_id="$(docker compose exec -T mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT id FROM hayne_holiday_compensation_grants WHERE employee_id=1 AND source_holiday_date=0x323032362d31322d3236"')"
           test -n "$dec_grant_id"
+          echo "DEC_GRANT_ID=${dec_grant_id}" >> "$GITHUB_ENV"
 
-          artifacts/submit-holiday.sh 2026-12-24 2026-12-24 1 1 'CI HOLIDAY PLAN' "$dec_grant_id" artifacts/plan.html
+      - name: Submitted request cannot switch grant
+        run: |
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/leaves/edit/${HOLIDAY_VALID_ID}" -o artifacts/edit-valid.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/edit-valid.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'startdate=2026-08-14' \
+            --data-urlencode 'startdatetype=Morning' \
+            --data-urlencode 'enddate=2026-08-14' \
+            --data-urlencode 'enddatetype=Afternoon' \
+            --data-urlencode 'duration=1' \
+            --data-urlencode "type=${HOLIDAY_TYPE_ID}" \
+            --data-urlencode 'cause=CI HOLIDAY VALID' \
+            --data-urlencode 'status=2' \
+            --data-urlencode 'comment=' \
+            --data-urlencode "hayne_holiday_compensation_grant_id=${DEC_GRANT_ID}" \
+            "http://localhost:8080/leaves/edit/${HOLIDAY_VALID_ID}" \
+            -o artifacts/edit-switch.html
+          grep -F 'Po wysłaniu wniosku nie można zmienić grantu dnia wolnego za święto.' artifacts/edit-switch.html
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT grant_id FROM hayne_holiday_compensation_request_meta WHERE leave_id=${HOLIDAY_VALID_ID}\")\" = \"${HOLIDAY_GRANT_ID}\"
+          "
+
+      - name: Planned request rechecks grant reservation
+        run: |
+          artifacts/submit-holiday.sh 2026-12-24 2026-12-24 1 1 'CI HOLIDAY PLAN' "$DEC_GRANT_ID" artifacts/plan.html
           plan_id="$(docker compose exec -T mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT id FROM leaves WHERE cause=0x434920484f4c4944415920504c414e ORDER BY id DESC LIMIT 1"')"
           test -n "$plan_id"
-          artifacts/submit-holiday.sh 2026-12-23 2026-12-23 1 2 'CI HOLIDAY FILL' "$dec_grant_id" artifacts/fill.html
+          artifacts/submit-holiday.sh 2026-12-23 2026-12-23 1 2 'CI HOLIDAY FILL' "$DEC_GRANT_ID" artifacts/fill.html
           fill_id="$(docker compose exec -T mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT id FROM leaves WHERE cause=0x434920484f4c494441592046494c4c ORDER BY id DESC LIMIT 1"')"
           test -n "$fill_id"
 
