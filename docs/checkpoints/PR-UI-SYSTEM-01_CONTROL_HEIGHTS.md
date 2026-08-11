@@ -12,7 +12,7 @@ Ujednolicić geometrię przycisków i standardowych kontrolek na zalogowanych le
 - standardowe inputy/selecty dostają dokładne `height` oraz `box-sizing: border-box`;
 - standardowe `.btn` dostają dokładne `height`, `min-height` i `box-sizing: border-box`;
 - pionowy padding przycisków zostaje usunięty, dzięki czemu nie zwiększa realnej wysokości;
-- Select2 oraz kontrolki DataTables korzystają z tego samego tokenu;
+- Select2, kontrolki DataTables oraz przyciski DataTables (`.dt-button`) korzystają z tego samego tokenu;
 - mobile używa wspólnego tokenu `46px` dla przycisków i kontrolek, bez osobnego niższego `min-height` przycisku.
 
 Warstwa `legacy-compat.css` nadal odpowiada za `inline-flex`, grupy przycisków i `input-append/input-prepend`, więc wszystkie elementy dziedziczą wspólną wysokość bez zmiany legacy HTML.
@@ -25,13 +25,16 @@ Warstwa `legacy-compat.css` nadal odpowiada za `inline-flex`, grupy przycisków 
 - `Wszyscy / Aktywni / Nieaktywni`;
 - przyciski kierunku dat i resetu;
 - pola dat;
-- `Zaznaczenie`, `Eksportuj listę`, `Utwórz`.
+- `Zaznaczenie`, `Eksportuj listę`, `Utwórz`;
+- `Liczba pozycji na stronie / Page length` i `Zmień kolumny / Change columns` generowane przez DataTables.
 
-Wszystkie standardowe elementy w tej powierzchni powinny mieć wspólną wysokość 44px na desktopie.
+Wszystkie te standardowe elementy powinny mieć wspólną wysokość 44px na desktopie.
 
 ## Weryfikacja
 
 `verify-admin-surfaces` został rozszerzony tak, aby zmiana `foundation.css` uruchamiała pełny smoke 21 głównych tras zalogowanej aplikacji oraz zapisywała reprezentatywne screenshoty, w tym `hr-employees.png`.
+
+Pierwszy screenshot CI potwierdził wyrównanie standardowych `.btn` i pól dat, a następnie PR objął również mniejsze przyciski DataTables, które nie korzystają z klasy Bootstrap `.btn`.
 
 CI sprawdza również obecność tokenu 44px i reguły dokładnej wysokości w zbudowanym obrazie.
 
