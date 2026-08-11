@@ -8,6 +8,8 @@ on:
       - 'hayne/overlay/legacy/application/controllers/Haynelimits.php'
       - 'hayne/patches/230-childcare-controller-base.patch'
       - 'hayne/patches/231-childcare-create.patch'
+      - 'hayne/patches/232-childcare-edit.patch'
+      - 'hayne/patches/233-childcare-plan-transition.patch'
 
 jobs:
   same-day-diagnostic:
@@ -31,9 +33,13 @@ jobs:
           done
           exit 1
 
-      - name: Authenticate and configure one Art. 188 day
+      - name: Capture built controller
         run: |
           mkdir -p artifacts
+          docker compose exec -T jorani cat legacy/application/controllers/Leaves.php > artifacts/Leaves.php
+
+      - name: Authenticate and configure one Art. 188 day
+        run: |
           curl -fsS -c artifacts/cookies.txt http://localhost:8080/session/login -o artifacts/login.html
           csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/login.html | head -n 1)"
           test -n "$csrf_token"
@@ -99,7 +105,7 @@ jobs:
           set -e
 
           docker compose exec -T mysql sh -ec "
-            mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -e \"SELECT id,startdate,enddate,status,employee,cause,duration,type,startdatetype,enddatetype FROM leaves ORDER BY id; SELECT * FROM hayne_childcare_year_allocations ORDER BY employee_id,year; SELECT id,employee,startdate,enddate,days,type,description FROM entitleddays WHERE employee=1 ORDER BY id; SELECT id,name,acronym,deduct_days_off FROM types ORDER BY id; SELECT id,name,startentdate,endentdate FROM contracts ORDER BY id; SELECT id,contract,date,type,length FROM dayoffs WHERE contract=1 AND date='${today}' ORDER BY id;\"
+            mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -e \"SELECT id,startdate,enddate,status,employee,cause,duration,type,startdatetype,enddatetype FROM leaves ORDER BY id; SELECT * FROM hayne_childcare_year_allocations ORDER BY employee_id,year; SELECT id,employee,startdate,enddate,days,type,description FROM entitleddays WHERE employee=1 ORDER BY id; SELECT id,name,acronym,deduct_days_off FROM types ORDER BY id; SELECT id,name,startentdate,endentdate FROM contracts ORDER BY id; SELECT * FROM dayoffs WHERE contract=1 AND date='${today}' ORDER BY id;\"
           " > artifacts/db-state.txt 2>&1 || true
           docker compose logs --no-color jorani > artifacts/app.log 2>&1 || true
           grep -n -E 'alert|opieki|Opieki|limit|Limit|Nie uda|błęd|Błęd|error|Error|duration|Duration|credit|Credit' artifacts/same-day.html > artifacts/response-signals.txt || true
