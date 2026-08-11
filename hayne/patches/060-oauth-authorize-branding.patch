@@ -3,5 +3,5 @@
 @@ -18,3 +18,3 @@
          <div class="span12">
 -            <img width="100" src="<?php echo base_url(); ?>assets/images/logo_simple.png">
-+            <img class="hayne-logo hayne-logo--oauth" src="<?php echo base_url(); ?>assets/hayne/logo.svg" alt="HAYNE">
++            <img class="hayne-logo hayne-logo--oauth" src="<?php echo base_url(); ?>assets/hayne/logo.svg" alt="HAYNE Leave">
              &nbsp;<i class="mdi mdi-twitter-retweet"></i>&nbsp;
