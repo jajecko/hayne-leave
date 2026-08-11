@@ -1,6 +1,6 @@
 # PR-LOGIN-01 — centered login and unified HAYNE Leave lockup
 
-Status: implementation branch
+Status: verified on PR branch
 Date: 2026-08-11
 
 ## Goal
@@ -99,6 +99,36 @@ Visual review:
 - no duplicate HAYNE Leave heading,
 - inputs/button have balanced proportions,
 - authenticated sidebar uses the same supplied HAYNE + LEAVE lockup.
+
+## Verification evidence
+
+PR: #22
+
+Initial verified head: `116057492ca536b01ecc24291f25f78310065ffa`
+
+GitHub Actions:
+
+- `verify` run #122 / `31481786447` — PASS,
+- `verify-pr-login-01` run #1 / `31481786508` — PASS.
+
+The dedicated run passed:
+
+- unified SVG source guards,
+- Compose validation,
+- independent dry-run of all HAYNE patches against Jorani v1.0.4,
+- full HAYNE image build,
+- built-image branding guards,
+- rendered login DOM assertions,
+- desktop 1440x1000 screenshot capture,
+- mobile 390x844 screenshot capture.
+
+Visual review of `pr-login-01-evidence` confirmed:
+
+- desktop: one compact centered card, no left panel, no duplicated product heading, integrated HAYNE + LEAVE logo, balanced 50px inputs/action,
+- mobile: centered single card with safe viewport gutters and no visible overflow,
+- authenticated home screenshot from the standard `verify` artifact: sidebar renders the same integrated HAYNE + LEAVE SVG with no separate Leave line under the logo.
+
+A final CI rerun is required after this checkpoint-only update before merge.
 
 ## Deployment note
 
