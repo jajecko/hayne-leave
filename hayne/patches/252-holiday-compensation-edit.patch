@@ -89,7 +89,7 @@
 +                $this->config->set_item('disallow_requests_without_credit', FALSE);
 +            }
  
-+            // Check if the leave request is valid regarding the leave balance
+             // Check if the leave request is valid regarding the leave balance
 @@ -590,2 +667,34 @@
 +            $hayneHolidayTransaction = $hayneHolidayCompensation || $wasHayneHolidayCompensation;
 +            $hayneHolidayGrantId = 0;
