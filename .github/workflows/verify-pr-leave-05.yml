@@ -1,0 +1,289 @@
+name: verify-pr-leave-05
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/overlay/legacy/application/models/Hayne_force_majeure_model.php'
+      - 'hayne/overlay/legacy/application/controllers/Haynelimits.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/**'
+      - 'hayne/overlay/legacy/application/views/leaves/force_majeure_*.php'
+      - 'hayne/overlay/legacy/application/views/leaves/counters.php'
+      - 'hayne/patches/225-force-majeure-controller-base.patch'
+      - 'hayne/patches/226-force-majeure-create.patch'
+      - 'hayne/patches/227-force-majeure-edit.patch'
+      - 'hayne/patches/228-force-majeure-plan-transition.patch'
+      - 'hayne/patches/229-force-majeure-views.patch'
+      - 'hayne/sql/001-leave-profiles.sql'
+      - '.github/workflows/verify-pr-leave-05.yml'
+      - 'docs/checkpoints/PR-LEAVE-05_FORCE_MAJEURE.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'hayne/overlay/legacy/application/models/Hayne_force_majeure_model.php'
+      - 'hayne/overlay/legacy/application/controllers/Haynelimits.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/**'
+      - 'hayne/overlay/legacy/application/views/leaves/force_majeure_*.php'
+      - 'hayne/overlay/legacy/application/views/leaves/counters.php'
+      - 'hayne/patches/225-force-majeure-controller-base.patch'
+      - 'hayne/patches/226-force-majeure-create.patch'
+      - 'hayne/patches/227-force-majeure-edit.patch'
+      - 'hayne/patches/228-force-majeure-plan-transition.patch'
+      - 'hayne/patches/229-force-majeure-views.patch'
+      - 'hayne/sql/001-leave-profiles.sql'
+      - '.github/workflows/verify-pr-leave-05.yml'
+      - 'docs/checkpoints/PR-LEAVE-05_FORCE_MAJEURE.md'
+
+jobs:
+  force-majeure-leave:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build and start HAYNE Leave
+        run: docker compose up --build -d
+
+      - name: Wait for application
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/session/login >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Syntax and source checks
+        run: |
+          docker compose exec -T jorani php -l legacy/application/models/Hayne_force_majeure_model.php
+          docker compose exec -T jorani php -l legacy/application/controllers/Haynelimits.php
+          docker compose exec -T jorani php -l legacy/application/controllers/Leaves.php
+          docker compose exec -T jorani php -l legacy/application/views/leaves/force_majeure_fields.php
+          docker compose exec -T jorani php -l legacy/application/views/leaves/force_majeure_details.php
+          docker compose exec -T jorani php -l legacy/application/views/haynelimits/force_majeure.php
+          docker compose exec -T jorani sh -ec '
+            grep -F "ANNUAL_LIMIT_DAYS = 2" legacy/application/models/Hayne_force_majeure_model.php
+            grep -F "hayne_force_majeure_model" legacy/application/controllers/Leaves.php
+            grep -F "force_majeure_fields" legacy/application/views/leaves/create.php
+            grep -F "force_majeure_fields" legacy/application/views/leaves/edit.php
+            grep -F "force_majeure_details" legacy/application/views/leaves/view.php
+            grep -F "data-hayne-force-majeure-summary" legacy/application/views/leaves/counters.php
+            grep -F "Wariant godzinowy jest obsługiwany poza HAYNE przez HR" legacy/application/views/leaves/force_majeure_fields.php
+          '
+
+      - name: Authenticate as administrator
+        run: |
+          mkdir -p artifacts
+          curl -fsS -c artifacts/cookies.txt http://localhost:8080/session/login -o artifacts/login.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/login.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jorani' \
+            --data-urlencode 'password=jorani' \
+            --data-urlencode 'language=en' \
+            http://localhost:8080/session/login \
+            -o artifacts/home.html
+          grep -F 'Cześć Admin!' artifacts/home.html
+
+      - name: Configure force-majeure policy
+        run: |
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/haynelimits -o artifacts/limits.html
+          grep -F 'Siła wyższa' artifacts/limits.html
+          grep -F 'Aktywuj automatyczny limit 2 dni rocznie' artifacts/limits.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/limits.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'force_majeure_type_id=5' \
+            --data-urlencode 'force_majeure_enabled=1' \
+            http://localhost:8080/haynelimits/saveForceMajeurePolicy \
+            -o artifacts/force-policy.html
+          grep -F 'Siła wyższa: zapisano limit 2 dni rocznie.' artifacts/force-policy.html
+
+          year="$(date +%Y)"
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CONCAT(leave_type_id,':',enabled) FROM hayne_statutory_leave_policies WHERE policy_code='force_majeure'\")\" = \"5:1\"
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM entitleddays WHERE employee=1 AND type=5 AND days=2 AND startdate='${year}-01-01' AND enddate='${year}-12-31' AND description='[HAYNE_STATUTORY|force_majeure|${year}]'\")\" = \"1\"
+          "
+
+      - name: Reject statutory type collisions
+        run: |
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/haynelimits -o artifacts/limits-collision.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/limits-collision.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'caregiver_type_id=5' \
+            --data-urlencode 'caregiver_enabled=1' \
+            http://localhost:8080/haynelimits/saveCaregiverPolicy \
+            -o artifacts/collision.html
+          grep -F 'Ten rodzaj nieobecności jest już używany dla polityki: siła wyższa.' artifacts/collision.html
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM hayne_statutory_leave_policies WHERE policy_code='caregiver' AND enabled=1\")\" = \"0\"
+          "
+
+      - name: Verify request form exposes force-majeure fields
+        run: |
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/create -o artifacts/create.html
+          grep -F 'id="hayneForceMajeureFields"' artifacts/create.html
+          grep -F 'data-force-majeure-type-id="5"' artifacts/create.html
+          grep -F 'Przyczyna pilnej sprawy rodzinnej' artifacts/create.html
+          grep -F 'moja natychmiastowa obecność jest niezbędna' artifacts/create.html
+          grep -F 'pozostało <strong>2 z 2 dni</strong>' artifacts/create.html
+          grep -F 'Wariant godzinowy jest obsługiwany poza HAYNE przez HR.' artifacts/create.html
+
+      - name: Prepare dates and request helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="$(date -d '+35 days' +%F)"
+          if [ "$(date -d "$base" +%Y)" != "$(date +%Y)" ]; then
+            base="$(date +%Y)-12-01"
+          fi
+          {
+            echo "FM_FUTURE_1=$base"
+            echo "FM_FUTURE_2=$(date -d "$base +1 day" +%F)"
+            echo "FM_FUTURE_3=$(date -d "$base +2 days" +%F)"
+            echo "FM_FUTURE_4=$(date -d "$base +3 days" +%F)"
+          } >> "$GITHUB_ENV"
+
+          cat > artifacts/submit-force.sh <<'SH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          start="$1"
+          end="$2"
+          duration="$3"
+          status="$4"
+          cause="$5"
+          event_code="$6"
+          presence="$7"
+          output="$8"
+
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/create -o artifacts/form.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/form.html | head -n 1)"
+          test -n "$csrf_token"
+          args=(
+            --data-urlencode "csrf_test_jorani=${csrf_token}"
+            --data-urlencode "startdate=${start}"
+            --data-urlencode 'startdatetype=Morning'
+            --data-urlencode "enddate=${end}"
+            --data-urlencode 'enddatetype=Afternoon'
+            --data-urlencode "duration=${duration}"
+            --data-urlencode 'type=5'
+            --data-urlencode "cause=${cause}"
+            --data-urlencode "status=${status}"
+            --data-urlencode "hayne_force_majeure_event=${event_code}"
+          )
+          if [ "$presence" = "1" ]; then
+            args+=(--data-urlencode 'hayne_force_majeure_immediate_presence=1')
+          fi
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            "${args[@]}" \
+            http://localhost:8080/leaves/create \
+            -o "$output"
+          SH
+          chmod +x artifacts/submit-force.sh
+
+      - name: Reject missing immediate-presence confirmation
+        run: |
+          artifacts/submit-force.sh "$FM_FUTURE_1" "$FM_FUTURE_1" 1 2 'CI FORCE NO PRESENCE' illness 0 artifacts/no-presence.html
+          test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM leaves WHERE cause='CI FORCE NO PRESENCE'\"")" = "0"
+          grep -F 'Potwierdź, że Twoja natychmiastowa obecność jest niezbędna.' artifacts/no-presence.html
+
+      - name: Allow same-day force-majeure request
+        run: |
+          today="$(date +%F)"
+          artifacts/submit-force.sh "$today" "$today" 1 2 'CI FORCE SAME DAY' illness 1 artifacts/same-day.html
+          same_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI FORCE SAME DAY' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$same_id"
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CONCAT(type,':',CAST(duration AS UNSIGNED),':',status) FROM leaves WHERE id=${same_id}\")\" = \"5:1:2\"
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CONCAT(event_code,':',immediate_presence) FROM hayne_force_majeure_request_meta WHERE leave_id=${same_id}\")\" = \"illness:1\"
+          "
+
+      - name: Reject request for already-past day
+        run: |
+          past="$(date -d '-1 day' +%F)"
+          artifacts/submit-force.sh "$past" "$past" 1 2 'CI FORCE PAST' accident 1 artifacts/past.html
+          test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM leaves WHERE cause='CI FORCE PAST'\"")" = "0"
+          grep -F 'Wniosek o zwolnienie z powodu siły wyższej złóż najpóźniej w dniu korzystania z tego zwolnienia.' artifacts/past.html
+
+      - name: Reach two of two days
+        run: |
+          artifacts/submit-force.sh "$FM_FUTURE_2" "$FM_FUTURE_2" 1 2 'CI FORCE SECOND' accident 1 artifacts/second.html
+          second_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI FORCE SECOND' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$second_id"
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT event_code FROM hayne_force_majeure_request_meta WHERE leave_id=${second_id}\")\" = \"accident\"
+          "
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/counters -o artifacts/balance.html
+          grep -F 'data-hayne-force-majeure-summary="v1"' artifacts/balance.html
+          grep -F 'data-used="2"' artifacts/balance.html
+          grep -F 'data-remaining="0"' artifacts/balance.html
+          grep -F 'Pozostało: 0 dni.' artifacts/balance.html
+
+      - name: Reject third force-majeure day
+        run: |
+          artifacts/submit-force.sh "$FM_FUTURE_3" "$FM_FUTURE_3" 1 2 'CI FORCE THIRD REJECT' illness 1 artifacts/third.html
+          test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM leaves WHERE cause='CI FORCE THIRD REJECT'\"")" = "0"
+          grep -F 'Przekroczony limit zwolnienia z powodu siły wyższej. Pozostało: 0 dni.' artifacts/third.html
+
+      - name: Planned request must recheck deadline on submission
+        run: |
+          past="$(date -d '-2 days' +%F)"
+          artifacts/submit-force.sh "$past" "$past" 1 1 'CI FORCE PAST PLAN' illness 1 artifacts/past-plan.html
+          plan_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI FORCE PAST PLAN' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$plan_id"
+          curl -fsS -L -b artifacts/cookies.txt -c artifacts/cookies.txt "http://localhost:8080/leaves/request/${plan_id}" -o artifacts/past-plan-request.html
+          test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT status FROM leaves WHERE id=${plan_id}\"")" = "1"
+          grep -F 'Wniosek o zwolnienie z powodu siły wyższej złóż najpóźniej w dniu korzystania z tego zwolnienia.' artifacts/past-plan-request.html
+
+      - name: Planned future request must recheck full limit
+        run: |
+          artifacts/submit-force.sh "$FM_FUTURE_4" "$FM_FUTURE_4" 1 1 'CI FORCE FUTURE PLAN' accident 1 artifacts/future-plan.html
+          plan_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI FORCE FUTURE PLAN' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$plan_id"
+          curl -fsS -L -b artifacts/cookies.txt -c artifacts/cookies.txt "http://localhost:8080/leaves/request/${plan_id}" -o artifacts/future-plan-request.html
+          test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT status FROM leaves WHERE id=${plan_id}\"")" = "1"
+          grep -F 'Przekroczony limit zwolnienia z powodu siły wyższej. Pozostało: 0 dni.' artifacts/future-plan-request.html
+
+      - name: Verify force-majeure details and no carry-over
+        run: |
+          same_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI FORCE SAME DAY' ORDER BY id DESC LIMIT 1\"")"
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/leaves/view/${same_id}" -o artifacts/details.html
+          grep -F 'data-hayne-force-majeure-details="v1"' artifacts/details.html
+          grep -F 'Choroba' artifacts/details.html
+          grep -F 'Natychmiastowa obecność' artifacts/details.html
+          grep -F '50%' artifacts/details.html
+
+          year="$(date +%Y)"
+          next_year="$((year + 1))"
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${next_year}" -o artifacts/limits-next.html
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CAST(days AS UNSIGNED) FROM entitleddays WHERE employee=1 AND type=5 AND description='[HAYNE_STATUTORY|force_majeure|${next_year}]' AND startdate='${next_year}-01-01'\")\" = \"2\"
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM entitleddays WHERE employee=1 AND type=5 AND description LIKE '[HAYNE\\_STATUTORY|force\\_majeure|%'\")\" = \"2\"
+          "
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/leaves/counters/${next_year}-06-15" -o artifacts/balance-next.html
+          grep -F 'data-hayne-force-majeure-summary="v1"' artifacts/balance-next.html
+          grep -F 'data-used="0"' artifacts/balance-next.html
+          grep -F 'data-remaining="2"' artifacts/balance-next.html
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

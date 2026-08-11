@@ -62,12 +62,16 @@
                                     $simulated -= (float) $value[5];
                                 $isCaregiverRow = !empty($hayneCaregiverSummary)
                                     && (int) $value[3] === (int) $hayneCaregiverSummary['leave_type_id'];
+                                $isForceMajeureRow = !empty($hayneForceMajeureSummary)
+                                    && (int) $value[3] === (int) $hayneForceMajeureSummary['leave_type_id'];
                                 ?>
-                                <tr<?php if ($isCaregiverRow) { ?> class="hayne-caregiver-balance" data-hayne-caregiver-summary="v1" data-used="<?php echo (float) $hayneCaregiverSummary['used']; ?>" data-remaining="<?php echo (float) $hayneCaregiverSummary['remaining']; ?>"<?php } ?>>
+                                <tr<?php if ($isCaregiverRow) { ?> class="hayne-caregiver-balance" data-hayne-caregiver-summary="v1" data-used="<?php echo (float) $hayneCaregiverSummary['used']; ?>" data-remaining="<?php echo (float) $hayneCaregiverSummary['remaining']; ?>"<?php } elseif ($isForceMajeureRow) { ?> class="hayne-force-majeure-balance" data-hayne-force-majeure-summary="v1" data-used="<?php echo (float) $hayneForceMajeureSummary['used']; ?>" data-remaining="<?php echo (float) $hayneForceMajeureSummary['remaining']; ?>"<?php } ?>>
                                     <td>
                                         <strong><?php echo $key; ?></strong>
                                         <?php if ($isCaregiverRow) { ?>
                                             <br /><small class="muted">Pozostało: <?php echo (float) $hayneCaregiverSummary['remaining']; ?> dni.</small>
+                                        <?php } elseif ($isForceMajeureRow) { ?>
+                                            <br /><small class="muted">Pozostało: <?php echo (float) $hayneForceMajeureSummary['remaining']; ?> dni.</small>
                                         <?php } ?>
                                     </td>
                                     <td class="hayne-balance-value hayne-balance-value--primary"><?php echo $estimated; ?></td>
