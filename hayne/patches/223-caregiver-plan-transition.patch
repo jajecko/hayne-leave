@@ -1,6 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -612,7 +612,36 @@
+@@ -612,6 +612,35 @@
              if ($this->user_id != $leave['employee']) {
                  $this->session->set_flashdata('msg', lang('leaves_cancellation_flash_msg_error'));
                  redirect('leaves');
@@ -36,7 +36,6 @@
 +
              //We can cancel a leave request only with a status 'Accepted'
              if ($leave['status'] == LMS_PLANNED) {
-                 $this->leaves_model->switchStatus($id, LMS_REQUESTED);
 @@ -622,3 +651,7 @@
 -                $this->sendMailOnLeaveRequestCreation($id);
 +                if ($hayneCaregiverTransition) {
