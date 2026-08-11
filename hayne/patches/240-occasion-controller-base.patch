@@ -1,0 +1,17 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -48,1 +48,2 @@
+         $this->lang->load('global', $this->language);
++        $this->load->model('hayne_occasion_leave_model');
+@@ -186,1 +187,2 @@
+         $data['source'] = $source;
++        $data['hayneOccasionDetails'] = $this->hayne_occasion_leave_model->getMetadataForDisplay((int) $id);
+@@ -257,2 +259,4 @@
+         $data['title'] = lang('leaves_create_title');
+         $data['help'] = $this->help->create_help_link('global_link_doc_page_request_leave');
++        $data['hayneOccasionState'] = $this->hayne_occasion_leave_model
++            ->getFormState((int) $this->session->userdata('id'));
+@@ -450,1 +454,3 @@
+             $data['title'] = lang('leaves_edit_html_title');
++            $data['hayneOccasionState'] = $this->hayne_occasion_leave_model
++                ->getFormState((int) $data['leave']['employee'], (int) $id);
