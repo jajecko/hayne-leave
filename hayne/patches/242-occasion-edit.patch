@@ -1,7 +1,9 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -543,1 +543,34 @@
+@@ -543,7 +543,74 @@
+             // Overwrite the submitted duration with the server-calculated value
              $duration = $calculationResult['length'];
+ 
 +            $hayneOccasion = $this->hayne_occasion_leave_model->isOccasionType((int) $leaveTypeId);
 +            $wasHayneOccasion = $this->hayne_occasion_leave_model->isOccasionLeave((int) $id);
 +            $hayneCaregiverForOccasionEdit = $this->hayne_caregiver_leave_model->isCaregiverType((int) $leaveTypeId);
@@ -35,11 +37,46 @@
 +                redirect('leaves/edit/' . (int) $id);
 +                return;
 +            }
-@@ -546,2 +579,2 @@
++
++            $hayneOccasionIdentityLocked = !in_array(
++                (int) $data['leave']['status'],
++                [LMS_PLANNED, LMS_REJECTED],
++                TRUE
++            );
++            if ($hayneOccasionIdentityLocked) {
++                if ($hayneOccasion !== $wasHayneOccasion) {
++                    $this->session->set_flashdata(
++                        'msg',
++                        'Po wysłaniu wniosku nie można zmienić go na urlop okolicznościowy ani z urlopu okolicznościowego.'
++                    );
++                    redirect('leaves/edit/' . (int) $id);
++                    return;
++                }
++                if ($wasHayneOccasion) {
++                    $hayneExistingOccasionDetails = $this->hayne_occasion_leave_model->getMetadata((int) $id);
++                    $haynePostedOccasionEvent = trim((string) $this->input->post('hayne_occasion_event', TRUE));
++                    $haynePostedOccasionEventDate = trim((string) $this->input->post('hayne_occasion_event_date', TRUE));
++                    if (
++                        empty($hayneExistingOccasionDetails) ||
++                        (string) $hayneExistingOccasionDetails['event_code'] !== $haynePostedOccasionEvent ||
++                        (string) $hayneExistingOccasionDetails['event_date'] !== $haynePostedOccasionEventDate
++                    ) {
++                        $this->session->set_flashdata(
++                            'msg',
++                            'Po wysłaniu wniosku nie można zmienić rodzaju ani daty zdarzenia urlopu okolicznościowego.'
++                        );
++                        redirect('leaves/edit/' . (int) $id);
++                        return;
++                    }
++                }
++            }
++
+             // Check if the leave request is valid regarding the leave balance
              $disallowRequestsWithoutCredit = filter_var($this->config->item('disallow_requests_without_credit'), FILTER_VALIDATE_BOOLEAN, ['' => FILTER_NULL_ON_FAILURE]);
 -            if ($disallowRequestsWithoutCredit === true) {
 +            if ($disallowRequestsWithoutCredit === true && !$hayneOccasion) {
-@@ -590,1 +623,36 @@
+                 $typeName = $this->types_model->getName($leaveTypeId);
+@@ -590,1 +657,36 @@
 +            $hayneOccasionTransaction = $hayneOccasion || $wasHayneOccasion;
 +            $hayneOccasionDetails = [];
 +            if ($hayneOccasionTransaction) {
@@ -76,7 +113,7 @@
 +            }
 +
              $this->leaves_model->updateLeaves(
-@@ -608,1 +676,15 @@
+@@ -608,2 +710,16 @@
 +            if ($hayneOccasionTransaction) {
 +                if ($hayneOccasion) {
 +                    $this->hayne_occasion_leave_model->setMetadata((int) $id, $hayneOccasionDetails);
@@ -92,3 +129,4 @@
 +                $this->db->trans_commit();
 +            }
              $this->session->set_flashdata('msg', lang('leaves_edit_flash_msg_success'));
+             //If the status is requested or cancellation, send an email to the manager
