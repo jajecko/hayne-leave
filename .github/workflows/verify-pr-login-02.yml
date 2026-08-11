@@ -28,7 +28,7 @@ jobs:
 
       - name: Guard route patch
         run: |
-          grep -F "default_controller'] = 'pages/view/home'" hayne/patches/180-default-dashboard-route.patch
+          grep -F "default_controller'] = 'pages/view'" hayne/patches/180-default-dashboard-route.patch
           ! grep -F "+\$route['default_controller'] = 'leaves';" hayne/patches/180-default-dashboard-route.patch
 
       - name: Build and start HAYNE Leave
@@ -37,7 +37,7 @@ jobs:
       - name: Guard built route
         run: |
           docker compose exec -T jorani sh -ec '
-            grep -F "\$route['\''default_controller'\''] = '\''pages/view/home'\'';" legacy/application/config/routes.php
+            grep -F "\$route['\''default_controller'\''] = '\''pages/view'\'';" legacy/application/config/routes.php
           '
 
       - name: Verify bare root login lands on dashboard
