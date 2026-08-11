@@ -27,3 +27,10 @@
 +                        </td>
 +                    </tr>
 +                <?php } ?>
+--- a/legacy/application/views/leaves/view.php
++++ b/legacy/application/views/leaves/view.php
+@@ -44,1 +44,4 @@
+         <textarea name="cause" readonly><?php echo $leave['cause']; ?></textarea>
++        <?php $this->load->view('leaves/caregiver_details', [
++          'hayneCaregiverDetails' => $hayneCaregiverDetails,
++        ]); ?>
