@@ -22,7 +22,10 @@
 +            $_POST['startdatetype'] = 'Morning';
 +            $_POST['enddatetype'] = 'Afternoon';
              $duration = (float) $this->input->post('duration');
-@@ -222,1 +226,9 @@
+@@ -348,7 +352,15 @@
+             $calculatedDuration = $calculationResult['length'];
+ 
+             // Overwrite the submitted duration with the server-calculated value
              $duration = $calculatedDuration;
 +
 +            if (floor($duration) != $duration) {
@@ -32,6 +35,9 @@
 +                }
 +                redirect('leaves/create');
 +            }
+ 
+             // Check if the leave request is valid regarding the leave balance
+             $disallowRequestsWithoutCredit = filter_var($this->config->item('disallow_requests_without_credit'), FILTER_VALIDATE_BOOLEAN, ['' => FILTER_NULL_ON_FAILURE]);
 @@ -351,7 +363,11 @@
              $employeeId = $this->session->userdata('id');
              $leaveTypeId = $this->input->post('type');
