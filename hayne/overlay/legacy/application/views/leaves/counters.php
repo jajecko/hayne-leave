@@ -51,6 +51,19 @@
                     </tr>
                 </thead>
                 <tbody>
+                    <?php if (!empty($hayneCaregiverSummary)) { ?>
+                        <tr class="hayne-caregiver-balance" data-hayne-caregiver-summary="v1"
+                            data-used="<?php echo (float) $hayneCaregiverSummary['used']; ?>"
+                            data-remaining="<?php echo (float) $hayneCaregiverSummary['remaining']; ?>">
+                            <td><strong>Urlop opiekuńczy</strong></td>
+                            <td class="hayne-balance-value hayne-balance-value--primary"><?php echo (float) $hayneCaregiverSummary['remaining']; ?></td>
+                            <td class="hayne-balance-value"><?php echo (float) $hayneCaregiverSummary['remaining']; ?></td>
+                            <td class="hayne-balance-value"><?php echo (int) $hayneCaregiverSummary['limit']; ?></td>
+                            <td class="hayne-balance-value"><?php echo (float) $hayneCaregiverSummary['used']; ?></td>
+                            <td class="hayne-balance-value hayne-balance-value--muted">—</td>
+                            <td class="hayne-balance-value hayne-balance-value--muted">—</td>
+                        </tr>
+                    <?php } ?>
                     <?php if (count($summary) > 0) {
                         foreach ($summary as $key => $value) {
                             if (($value[2] == '') || ($value[2] == 'x')) {
