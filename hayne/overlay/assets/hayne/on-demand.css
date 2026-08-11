@@ -1,0 +1,31 @@
+.hayne-on-demand-option {
+  box-sizing: border-box;
+  margin: 14px 0 20px;
+  padding: 14px 16px;
+  border: 1px solid rgba(17, 24, 39, 0.14);
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.025);
+}
+
+.hayne-on-demand-option[hidden] {
+  display: none !important;
+}
+
+.hayne-on-demand-option .checkbox {
+  margin: 0;
+  font-weight: 600;
+}
+
+.hayne-on-demand-option__meta {
+  display: block;
+  margin-top: 6px;
+  line-height: 1.45;
+}
+
+.hayne-on-demand-option__meta strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.hayne-on-demand-balance {
+  margin-top: 10px;
+}
