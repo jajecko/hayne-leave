@@ -1,6 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -617,1 +617,35 @@
+@@ -617,1 +617,37 @@
 +            $hayneOccasionTransition = FALSE;
 +            if (
 +                $this->user_id == $leave['employee'] &&
@@ -38,7 +38,7 @@
 +            }
 +
              //We can cancel a leave request only with a status 'Accepted'
-@@ -622,1 +656,13 @@
+@@ -622,1 +658,11 @@
 +                if ($hayneOccasionTransition) {
 +                    if ($this->db->trans_status() === FALSE) {
 +                        $this->db->trans_rollback();
