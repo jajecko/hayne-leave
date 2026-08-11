@@ -1,6 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -543,2 +543,79 @@
+@@ -543,2 +543,78 @@
              // Overwrite the submitted duration with the server-calculated value
              $duration = $calculationResult['length'];
 +            $hayneHolidayCompensation = $this->hayne_holiday_compensation_model->isHolidayCompensationType((int) $leaveTypeId);
