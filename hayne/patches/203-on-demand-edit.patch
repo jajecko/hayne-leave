@@ -1,10 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -1,5 +1,32 @@
-                 $_POST['type'] = $leaveTypesDetails->defaultType;
-                 log_message('debug', 'LR type forced to ' . $leaveTypesDetails->defaultType);
-             }
- 
+@@ -590,1 +590,28 @@
 +            $hayneOnDemand = $this->input->post('hayne_on_demand', TRUE) === '1';
 +            $wasHayneOnDemand = $this->hayne_on_demand_model->isOnDemand((int) $id);
 +            $hayneOnDemandTransaction = $hayneOnDemand || $wasHayneOnDemand;
@@ -33,12 +29,7 @@
 +            }
 +
              $this->leaves_model->updateLeaves(
---- a/legacy/application/controllers/Leaves.php
-+++ b/legacy/application/controllers/Leaves.php
-@@ -1,4 +1,14 @@
-                 $this->input->post('type'),
-                 $this->input->post('comment', true)
-             );
+@@ -608,1 +635,11 @@
 +            if ($hayneOnDemandTransaction) {
 +                $this->hayne_on_demand_model->setOnDemand((int) $id, $hayneOnDemand);
 +                if ($this->db->trans_status() === FALSE) {
