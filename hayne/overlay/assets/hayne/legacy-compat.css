@@ -1,0 +1,177 @@
+/* Compatibility layer for authenticated legacy Jorani screens.
+ * Keeps HAYNE primitives while restoring the spacing and grouping assumptions
+ * used by Bootstrap 2-era admin and HR views.
+ */
+
+#wrap .form-horizontal .control-group {
+  margin-bottom: 18px;
+}
+
+#wrap .form-horizontal .control-label {
+  margin-bottom: 0;
+  padding-top: 11px;
+}
+
+#wrap .form-horizontal .controls {
+  min-height: var(--hayne-control-height);
+}
+
+#wrap .form-horizontal .controls > input[type="text"],
+#wrap .form-horizontal .controls > input[type="password"],
+#wrap .form-horizontal .controls > input[type="email"],
+#wrap .form-horizontal .controls > input[type="number"],
+#wrap .form-horizontal .controls > input[type="date"],
+#wrap .form-horizontal .controls > select,
+#wrap .form-horizontal .controls > textarea,
+#wrap .dataTables_wrapper input,
+#wrap .dataTables_wrapper select {
+  margin-bottom: 0;
+}
+
+#wrap .modal-body form > label,
+#wrap .modal-body > label {
+  margin-top: 16px;
+  margin-bottom: 7px;
+}
+
+#wrap .modal-body form > label:first-of-type,
+#wrap .modal-body > label:first-child {
+  margin-top: 0;
+}
+
+#wrap .modal-body form > input[type="text"],
+#wrap .modal-body form > input[type="password"],
+#wrap .modal-body form > input[type="email"],
+#wrap .modal-body form > input[type="number"],
+#wrap .modal-body form > input[type="date"],
+#wrap .modal-body form > select,
+#wrap .modal-body form > textarea,
+#wrap .modal-body > input[type="text"],
+#wrap .modal-body > input[type="password"],
+#wrap .modal-body > input[type="email"],
+#wrap .modal-body > input[type="number"],
+#wrap .modal-body > input[type="date"],
+#wrap .modal-body > select,
+#wrap .modal-body > textarea {
+  margin-bottom: 0;
+}
+
+#wrap .input-append,
+#wrap .input-prepend {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: stretch;
+  gap: 8px;
+  margin-bottom: 0;
+  vertical-align: middle;
+  white-space: normal;
+}
+
+#wrap .input-append > input,
+#wrap .input-prepend > input,
+#wrap .input-append > select,
+#wrap .input-prepend > select {
+  min-width: 0;
+  margin: 0;
+  border-radius: var(--hayne-radius-sm);
+}
+
+#wrap .input-append > .btn,
+#wrap .input-prepend > .btn {
+  margin: 0;
+  border-radius: var(--hayne-radius-sm);
+}
+
+#wrap .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+#wrap .btn > .mdi,
+#wrap .btn .mdi {
+  flex: 0 0 auto;
+  font-size: 16px;
+  line-height: 1;
+}
+
+#wrap .btn-group {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: stretch;
+  gap: 6px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+#wrap .btn-group > .btn,
+#wrap .btn-group > .btn-group > .btn {
+  float: none;
+  margin-left: 0;
+  border-radius: var(--hayne-radius-sm);
+}
+
+#wrap .btn-group > input[type="text"],
+#wrap .btn-group > input[type="date"] {
+  min-width: 0;
+  margin: 0;
+  border-radius: var(--hayne-radius-sm);
+}
+
+#wrap .modal-footer .btn + .btn,
+#wrap .span12 > .btn + .btn,
+#wrap .pull-right > .btn,
+#wrap .pull-right > .btn-group {
+  margin-left: 8px;
+}
+
+#wrap .pull-right > .btn:first-child,
+#wrap .pull-right > .btn-group:first-child {
+  margin-left: 0;
+}
+
+#wrap label > input[type="checkbox"],
+#wrap label > input[type="radio"] {
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+#wrap #users td:first-child .pull-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#wrap #users td:first-child .pull-right > a {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid #e1e1dc;
+  border-radius: 7px;
+  background: #fff;
+  line-height: 1;
+  text-decoration: none;
+}
+
+#wrap #users td:first-child .pull-right > a:hover,
+#wrap #users td:first-child .pull-right > a:focus {
+  border-color: #c8c8c2;
+  background: #f4f4f1;
+}
+
+@media (max-width: 979px) {
+  #wrap .btn-group,
+  #wrap .input-append,
+  #wrap .input-prepend {
+    flex-wrap: wrap;
+  }
+
+  #wrap .pull-right > .btn,
+  #wrap .pull-right > .btn-group {
+    margin-top: 8px;
+  }
+}
