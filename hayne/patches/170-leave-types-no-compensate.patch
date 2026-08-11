@@ -12,9 +12,7 @@
  $config['disable_edit_leave_duration'] = $env_bool('DISABLE_EDIT_LEAVE_DURATION', false); // Switch to read-only (duration is computed)
 --- a/legacy/application/models/Contracts_model.php
 +++ b/legacy/application/models/Contracts_model.php
-@@ -274,34 +274,44 @@ class Contracts_model extends CI_Model
-         $this->load->model('leaves_model');
- 
+@@ -276,27 +276,37 @@ class Contracts_model extends CI_Model
          //What is the default type ?
 -        //First of all, we need infos about the user (namely its contract)
 +        //First of all, we need infos about the user (namely its contract).
@@ -51,29 +49,25 @@
 +            $credit = 0.0;
          } else {
 -            $credit = $this->leaves_model->getLeavesTypeBalanceForEmployee($userId, $types[$leaveType]);
+-        }
 +            //Never let a stale contract/config identifier break the create-leave screen.
 +            if (!array_key_exists($defaultType, $types)) {
 +                $defaultType = (int) array_key_first($types);
 +            }
-+
+ 
+-        //Filter this array by removing the excluded types
+-        $excludedTypes = $this->contracts_model->getListOfExcludedTypes($user['contract']);
+-        $types = array_diff($types, $excludedTypes);
 +            $effectiveType = is_null($leaveType) ? $defaultType : $leaveType;
 +            if (!array_key_exists($effectiveType, $types)) {
 +                $effectiveType = $defaultType;
 +            }
 +
 +            $credit = $this->leaves_model->getLeavesTypeBalanceForEmployee($userId, $types[$effectiveType]);
-         }
- 
--        //Filter this array by removing the excluded types
--        $excludedTypes = $this->contracts_model->getListOfExcludedTypes($user['contract']);
--        $types = array_diff($types, $excludedTypes);
--
-         //Let's return an anonymous object containing all these details
-         $leaveTypesDetails = new stdClass;
-         $leaveTypesDetails->defaultType = $defaultType;
++        }
 --- a/legacy/application/models/Overtime_model.php
 +++ b/legacy/application/models/Overtime_model.php
-@@ -89,6 +89,20 @@ class Overtime_model extends CI_Model
+@@ -111,6 +111,20 @@ class Overtime_model extends CI_Model
          $this->db->where('id', $id);
          $this->db->update('overtime', ['status' => 3]);
  
@@ -94,7 +88,8 @@
          //Add entitlement
          $extra = $this->getExtras($id);
  
-@@ -112,7 +126,7 @@ class Overtime_model extends CI_Model
+@@ -129,7 +143,7 @@ class Overtime_model extends CI_Model
+             'employee' => $extra['employee'],
              'startdate' => $startentdate,
              'enddate' => $endentdate,
              'days' => $extra['duration'],
