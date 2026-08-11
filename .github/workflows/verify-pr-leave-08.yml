@@ -222,7 +222,7 @@ jobs:
           test -n "$valid_id"
           echo "HOLIDAY_VALID_ID=${valid_id}" >> "$GITHUB_ENV"
           docker compose exec -T mysql sh -ec "
-            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CONCAT(status,':',duration,':',type) FROM leaves WHERE id=${valid_id}\")\" = \"2:1:${HOLIDAY_TYPE_ID}\"
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CONCAT(status,':',CAST(duration AS UNSIGNED),':',type) FROM leaves WHERE id=${valid_id}\")\" = \"2:1:${HOLIDAY_TYPE_ID}\"
             test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT grant_id FROM hayne_holiday_compensation_request_meta WHERE leave_id=${valid_id}\")\" = \"${HOLIDAY_GRANT_ID}\"
           "
 
