@@ -1,16 +1,27 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -48,1 +48,2 @@
-         $this->lang->load('global', $this->language);
+@@ -47,2 +47,3 @@
+         $this->lang->load('leaves', $this->language);
 +        $this->load->model('hayne_childcare_model');
-@@ -134,1 +135,2 @@
-         $data['summary'] = $this->leaves_model->getLeaveBalanceForEmployee($this->user_id, $refDate);
+         $this->lang->load('global', $this->language);
+@@ -125,7 +126,8 @@
+         if ($refDate != NULL) {
+             $data['isDefault'] = 0;
+         } else {
+             $refDate = date("Y-m-d");
+             $data['isDefault'] = 1;
+         }
 +        $data['hayneChildcareSummary'] = $this->hayne_childcare_model->getSummary((int) $this->user_id, (int) substr($refDate, 0, 4));
-@@ -277,1 +279,3 @@
-             $data['types'] = $leaveTypesDetails->types;
-+            $data['hayneChildcareState'] = $this->hayne_childcare_model
-+                ->getFormState((int) $this->session->userdata('id'));
-@@ -466,1 +470,3 @@
-             $data['types'] = $leaveTypesDetails->types;
+         $data['refDate'] = $refDate;
+@@ -265,3 +267,5 @@
+         $this->form_validation->set_rules('cause', lang('leaves_create_field_cause'), 'strip_tags');
+         $this->form_validation->set_rules('status', lang('leaves_create_field_status'), 'required|strip_tags');
++        $data['hayneChildcareState'] = $this->hayne_childcare_model
++            ->getFormState((int) $this->session->userdata('id'));
+ 
+@@ -457,3 +461,5 @@
+             $leaveTypesDetails = $this->contracts_model->getLeaveTypesDetailsOTypesForUser($data['leave']['employee'], $data['leave']['type']);
+             $data['defaultType'] = $leaveTypesDetails->defaultType;
 +            $data['hayneChildcareState'] = $this->hayne_childcare_model
 +                ->getFormState((int) $data['leave']['employee'], (int) $id);
+             $data['credit'] = $leaveTypesDetails->credit;

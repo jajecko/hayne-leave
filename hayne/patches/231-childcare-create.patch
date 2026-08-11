@@ -1,7 +1,10 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -350,1 +350,24 @@
-             $duration = $calculatedDuration;
+@@ -345,5 +345,29 @@
+             );
+ 
+             $calculatedDuration = $calculationResult['length'];
+ 
 +            $hayneChildcare = $this->hayne_childcare_model->isChildcareType((int) $leaveTypeId);
 +            if ($hayneChildcare) {
 +                try {
@@ -15,7 +18,7 @@
 +                        (int) $leaveTypeId,
 +                        (string) $startDate,
 +                        (string) $endDate,
-+                        (float) $duration,
++                        (float) $calculatedDuration,
 +                        (int) $this->input->post('status')
 +                    );
 +                } catch (Throwable $exception) {
@@ -25,7 +28,12 @@
 +                    return;
 +                }
 +            }
-@@ -389,1 +412,10 @@
++
+             // Overwrite the submitted duration with the server-calculated value
+@@ -384,3 +407,12 @@
+                 $this->input->post('cause', true),
+                 $this->input->post('status')
+             );
 +            if ($hayneChildcare) {
 +                if ($this->db->trans_status() === FALSE) {
 +                    $this->db->trans_rollback();
@@ -35,4 +43,3 @@
 +                }
 +                $this->db->trans_commit();
 +            }
-             $this->session->set_flashdata('msg', lang('leaves_create_flash_msg_success'));

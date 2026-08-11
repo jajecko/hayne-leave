@@ -1,8 +1,36 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -548,1 +548,26 @@
+@@ -568,6 +568,56 @@
+                     }
+                 }
+             }
+ 
 +            $hayneChildcare = $this->hayne_childcare_model->isChildcareType((int) $leaveTypeId);
 +            $wasHayneChildcare = $this->hayne_childcare_model->isChildcareLeave((int) $id);
++            $hayneCaregiverForChildcareEdit = $this->hayne_caregiver_leave_model->isCaregiverType((int) $leaveTypeId);
++            $wasHayneCaregiverForChildcareEdit = $this->hayne_caregiver_leave_model->isCaregiverLeave((int) $id);
++            $hayneForceForChildcareEdit = $this->hayne_force_majeure_model->isForceMajeureType((int) $leaveTypeId);
++            $wasHayneForceForChildcareEdit = $this->hayne_force_majeure_model->isForceMajeureLeave((int) $id);
++            $hayneOnDemandForChildcareEdit = $this->input->post('hayne_on_demand', TRUE) === '1';
++            $wasHayneOnDemandForChildcareEdit = $this->hayne_on_demand_model->isOnDemand((int) $id);
++
++            if (
++                ($hayneChildcare && (
++                    $wasHayneCaregiverForChildcareEdit ||
++                    $wasHayneForceForChildcareEdit ||
++                    $wasHayneOnDemandForChildcareEdit
++                )) ||
++                ($wasHayneChildcare && (
++                    $hayneCaregiverForChildcareEdit ||
++                    $hayneForceForChildcareEdit ||
++                    $hayneOnDemandForChildcareEdit
++                ))
++            ) {
++                $this->session->set_flashdata('msg', 'Nie można bezpośrednio zmienić rodzaju wniosku pomiędzy ustawowymi pulami HAYNE.');
++                redirect('leaves/edit/' . (int) $id);
++                return;
++            }
++
 +            if ($hayneChildcare) {
 +                try {
 +                    $this->db->trans_begin();
@@ -26,8 +54,14 @@
 +                    return;
 +                }
 +            }
-             // Check if the leave request is valid regarding the leave balance
-@@ -608,1 +633,10 @@
++
+             //Users must use an existing leave type, otherwise
+             //force leave type to default leave type
+@@ -604,4 +648,13 @@
+                 abs($duration),
+                 $this->input->post('type'),
+                 $this->input->post('comment', true)
+             );
 +            if ($hayneChildcare) {
 +                if ($this->db->trans_status() === FALSE) {
 +                    $this->db->trans_rollback();
@@ -37,4 +71,3 @@
 +                }
 +                $this->db->trans_commit();
 +            }
-             $this->session->set_flashdata('msg', lang('leaves_edit_flash_msg_success'));

@@ -1,8 +1,15 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -617,1 +617,26 @@
+@@ -606,6 +606,36 @@
+         if (empty($leave)) {
+             redirect('notfound');
+         } else {
 +            $hayneChildcareTransition = FALSE;
-+            if ($leave['status'] == LMS_PLANNED && $this->hayne_childcare_model->isChildcareLeave((int) $id)) {
++            if (
++                $this->user_id == $leave['employee'] &&
++                $leave['status'] == LMS_PLANNED &&
++                $this->hayne_childcare_model->isChildcareLeave((int) $id)
++            ) {
 +                try {
 +                    $this->db->trans_begin();
 +                    $this->hayne_childcare_model->lockEmployeeYear(
@@ -26,10 +33,15 @@
 +                    return;
 +                }
 +            }
-             //We can cancel a leave request only with a status 'Accepted'
-@@ -622,1 +647,5 @@
++
+             //Only the connected user can reject its own requests
+             if ($this->user_id != $leave['employee']) {
+                 $this->session->set_flashdata('msg', lang('leaves_cancellation_flash_msg_error'));
+@@ -622,3 +648,7 @@
 +                if ($hayneChildcareTransition) {
 +                    $this->db->trans_commit();
 +                    $hayneChildcareTransition = FALSE;
 +                }
                  $this->sendMailOnLeaveRequestCreation($id);
+                 $this->session->set_flashdata('msg', lang('leaves_cancellation_flash_msg_success'));
+                 redirect('leaves');
