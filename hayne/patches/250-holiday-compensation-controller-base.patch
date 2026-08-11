@@ -1,0 +1,23 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -47,2 +47,3 @@
+         $this->lang->load('leaves', $this->language);
+         $this->lang->load('global', $this->language);
++        $this->load->model('hayne_holiday_compensation_model');
+@@ -188,2 +189,3 @@
++        $data['hayneHolidayCompensationDetails'] = $this->hayne_holiday_compensation_model->getMetadataForDisplay((int) $id);
+         //overwrite source (for taking into account the tabular calendar)
+         if ($this->input->get('source') != NULL) {
+@@ -271,2 +273,5 @@
++            $data['hayneHolidayCompensationState'] = $this->hayne_holiday_compensation_model->getFormState(
++                (int) $this->session->userdata('id')
++            );
+             $this->load->model('contracts_model');
+             $leaveTypesDetails = $this->contracts_model->getLeaveTypesDetailsOTypesForUser($this->session->userdata('id'));
+@@ -455,2 +460,6 @@
++            $data['hayneHolidayCompensationState'] = $this->hayne_holiday_compensation_model->getFormState(
++                (int) $data['leave']['employee'],
++                (int) $id
++            );
+             $data['id'] = $id;
+             $this->load->model('contracts_model');

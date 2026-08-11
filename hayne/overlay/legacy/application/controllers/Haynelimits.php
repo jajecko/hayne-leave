@@ -19,6 +19,7 @@ class Haynelimits extends CI_Controller
         $this->load->model('hayne_force_majeure_model');
         $this->load->model('hayne_childcare_model');
         $this->load->model('hayne_occasion_leave_model');
+        $this->load->model('hayne_holiday_compensation_model');
     }
 
     public function index(): void
@@ -418,6 +419,10 @@ class Haynelimits extends CI_Controller
             'occasion' => [
                 'policy' => $this->hayne_occasion_leave_model->getPolicy(),
                 'label' => 'urlop okolicznościowy',
+            ],
+            'holiday_compensation' => [
+                'policy' => $this->hayne_holiday_compensation_model->getPolicy(),
+                'label' => 'dzień wolny za święto',
             ],
         ];
 

@@ -42,6 +42,19 @@ $editingAutoRenew = $edit_profile ? ((int) $edit_profile['auto_renew'] === 1) : 
                 'types' => $types,
             ]); ?>
 
+            <div class="well hayne-statutory-policy" data-hayne-policy="holiday_compensation">
+                <div class="row-fluid">
+                    <div class="span8">
+                        <h3 style="margin-top: 0;">Dzień wolny za święto</h3>
+                        <p><strong>1 dzień za konkretny grant HR</strong>, ważny wyłącznie w przypisanym okresie rozliczeniowym.</p>
+                        <p class="muted" style="margin-bottom: 0;">Nie jest częścią puli 20/26, nie korzysta z FIFO i nie przechodzi na kolejny okres rozliczeniowy.</p>
+                    </div>
+                    <div class="span4" style="text-align: right;">
+                        <a class="btn btn-primary" href="<?php echo base_url(); ?>hayneholidays">Zarządzaj dniami za święta</a>
+                    </div>
+                </div>
+            </div>
+
             <div class="row-fluid">
                 <div class="span5">
                     <div class="well">
