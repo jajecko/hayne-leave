@@ -1,6 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -543,1 +543,36 @@
+@@ -543,1 +543,34 @@
              $duration = $calculationResult['length'];
 +            $hayneOccasion = $this->hayne_occasion_leave_model->isOccasionType((int) $leaveTypeId);
 +            $wasHayneOccasion = $this->hayne_occasion_leave_model->isOccasionLeave((int) $id);
@@ -35,11 +35,11 @@
 +                redirect('leaves/edit/' . (int) $id);
 +                return;
 +            }
-@@ -546,2 +581,2 @@
+@@ -546,2 +579,2 @@
              $disallowRequestsWithoutCredit = filter_var($this->config->item('disallow_requests_without_credit'), FILTER_VALIDATE_BOOLEAN, ['' => FILTER_NULL_ON_FAILURE]);
 -            if ($disallowRequestsWithoutCredit === true) {
 +            if ($disallowRequestsWithoutCredit === true && !$hayneOccasion) {
-@@ -590,1 +625,37 @@
+@@ -590,1 +623,36 @@
 +            $hayneOccasionTransaction = $hayneOccasion || $wasHayneOccasion;
 +            $hayneOccasionDetails = [];
 +            if ($hayneOccasionTransaction) {
@@ -76,7 +76,7 @@
 +            }
 +
              $this->leaves_model->updateLeaves(
-@@ -608,1 +679,16 @@
+@@ -608,1 +676,15 @@
 +            if ($hayneOccasionTransaction) {
 +                if ($hayneOccasion) {
 +                    $this->hayne_occasion_leave_model->setMetadata((int) $id, $hayneOccasionDetails);
