@@ -1,6 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -617,4 +617,33 @@
+@@ -617,3 +617,32 @@
 +            $hayneForceMajeureTransition = FALSE;
 +            if ($leave['status'] == LMS_PLANNED && $this->hayne_force_majeure_model->isForceMajeureLeave((int) $id)) {
 +                $hayneForceMajeureDetails = $this->hayne_force_majeure_model->getMetadata((int) $id);
@@ -33,7 +33,7 @@
              //We can cancel a leave request only with a status 'Accepted'
              if ($leave['status'] == LMS_PLANNED) {
                  $this->leaves_model->switchStatus($id, LMS_REQUESTED);
-@@ -622,3 +651,7 @@
+@@ -622,2 +651,6 @@
 +                if ($hayneForceMajeureTransition) {
 +                    $this->db->trans_commit();
 +                    $hayneForceMajeureTransition = FALSE;
