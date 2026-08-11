@@ -8,7 +8,7 @@
                  <li class="nav-header">System</li>
 --- a/legacy/application/controllers/Entitleddays.php
 +++ b/legacy/application/controllers/Entitleddays.php
-@@ -113,4 +113,8 @@
+@@ -149,4 +149,8 @@
              $days = $this->input->post('days', TRUE);
              $type = $this->input->post('type', TRUE);
              $description = sanitize($this->input->post('description', TRUE));
@@ -17,7 +17,7 @@
 +                return;
 +            }
              if (isset($startdate) && isset($enddate) && isset($days) && isset($type) && isset($user_id)) {
-@@ -138,4 +142,8 @@
+@@ -173,4 +177,8 @@
              $days = $this->input->post('days', TRUE);
              $type = $this->input->post('type', TRUE);
              $description = sanitize($this->input->post('description', TRUE));
@@ -26,7 +26,7 @@
 +                return;
 +            }
              if (isset($startdate) && isset($enddate) && isset($days) && isset($type) && isset($contract_id)) {
-@@ -168,3 +176,7 @@
+@@ -202,4 +210,8 @@
              if (isset($id) && isset($operation)) {
                  $this->output->set_content_type('text/plain');
                  $days = $this->input->post('days', TRUE);
