@@ -35,7 +35,9 @@ jobs:
           grep -F "require FCPATH . 'local/pages/hayne-home.php';" hayne/overlay/legacy/local/pages/en/home.php
           grep -F "require FCPATH . 'local/pages/hayne-home.php';" hayne/overlay/legacy/local/pages/pl/home.php
           grep -F 'data-hayne-home="v1"' hayne/overlay/legacy/local/pages/hayne-home.php
-          grep -F 'Time off, in one place.' hayne/overlay/legacy/local/pages/hayne-home.php
+          grep -F "userdata('firstname')" hayne/overlay/legacy/local/pages/hayne-home.php
+          grep -F "'Cześć ' . \$hayneFirstName . '!'" hayne/overlay/legacy/local/pages/hayne-home.php
+          ! grep -F 'Time off, in one place.' hayne/overlay/legacy/local/pages/hayne-home.php
           grep -F 'hayne-kpi-grid' hayne/overlay/legacy/local/pages/hayne-home.php
           ! grep -F 'Leave and Overtime Management System' hayne/overlay/legacy/local/pages/hayne-home.php
 
@@ -54,6 +56,7 @@ jobs:
             grep -F "require FCPATH . '\''local/pages/hayne-home.php'\'';" legacy/local/pages/en/home.php
             grep -F "require FCPATH . '\''local/pages/hayne-home.php'\'';" legacy/local/pages/pl/home.php
             grep -F "data-hayne-home=\"v1\"" legacy/local/pages/hayne-home.php
+            grep -F "userdata('\''firstname'\'')" legacy/local/pages/hayne-home.php
           '
 
       - name: Login explicitly in Polish
@@ -86,7 +89,8 @@ jobs:
 
           test -s artifacts/hayne-home-pl.html
           grep -F 'data-hayne-home="v1"' artifacts/hayne-home-pl.html
-          grep -F 'Time off, in one place.' artifacts/hayne-home-pl.html
+          grep -F 'Cześć Admin!' artifacts/hayne-home-pl.html
+          ! grep -F 'Time off, in one place.' artifacts/hayne-home-pl.html
           grep -F 'Pozostało dni' artifacts/hayne-home-pl.html
           grep -F 'Nadchodzące nieobecności' artifacts/hayne-home-pl.html
           grep -F 'Szybkie akcje' artifacts/hayne-home-pl.html
