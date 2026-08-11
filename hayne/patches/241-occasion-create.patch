@@ -7,7 +7,7 @@
              $disallowRequestsWithoutCredit = filter_var($this->config->item('disallow_requests_without_credit'), FILTER_VALIDATE_BOOLEAN, ['' => FILTER_NULL_ON_FAILURE]);
 -            if ($disallowRequestsWithoutCredit === true) {
 +            if ($disallowRequestsWithoutCredit === true && !$hayneOccasion) {
-@@ -374,1 +375,32 @@
+@@ -374,1 +375,31 @@
 +            if ($hayneOccasion) {
 +                $hayneOccasionDetails = [
 +                    'event_code' => $this->input->post('hayne_occasion_event', TRUE),
@@ -39,7 +39,7 @@
 +            }
 +
              if (function_exists('triggerCreateLeaveRequest')) {
-@@ -389,1 +421,12 @@
+@@ -389,1 +420,11 @@
 +            if ($hayneOccasion) {
 +                $this->hayne_occasion_leave_model->setMetadata((int) $leave_id, $hayneOccasionDetails);
 +                if ($this->db->trans_status() === FALSE) {
