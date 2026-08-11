@@ -62,7 +62,7 @@ jobs:
           for attempt in $(seq 1 60); do
             if curl -fsS \
               -c artifacts/hayne-cookies.txt \
-              http://127.0.0.1:8080/session/login \
+              http://localhost:8080/session/login \
               -o artifacts/hayne-login.html; then
               break
             fi
@@ -81,7 +81,7 @@ jobs:
             --data-urlencode 'login=jorani' \
             --data-urlencode 'password=jorani' \
             --data-urlencode 'language=pl' \
-            http://127.0.0.1:8080/session/login \
+            http://localhost:8080/session/login \
             -o artifacts/hayne-home-pl.html
 
           test -s artifacts/hayne-home-pl.html
