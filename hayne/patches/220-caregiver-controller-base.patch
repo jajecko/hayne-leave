@@ -7,11 +7,14 @@
 @@ -132,1 +134,2 @@
 +        $data['hayneCaregiverSummary'] = $this->hayne_caregiver_leave_model->getSummary((int) $this->user_id, (int) substr($refDate, 0, 4));
          $data['summary'] = $this->leaves_model->getLeaveBalanceForEmployee($this->user_id, $refDate);
-@@ -276,1 +279,3 @@
+@@ -167,1 +170,2 @@
++        $data['hayneCaregiverDetails'] = $this->hayne_caregiver_leave_model->getMetadata((int) $id);
+         //If the user is not its not HR, not manager and not the creator of the leave
+@@ -276,1 +280,3 @@
              $data['types'] = $leaveTypesDetails->types;
 +            $data['hayneCaregiverState'] = $this->hayne_caregiver_leave_model
 +                ->getFormState((int) $this->session->userdata('id'));
-@@ -465,1 +470,3 @@
+@@ -465,1 +471,3 @@
              $data['types'] = $leaveTypesDetails->types;
 +            $data['hayneCaregiverState'] = $this->hayne_caregiver_leave_model
 +                ->getFormState((int) $data['leave']['employee'], (int) $id);
