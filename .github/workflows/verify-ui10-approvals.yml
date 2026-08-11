@@ -1,0 +1,140 @@
+name: verify-ui10-approvals
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/overlay/assets/hayne/approvals.js'
+      - 'hayne/overlay/assets/hayne/approvals.css'
+      - 'hayne/overlay/assets/hayne/approvals-state.css'
+      - 'hayne/patches/150-approvals-assets.patch'
+      - '.github/workflows/verify-ui10-approvals.yml'
+      - 'docs/checkpoints/PR-UI-10_APPROVALS_TARGET.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'hayne/overlay/assets/hayne/approvals.js'
+      - 'hayne/overlay/assets/hayne/approvals.css'
+      - 'hayne/overlay/assets/hayne/approvals-state.css'
+      - 'hayne/patches/150-approvals-assets.patch'
+
+jobs:
+  approvals-surface:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Download pinned Jorani source
+        env:
+          JORANI_VERSION: v1.0.4
+        run: |
+          mkdir -p /tmp/jorani
+          curl -fsSL "https://github.com/jorani/jorani/archive/refs/tags/${JORANI_VERSION}.tar.gz" \
+            | tar -xz --strip-components=1 -C /tmp/jorani
+
+      - name: Verify HAYNE patches independently
+        run: |
+          cd /tmp/jorani
+          for patch_file in "$GITHUB_WORKSPACE"/hayne/patches/*.patch; do
+            echo "Checking ${patch_file}"
+            patch --dry-run --batch --forward -p1 < "${patch_file}"
+          done
+
+      - name: Build and start HAYNE Leave
+        run: docker compose up --build -d
+
+      - name: Guard approval workflow contract in built image
+        run: |
+          docker compose exec -T jorani sh -ec '
+            view=legacy/application/views/requests/index.php
+            grep -F "class=\"lnkAccept\"" "$view"
+            grep -F "class=\"lnkReject\"" "$view"
+            grep -F "class=\"lnkCancellationAccept\"" "$view"
+            grep -F "class=\"lnkCancellationReject\"" "$view"
+            grep -F "requests/accept/" "$view"
+            grep -F "requests/reject/" "$view"
+            grep -F "requests/cancellation/accept/" "$view"
+            grep -F "requests/cancellation/reject/" "$view"
+            grep -F "assets/hayne/approvals.css" legacy/application/views/templates/header.php
+            grep -F "assets/hayne/approvals.js" legacy/application/views/templates/header.php
+            grep -F "hayne-approvals-page" assets/hayne/approvals.js
+            grep -F "Akceptuj" assets/hayne/approvals.js
+            grep -F "Odrzuć" assets/hayne/approvals.js
+          '
+
+      - name: Login and capture approvals HTML
+        run: |
+          mkdir -p artifacts
+          for attempt in $(seq 1 60); do
+            if curl -fsS \
+              -c artifacts/cookies.txt \
+              http://127.0.0.1:8080/session/login \
+              -o artifacts/login.html; then
+              break
+            fi
+            echo "Waiting for HAYNE Leave (${attempt}/60)..."
+            sleep 2
+          done
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/login.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jorani' \
+            --data-urlencode 'password=jorani' \
+            --data-urlencode 'language=en' \
+            http://127.0.0.1:8080/session/login \
+            -o artifacts/home.html
+          curl -fsS -L -b artifacts/cookies.txt \
+            http://127.0.0.1:8080/requests \
+            -o artifacts/hayne-approvals.html
+          test -s artifacts/hayne-approvals.html
+          grep -F 'id="leaves"' artifacts/hayne-approvals.html
+          grep -F 'id="frmRejectLeaveForm"' artifacts/hayne-approvals.html
+          grep -F 'assets/hayne/approvals.css' artifacts/hayne-approvals.html
+          grep -F 'assets/hayne/approvals.js' artifacts/hayne-approvals.html
+          ! grep -F 'jorani.org' artifacts/hayne-approvals.html
+          ! grep -F '>Jorani<' artifacts/hayne-approvals.html
+          curl -fsS http://127.0.0.1:8080/assets/hayne/approvals.css -o artifacts/hayne-approvals.css
+          curl -fsS http://127.0.0.1:8080/assets/hayne/approvals.js -o artifacts/hayne-approvals.js
+          grep -F '.hayne-approvals-card' artifacts/hayne-approvals.css
+          grep -F 'data-hayne-view' artifacts/hayne-approvals.js
+
+      - name: Capture approvals screenshot
+        run: |
+          if command -v google-chrome >/dev/null 2>&1; then
+            chrome_flags="--headless --no-sandbox --disable-gpu --hide-scrollbars --allow-file-access-from-files --run-all-compositor-stages-before-draw --virtual-time-budget=3000 --window-size=1440,1000"
+            google-chrome $chrome_flags \
+              --dump-dom \
+              "file://${GITHUB_WORKSPACE}/artifacts/hayne-approvals.html" \
+              > artifacts/hayne-approvals-rendered.html
+            grep -F 'data-hayne-view="approvals-v1"' artifacts/hayne-approvals-rendered.html
+            grep -F '>Do akceptacji<' artifacts/hayne-approvals-rendered.html
+            grep -F 'Brak wniosków wymagających działania' artifacts/hayne-approvals-rendered.html
+            google-chrome $chrome_flags \
+              --screenshot=artifacts/hayne-approvals.png \
+              "file://${GITHUB_WORKSPACE}/artifacts/hayne-approvals.html"
+          else
+            echo "google-chrome is not available; HTML smoke remains authoritative."
+          fi
+
+      - name: Upload approvals evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hayne-ui10-approvals
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

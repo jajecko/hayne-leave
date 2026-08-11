@@ -1,0 +1,13 @@
+/* Static CI evidence uses file://, so pathname-based navigation cannot identify /requests.
+ * Runtime HTTP already marks the group active; :has() keeps the captured HAYNE state equivalent.
+ */
+#wrap:has(.hayne-approvals-page) .hayne-nav-approvals > a,
+#wrap:has(.hayne-approvals-page) .hayne-nav-approvals > a:hover,
+#wrap:has(.hayne-approvals-page) .hayne-nav-approvals > a:focus {
+  background: #111 !important;
+  color: #fff !important;
+}
+
+#wrap:has(.hayne-approvals-page) .hayne-nav-approvals > a > .hayne-line-icon {
+  color: #fff !important;
+}
