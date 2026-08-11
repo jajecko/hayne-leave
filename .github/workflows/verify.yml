@@ -153,7 +153,7 @@ jobs:
             -o artifacts/hayne-home.html
           test -s artifacts/hayne-home.html
           grep -F 'data-hayne-home="v1"' artifacts/hayne-home.html
-          grep -F 'Time off, in one place.' artifacts/hayne-home.html
+          grep -F 'Cześć Admin!' artifacts/hayne-home.html
           grep -F 'assets/hayne/home.css' artifacts/hayne-home.html
           ! grep -F 'Welcome to Jorani' artifacts/hayne-home.html
           curl -fsS http://localhost:8080/assets/hayne/home.css -o artifacts/hayne-home.css
