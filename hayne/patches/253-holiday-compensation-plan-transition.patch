@@ -1,0 +1,50 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -617,2 +617,34 @@
++            $hayneHolidayCompensationTransition = FALSE;
++            if (
++                $this->user_id == $leave['employee'] &&
++                $leave['status'] == LMS_PLANNED &&
++                $this->hayne_holiday_compensation_model->isHolidayCompensationLeave((int) $id)
++            ) {
++                $meta = $this->hayne_holiday_compensation_model->getMetadata((int) $id);
++                try {
++                    $grantId = $this->hayne_holiday_compensation_model->normalizeGrantId(
++                        is_array($meta) ? ($meta['grant_id'] ?? NULL) : NULL
++                    );
++                    $this->db->trans_begin();
++                    $this->hayne_holiday_compensation_model->lockGrant((int) $leave['employee'], $grantId);
++                    $this->hayne_holiday_compensation_model->assertRequestAllowed(
++                        (int) $leave['employee'],
++                        (int) $leave['type'],
++                        (string) $leave['startdate'],
++                        (string) $leave['enddate'],
++                        (float) $leave['duration'],
++                        LMS_REQUESTED,
++                        $grantId,
++                        (int) $id
++                    );
++                    $hayneHolidayCompensationTransition = TRUE;
++                } catch (Throwable $exception) {
++                    $this->db->trans_rollback();
++                    $this->session->set_flashdata('msg', $exception->getMessage());
++                    redirect('leaves');
++                    return;
++                }
++            }
++
+             //We can cancel a leave request only with a status 'Accepted'
+             if ($leave['status'] == LMS_PLANNED) {
+@@ -622,2 +654,12 @@
++                if ($hayneHolidayCompensationTransition) {
++                    if ($this->db->trans_status() === FALSE) {
++                        $this->db->trans_rollback();
++                        $this->session->set_flashdata('msg', 'Nie udało się wysłać planowanego dnia wolnego za święto.');
++                        redirect('leaves');
++                        return;
++                    }
++                    $this->db->trans_commit();
++                    $hayneHolidayCompensationTransition = FALSE;
++                }
+                 $this->sendMailOnLeaveRequestCreation($id);
+                 $this->session->set_flashdata('msg', lang('leaves_cancellation_flash_msg_success'));
