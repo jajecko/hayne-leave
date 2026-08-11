@@ -1,6 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -612,9 +612,38 @@
+@@ -612,7 +612,36 @@
              if ($this->user_id != $leave['employee']) {
                  $this->session->set_flashdata('msg', lang('leaves_cancellation_flash_msg_error'));
                  redirect('leaves');
