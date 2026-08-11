@@ -10,7 +10,7 @@ Doprowadzić główną kolejkę managera `/requests` do systemu wizualnego HAYNE
 - `/requests/requested` pokazuje wnioski `Requested` i prośby `Cancellation`,
 - `/requests/all` pozwala przeglądać wszystkie statusy,
 - akcje pozostają oparte na klasach `.lnkAccept`, `.lnkReject`, `.lnkCancellationAccept`, `.lnkCancellationReject`,
-- endpointy pozostają `requests/accept/<id>`, `requests/reject/<id>`, `requests/acceptCancellation/<id>`, `requests/rejectCancellation/<id>`,
+- endpointy pozostają `requests/accept/<id>`, `requests/reject/<id>`, `requests/cancellation/accept/<id>`, `requests/cancellation/reject/<id>`,
 - komentarz odrzucenia nadal korzysta z `#frmRejectLeaveForm`,
 - filtrowanie nadal używa `#cboLeaveType`, `.filterStatus` i oryginalnych indeksów DataTables.
 
