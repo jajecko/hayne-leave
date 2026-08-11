@@ -6,7 +6,7 @@
 +        $this->load->model('hayne_force_majeure_model');
 +        $this->hayne_force_majeure_model->ensureCurrentYear((int) $this->user_id);
      }
-@@ -134,4 +136,5 @@
+@@ -134,3 +136,4 @@
 +        $data['hayneForceMajeureSummary'] = $this->hayne_force_majeure_model->getSummary((int) $this->user_id, (int) substr($refDate, 0, 4));
          if (!is_null($data['summary'])) {
              $data['title'] = lang('leaves_summary_title');
@@ -16,13 +16,13 @@
 +        $data['hayneForceMajeureDetails'] = $this->hayne_force_majeure_model->getMetadata((int) $id);
          $data['source'] = $source;
          //overwrite source (for taking into account the tabular calendar)
-@@ -277,4 +281,6 @@
+@@ -277,3 +281,5 @@
 +            $data['hayneForceMajeureState'] = $this->hayne_force_majeure_model
 +                ->getFormState((int) $this->session->userdata('id'));
              $this->load->view('templates/header', $data);
              $this->load->view('menu/index', $data);
              $this->load->view('leaves/create');
-@@ -466,4 +472,6 @@
+@@ -466,3 +472,5 @@
 +            $data['hayneForceMajeureState'] = $this->hayne_force_majeure_model
 +                ->getFormState((int) $data['leave']['employee'], (int) $id);
              $this->load->model('users_model');
