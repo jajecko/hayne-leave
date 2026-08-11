@@ -6,8 +6,11 @@ on:
       - 'hayne/overlay/legacy/application/models/Hayne_on_demand_model.php'
       - 'hayne/overlay/assets/hayne/on-demand.js'
       - 'hayne/overlay/assets/hayne/on-demand.css'
-      - 'hayne/patches/200-on-demand-controller.patch'
-      - 'hayne/patches/201-on-demand-controller-hardening.patch'
+      - 'hayne/patches/200-on-demand-assets.patch'
+      - 'hayne/patches/201-on-demand-controller-base.patch'
+      - 'hayne/patches/202-on-demand-create.patch'
+      - 'hayne/patches/203-on-demand-edit.patch'
+      - 'hayne/patches/204-on-demand-plan-transition.patch'
       - 'hayne/patches/205-on-demand-views.patch'
       - 'hayne/patches/210-on-demand-approvals.patch'
       - 'hayne/sql/001-leave-profiles.sql'
@@ -20,8 +23,11 @@ on:
       - 'hayne/overlay/legacy/application/models/Hayne_on_demand_model.php'
       - 'hayne/overlay/assets/hayne/on-demand.js'
       - 'hayne/overlay/assets/hayne/on-demand.css'
-      - 'hayne/patches/200-on-demand-controller.patch'
-      - 'hayne/patches/201-on-demand-controller-hardening.patch'
+      - 'hayne/patches/200-on-demand-assets.patch'
+      - 'hayne/patches/201-on-demand-controller-base.patch'
+      - 'hayne/patches/202-on-demand-create.patch'
+      - 'hayne/patches/203-on-demand-edit.patch'
+      - 'hayne/patches/204-on-demand-plan-transition.patch'
       - 'hayne/patches/205-on-demand-views.patch'
       - 'hayne/patches/210-on-demand-approvals.patch'
       - 'hayne/sql/001-leave-profiles.sql'
@@ -110,6 +116,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          set -x
           year="$(date +%Y)"
           d1="$(date -d "${year}-03-01 next monday" +%F)"
           d3="$(date -d "${d1} +2 days" +%F)"
@@ -155,6 +162,10 @@ jobs:
           }
 
           submit_leave "$d1" "$d3" 3 2 'CI ONDEMAND THREE' 1 artifacts/three.html
+          echo '=== FIRST RESPONSE FLASH/ERROR MARKERS ==='
+          grep -E 'alert|Przekroczony|pełne dni|Nie udało|brak|Brak' artifacts/three.html | head -n 30 || true
+          echo '=== FIRST LEAVE DB STATE ==='
+          docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -e \"SELECT id,startdate,enddate,status,employee,cause,startdatetype,enddatetype,duration,type FROM leaves WHERE cause LIKE 'CI ONDEMAND%'; SELECT * FROM hayne_leave_request_meta;\""
           first_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI ONDEMAND THREE' ORDER BY id DESC LIMIT 1\"")"
           test -n "$first_id"
           docker compose exec -T mysql sh -ec "
@@ -164,6 +175,8 @@ jobs:
 
           before_two="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM leaves WHERE cause='CI ONDEMAND TWO REJECT'\"")"
           submit_leave "$d8" "$d9" 2 2 'CI ONDEMAND TWO REJECT' 1 artifacts/two-reject.html
+          echo '=== SECOND REQUEST RESPONSE ==='
+          grep -E 'Przekroczony|Pozostało|alert' artifacts/two-reject.html | head -n 30 || true
           after_two="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM leaves WHERE cause='CI ONDEMAND TWO REJECT'\"")"
           test "$before_two" = "$after_two"
           grep -F 'Przekroczony limit urlopu na żądanie' artifacts/two-reject.html
