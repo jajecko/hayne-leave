@@ -88,7 +88,6 @@ $childcareTypeId = $childcareConfigured ? (int) $childcare_policy['leave_type_id
                 <tr>
                     <th>Pracownik</th>
                     <th>Limit w <?php echo (int) $selected_year; ?></th>
-                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -113,8 +112,6 @@ $childcareTypeId = $childcareConfigured ? (int) $childcare_policy['leave_type_id
                                     <option value="1" <?php echo $days === 1 ? 'selected' : ''; ?>>1 dzień</option>
                                     <option value="2" <?php echo $days === 2 ? 'selected' : ''; ?>>2 dni</option>
                                 </select>
-                        </td>
-                        <td>
                                 <button type="submit" class="btn btn-small">Zapisz</button>
                             </form>
                         </td>
