@@ -4,19 +4,22 @@
          $this->lang->load('leaves', $this->language);
 +        $this->load->model('hayne_childcare_model');
          $this->lang->load('global', $this->language);
-@@ -122,3 +123,5 @@
+@@ -121,6 +122,8 @@
          $this->auth->checkIfOperationIsAllowed('counters_leaves');
          $data = getUserContext($this);
          $this->lang->load('datatable', $this->language);
 +        $hayneChildcareRefDate = $refDate ?? date("Y-m-d");
 +        $data['hayneChildcareSummary'] = $this->hayne_childcare_model->getSummary((int) $this->user_id, (int) substr($hayneChildcareRefDate, 0, 4));
-@@ -265,3 +267,5 @@
+         if ($refDate != NULL) {
+             $data['isDefault'] = 0;
+         } else {
+@@ -265,3 +268,5 @@
          $this->form_validation->set_rules('cause', lang('leaves_create_field_cause'), 'strip_tags');
          $this->form_validation->set_rules('status', lang('leaves_create_field_status'), 'required|strip_tags');
 +        $data['hayneChildcareState'] = $this->hayne_childcare_model
 +            ->getFormState((int) $this->session->userdata('id'));
  
-@@ -457,3 +461,5 @@
+@@ -457,3 +462,5 @@
              $leaveTypesDetails = $this->contracts_model->getLeaveTypesDetailsOTypesForUser($data['leave']['employee'], $data['leave']['type']);
              $data['defaultType'] = $leaveTypesDetails->defaultType;
 +            $data['hayneChildcareState'] = $this->hayne_childcare_model
