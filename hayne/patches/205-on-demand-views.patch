@@ -1,6 +1,6 @@
 --- a/legacy/application/views/leaves/create.php
 +++ b/legacy/application/views/leaves/create.php
-@@ -28,8 +28,24 @@
+@@ -28,8 +28,23 @@
          <select class="input-xxlarge" name="type" id="type">
              <?php foreach ($types as $typeId => $TypeName): ?>
                  <option value="<?php echo $typeId; ?>" <?php if ($typeId == $defaultType)
@@ -26,7 +26,7 @@
 +        <?php } ?>
 --- a/legacy/application/views/leaves/edit.php
 +++ b/legacy/application/views/leaves/edit.php
-@@ -34,8 +34,24 @@
+@@ -34,8 +34,23 @@
                  <select class="input-xxlarge" name="type" id="type">
                      <?php foreach ($types as $typeId => $TypeName): ?>
                          <option value="<?php echo $typeId; ?>" <?php if ($typeId == $leave['type'])
