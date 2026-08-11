@@ -1,0 +1,52 @@
+--- a/legacy/application/views/templates/header.php
++++ b/legacy/application/views/templates/header.php
+@@ -43,6 +43,7 @@
+     <script defer type="text/javascript" src="<?php echo base_url(); ?>assets/hayne/navigation.js"></script>
+     <script defer type="text/javascript" src="<?php echo base_url(); ?>assets/hayne/request.js"></script>
++    <script defer type="text/javascript" src="<?php echo base_url(); ?>assets/hayne/full-day.js"></script>
+     <script defer type="text/javascript" src="<?php echo base_url(); ?>assets/hayne/requests.js"></script>
+     <script defer type="text/javascript" src="<?php echo base_url(); ?>assets/hayne/login.js"></script>
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -181,8 +181,13 @@
+             $employeeId = $this->session->userdata('id');
+             $leaveTypeId = $this->input->post('type');
+             $startDate = $this->input->post('startdate');
+-            $startDateType = $this->input->post('startdatetype');
++            $startDateType = 'Morning';
+             $endDate = $this->input->post('enddate');
+-            $endDateType = $this->input->post('enddatetype');
++            $endDateType = 'Afternoon';
++            // HAYNE Leave v1 works only with complete working days.
++            // Do not trust manipulated form values for half-day requests.
++            $_POST['startdatetype'] = 'Morning';
++            $_POST['enddatetype'] = 'Afternoon';
+             $duration = (float) $this->input->post('duration');
+@@ -219,6 +224,14 @@
+ 
+             $calculatedDuration = $calculationResult['length'];
++
++            if (floor($calculatedDuration) != $calculatedDuration) {
++                $this->session->set_flashdata('msg', 'HAYNE Leave obsługuje wyłącznie pełne dni nieobecności.');
++                if (isset($_GET['source'])) {
++                    redirect($_GET['source']);
++                }
++                redirect('leaves/create');
++            }
+ 
+             // Overwrite the submitted duration with the server-calculated value
+             $duration = $calculatedDuration;
+@@ -351,8 +364,13 @@
+             $employeeId = $this->session->userdata('id');
+             $leaveTypeId = $this->input->post('type');
+             $startDate = $this->input->post('startdate');
+-            $startDateType = $this->input->post('startdatetype');
++            $startDateType = 'Morning';
+             $endDate = $this->input->post('enddate');
+-            $endDateType = $this->input->post('enddatetype');
++            $endDateType = 'Afternoon';
++            // HAYNE Leave v1 works only with complete working days.
++            // Do not trust manipulated form values for half-day requests.
++            $_POST['startdatetype'] = 'Morning';
++            $_POST['enddatetype'] = 'Afternoon';
+             $duration = (float) $this->input->post('duration');
