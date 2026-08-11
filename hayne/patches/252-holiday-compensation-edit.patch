@@ -1,48 +1,7 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -503,44 +503,120 @@
-             // Reinforce control for leave requests spanning two periods
-             $this->load->model('contracts_model');
-             $this->load->model('dayoffs_model');
-             $startEntDate = '';
-             $endEntDate = '';
- 
-             // Fetch the contract boundaries for the employee at the requested start date
-             $hasContract = $this->contracts_model->getBoundaries($employeeId, $startEntDate, $endEntDate, $startDate);
- 
-             if ($hasContract === true) {
-                 // Reject the request if the start or end date falls outside the current contract period
-                 if ($startDate < $startEntDate || $endDate > $endEntDate) {
-                     $this->session->set_flashdata('msg', lang('leaves_validate_flash_msg_overlap_period'));
- 
-                     // Redirect back to the appropriate form
-                     if (isset($_GET['source'])) {
-                         redirect($_GET['source']);
-                     } else {
-                         redirect('leaves');
-                     }
-                 }
-             }
- 
-             // Recalculate the Actual Duration ---
-             // Fetch leave type details to see if we should deduct days off
-             $typeObject = $this->types_model->getTypes($leaveTypeId);
-             $deductDayOff = isset($typeObject['deduct_days_off']) ? $typeObject['deduct_days_off'] : FALSE;
- 
-             // Get non-working days for this employee in the given range
-             $listDaysOff = $this->dayoffs_model->listOfDaysOffBetweenDates($employeeId, $startDate, $endDate);
- 
-             // Calculate length using the model logic
-             $calculationResult = $this->leaves_model->actualLengthAndDaysOff(
-                 $startDate,
-                 $endDate,
-                 $startDateType,
-                 $endDateType,
-                 $listDaysOff,
-                 $deductDayOff
-             );
-             // Overwrite the submitted duration with the server-calculated value
-             $duration = $calculationResult['length'];
+@@ -501,26 +501,102 @@
+             $duration = (float) $this->input->post('duration');
 +            $hayneHolidayCompensation = $this->hayne_holiday_compensation_model->isHolidayCompensationType((int) $leaveTypeId);
 +            $wasHayneHolidayCompensation = $this->hayne_holiday_compensation_model->isHolidayCompensationLeave((int) $id);
 +            $hayneCaregiverForHolidayEdit = $this->hayne_caregiver_leave_model->isCaregiverType((int) $leaveTypeId);
@@ -120,7 +79,30 @@
 +                $this->config->set_item('disallow_requests_without_credit', FALSE);
 +            }
  
-             // Check if the leave request is valid regarding the leave balance
+             // Reinforce control for leave requests spanning two periods
+             $this->load->model('contracts_model');
+             $this->load->model('dayoffs_model');
+             $startEntDate = '';
+             $endEntDate = '';
+ 
+             // Fetch the contract boundaries for the employee at the requested start date
+             $hasContract = $this->contracts_model->getBoundaries($employeeId, $startEntDate, $endEntDate, $startDate);
+ 
+             if ($hasContract === true) {
+                 // Reject the request if the start or end date falls outside the current contract period
+                 if ($startDate < $startEntDate || $endDate > $endEntDate) {
+                     $this->session->set_flashdata('msg', lang('leaves_validate_flash_msg_overlap_period'));
+ 
+                     // Redirect back to the appropriate form
+                     if (isset($_GET['source'])) {
+                         redirect($_GET['source']);
+                     } else {
+                         redirect('leaves');
+                     }
+                 }
+             }
+ 
+             // Recalculate the Actual Duration ---
 @@ -590,2 +667,34 @@
 +            $hayneHolidayTransaction = $hayneHolidayCompensation || $wasHayneHolidayCompensation;
 +            $hayneHolidayGrantId = 0;
