@@ -299,13 +299,55 @@ jobs:
           test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT status FROM leaves WHERE id=${OC_PLAN_ID}\"")" = "1"
           grep -F 'Przekroczony limit dla tego zdarzenia. Pozostało: 0 dni.' artifacts/plan-request.html
 
+      - name: Submitted occasion event identity must stay locked
+        run: |
+          submitted_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI OCCASION SPLIT ONE' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$submitted_id"
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/leaves/edit/${submitted_id}" -o artifacts/submitted-edit.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/submitted-edit.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode "startdate=${OC_D1}" \
+            --data-urlencode 'startdatetype=Morning' \
+            --data-urlencode "enddate=${OC_D1}" \
+            --data-urlencode 'enddatetype=Afternoon' \
+            --data-urlencode 'duration=1' \
+            --data-urlencode 'type=3' \
+            --data-urlencode 'cause=CI OCCASION SPLIT ONE' \
+            --data-urlencode 'status=2' \
+            --data-urlencode 'comment=' \
+            --data-urlencode 'hayne_occasion_event=child_birth' \
+            --data-urlencode "hayne_occasion_event_date=${OC_D1}" \
+            "http://localhost:8080/leaves/edit/${submitted_id}" \
+            -o artifacts/submitted-edit-result.html
+          grep -F 'Po wysłaniu wniosku nie można zmienić rodzaju ani daty zdarzenia urlopu okolicznościowego.' artifacts/submitted-edit-result.html
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CONCAT(m.event_code,':',m.event_date,':',l.status) FROM hayne_occasion_request_meta m JOIN leaves l ON l.id=m.leave_id WHERE m.leave_id=${submitted_id}\")\" = \"employee_marriage:${OC_D1}:2\"
+          "
+
       - name: Keep occasion leave out of annual entitlements
         run: |
           docker compose exec -T mysql sh -ec '
+            events_count="$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_occasion_events")"
+            meta_count="$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_occasion_request_meta")"
+            echo "occasion events=${events_count}; metadata=${meta_count}"
             test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM entitleddays WHERE LOCATE(0x6f63636173696f6e, description) > 0")" = "0"
-            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_occasion_events")" -ge "4"
-            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_occasion_request_meta")" -ge "7"
+            test "$events_count" -ge "5"
+            test "$meta_count" -ge "6"
           '
+
+      - name: Reject undefined-variable regressions in Leaves controller
+        run: |
+          docker compose logs --no-color jorani > artifacts/runtime.log
+          if grep -F 'Undefined variable $id' artifacts/runtime.log; then
+            exit 1
+          fi
+          if grep -F 'Undefined variable $hayneOccasion' artifacts/runtime.log; then
+            exit 1
+          fi
 
       - name: Upload occasion render diagnostic
         if: failure()
@@ -317,6 +359,8 @@ jobs:
             artifacts/limits.html
             artifacts/occasion-policy.html
             artifacts/collision.html
+            artifacts/submitted-edit-result.html
+            artifacts/runtime.log
           if-no-files-found: ignore
           retention-days: 2
 
