@@ -7,3 +7,4 @@ RUN apk add --no-cache curl tar \
 
 FROM mysql:8.0
 COPY --from=upstream /src/legacy/sql/init/ /docker-entrypoint-initdb.d/
+COPY hayne/sql/001-leave-profiles.sql /docker-entrypoint-initdb.d/zz-hayne-leave-profiles.sql
