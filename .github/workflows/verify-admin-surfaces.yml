@@ -3,20 +3,24 @@ name: verify-admin-surfaces
 on:
   pull_request:
     paths:
+      - 'hayne/overlay/assets/hayne/foundation.css'
       - 'hayne/overlay/assets/hayne/legacy-compat.css'
       - 'hayne/patches/010-header-branding.patch'
       - 'hayne/patches/160-types-model-zero-id.patch'
       - '.github/workflows/verify-admin-surfaces.yml'
       - 'docs/checkpoints/PR-ADMIN-01_LEGACY_COMPAT.md'
+      - 'docs/checkpoints/PR-UI-SYSTEM-01_CONTROL_HEIGHTS.md'
   push:
     branches:
       - main
     paths:
+      - 'hayne/overlay/assets/hayne/foundation.css'
       - 'hayne/overlay/assets/hayne/legacy-compat.css'
       - 'hayne/patches/010-header-branding.patch'
       - 'hayne/patches/160-types-model-zero-id.patch'
       - '.github/workflows/verify-admin-surfaces.yml'
       - 'docs/checkpoints/PR-ADMIN-01_LEGACY_COMPAT.md'
+      - 'docs/checkpoints/PR-UI-SYSTEM-01_CONTROL_HEIGHTS.md'
 
 jobs:
   admin-surfaces:
@@ -32,11 +36,15 @@ jobs:
 
       - name: Guard compatibility sources
         run: |
+          test -f hayne/overlay/assets/hayne/foundation.css
           test -f hayne/overlay/assets/hayne/legacy-compat.css
           test -f hayne/patches/160-types-model-zero-id.patch
           grep -F 'assets/hayne/legacy-compat.css' hayne/patches/010-header-branding.patch
           grep -F 'public function getTypes(?int $id = null): ?array' hayne/patches/160-types-model-zero-id.patch
           grep -F 'if ($id === null)' hayne/patches/160-types-model-zero-id.patch
+          grep -F -- '--hayne-control-height: 44px;' hayne/overlay/assets/hayne/foundation.css
+          grep -F 'height: var(--hayne-control-height);' hayne/overlay/assets/hayne/foundation.css
+          grep -F 'box-sizing: border-box;' hayne/overlay/assets/hayne/foundation.css
           grep -F '#wrap .form-horizontal .control-group' hayne/overlay/assets/hayne/legacy-compat.css
           grep -F '#wrap .btn-group' hayne/overlay/assets/hayne/legacy-compat.css
           grep -F '#wrap .input-append' hayne/overlay/assets/hayne/legacy-compat.css
@@ -50,6 +58,9 @@ jobs:
             grep -F "assets/hayne/legacy-compat.css" legacy/application/views/templates/header.php
             grep -F "public function getTypes(?int \$id = null): ?array" legacy/application/models/Types_model.php
             grep -F "if (\$id === null)" legacy/application/models/Types_model.php
+            grep -F -- "--hayne-control-height: 44px;" assets/hayne/foundation.css
+            grep -F "height: var(--hayne-control-height);" assets/hayne/foundation.css
+            test -f assets/hayne/foundation.css
             test -f assets/hayne/legacy-compat.css
           '
 
@@ -122,10 +133,14 @@ jobs:
           ! grep -F 'Undefined array key' "$edit"
           ! grep -F 'A PHP Error was encountered' "$edit"
 
-      - name: Verify legacy UI compatibility asset
+      - name: Verify legacy UI compatibility assets
         run: |
+          curl -fsS http://localhost:8080/assets/hayne/foundation.css \
+            -o artifacts/admin/foundation.css
           curl -fsS http://localhost:8080/assets/hayne/legacy-compat.css \
             -o artifacts/admin/legacy-compat.css
+          grep -F -- '--hayne-control-height: 44px;' artifacts/admin/foundation.css
+          grep -F 'height: var(--hayne-control-height);' artifacts/admin/foundation.css
           grep -F '#wrap .form-horizontal .control-group' artifacts/admin/legacy-compat.css
           grep -F '#wrap .modal-body form > label' artifacts/admin/legacy-compat.css
           grep -F '#wrap .btn-group' artifacts/admin/legacy-compat.css
@@ -149,7 +164,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pr-admin-01-evidence
+          name: pr-ui-system-01-evidence
           path: artifacts/admin/
           if-no-files-found: warn
           retention-days: 14
