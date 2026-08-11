@@ -1,13 +1,6 @@
 --- a/legacy/application/views/leaves/create.php
 +++ b/legacy/application/views/leaves/create.php
-@@ -28,8 +28,23 @@
-         <select class="input-xxlarge" name="type" id="type">
-             <?php foreach ($types as $typeId => $TypeName): ?>
-                 <option value="<?php echo $typeId; ?>" <?php if ($typeId == $defaultType)
-                        echo "selected"; ?>>
-                     <?php echo $TypeName; ?>
-                 </option>
-             <?php endforeach ?>
+@@ -35,1 +35,16 @@
          </select>
 +        <?php if (!empty($hayneOnDemandState['enabled'])) { ?>
 +            <div id="hayneOnDemandOption" class="hayne-on-demand-option"
@@ -26,14 +19,7 @@
 +        <?php } ?>
 --- a/legacy/application/views/leaves/edit.php
 +++ b/legacy/application/views/leaves/edit.php
-@@ -34,8 +34,23 @@
-                 <select class="input-xxlarge" name="type" id="type">
-                     <?php foreach ($types as $typeId => $TypeName): ?>
-                         <option value="<?php echo $typeId; ?>" <?php if ($typeId == $leave['type'])
-                                echo "selected"; ?>>
-                             <?php echo $TypeName; ?>
-                         </option>
-                     <?php endforeach ?>
+@@ -41,1 +41,16 @@
                  </select>
 +                <?php if (!empty($hayneOnDemandState['enabled'])) { ?>
 +                    <div id="hayneOnDemandOption" class="hayne-on-demand-option"
