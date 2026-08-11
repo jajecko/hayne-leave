@@ -1,0 +1,127 @@
+--- a/legacy/application/config/config.php
++++ b/legacy/application/config/config.php
+@@ -494,7 +494,8 @@ $config['login_pattern'] = $env_str('LOGIN_PATTERN', 'jdoe');           // (def
+ //____________________________________________________________________________
+ //Set this value to TRUE if you want to create leaves at status requested instead of planned
+ $config['leave_status_requested'] = $env_bool('LEAVE_STATUS_REQUESTED', false);
+-$config['default_leave_type'] = $env_bool('DEFAULT_LEAVE_TYPE', false);    // Default leave type identifier (integer).
++$config['default_leave_type'] = $env_int('DEFAULT_LEAVE_TYPE', 1);       // Default leave type identifier (integer).
++$config['overtime_compensation_type'] = $env_int('OVERTIME_COMPENSATION_TYPE', 0); // 0 disables entitlement credit from overtime.
+ 
+ // Create a leave request / Allow overwrite of the duration
+ $config['disable_edit_leave_duration'] = $env_bool('DISABLE_EDIT_LEAVE_DURATION', false); // Switch to read-only (duration is computed)
+--- a/legacy/application/models/Contracts_model.php
++++ b/legacy/application/models/Contracts_model.php
+@@ -274,34 +274,44 @@ class Contracts_model extends CI_Model
+         $this->load->model('leaves_model');
+ 
+         //What is the default type ?
+-        //First of all, we need infos about the user (namely its contract)
++        //First of all, we need infos about the user (namely its contract).
+         $user = $this->users_model->getUsers($userId);
+-        $contract = $this->getContracts($user['contract']);
++        $contractId = isset($user['contract']) ? (int) $user['contract'] : 0;
++        $contract = $contractId > 0 ? $this->getContracts($contractId) : NULL;
++
+         //If a default leave type is set on the contract, it overwrites what is set in config file
+-        $defaultType = $this->config->item('default_leave_type');
+-        $defaultType = (($defaultType == FALSE) || (is_null($this->config->item('default_leave_type')))) ? 0 : $defaultType;
++        $defaultType = (int) $this->config->item('default_leave_type');
+         if (!empty($contract)) {
+             if (array_key_exists('default_leave_type', $contract)) {
+                 if (!is_null($contract['default_leave_type'])) {
+-                    $defaultType = $contract['default_leave_type'];
++                    $defaultType = (int) $contract['default_leave_type'];
+                 }
+             }
+         }
+ 
+-        //Build the list of types
+-        $types = $this->types_model->getTypesAsArray();
+-        //Compute the credit of entitlment for the default leave type
+-        if (is_null($leaveType)) {
+-            $credit = $this->leaves_model->getLeavesTypeBalanceForEmployee($userId, $types[$defaultType]);
++        //Build the list of leave types available for this user.
++        $types = $contractId > 0
++            ? $this->getListOfIncludedTypes($contractId)
++            : $this->types_model->getTypesAsArray();
++
++        if (empty($types)) {
++            $defaultType = NULL;
++            $credit = 0.0;
+         } else {
+-            $credit = $this->leaves_model->getLeavesTypeBalanceForEmployee($userId, $types[$leaveType]);
++            //Never let a stale contract/config identifier break the create-leave screen.
++            if (!array_key_exists($defaultType, $types)) {
++                $defaultType = (int) array_key_first($types);
++            }
++
++            $effectiveType = is_null($leaveType) ? $defaultType : $leaveType;
++            if (!array_key_exists($effectiveType, $types)) {
++                $effectiveType = $defaultType;
++            }
++
++            $credit = $this->leaves_model->getLeavesTypeBalanceForEmployee($userId, $types[$effectiveType]);
+         }
+ 
+-        //Filter this array by removing the excluded types
+-        $excludedTypes = $this->contracts_model->getListOfExcludedTypes($user['contract']);
+-        $types = array_diff($types, $excludedTypes);
+-
+         //Let's return an anonymous object containing all these details
+         $leaveTypesDetails = new stdClass;
+         $leaveTypesDetails->defaultType = $defaultType;
+--- a/legacy/application/models/Overtime_model.php
++++ b/legacy/application/models/Overtime_model.php
+@@ -89,6 +89,20 @@ class Overtime_model extends CI_Model
+         $this->db->where('id', $id);
+         $this->db->update('overtime', ['status' => 3]);
+ 
++        //HAYNE does not reserve leave type #0 for overtime compensation.
++        //If overtime compensation is ever enabled explicitly, it must point to
++        //an existing positive leave type identifier.
++        $compensationType = (int) $this->config->item('overtime_compensation_type');
++        if ($compensationType <= 0) {
++            return;
++        }
++
++        $this->load->model('types_model');
++        if (empty($this->types_model->getTypes($compensationType))) {
++            log_message('error', 'Invalid overtime compensation leave type #' . $compensationType);
++            return;
++        }
++
+         //Add entitlement
+         $extra = $this->getExtras($id);
+ 
+@@ -112,7 +126,7 @@ class Overtime_model extends CI_Model
+             'startdate' => $startentdate,
+             'enddate' => $endentdate,
+             'days' => $extra['duration'],
+-            'type' => 0,
++            'type' => $compensationType,
+             'overtime' => $id,
+             'description' => 'Catch up ' . $extra['date']
+         ];
+--- a/legacy/application/controllers/Leavetypes.php
++++ b/legacy/application/controllers/Leavetypes.php
+@@ -91,15 +91,11 @@ class LeaveTypes extends CI_Controller
+     public function delete(int $id): void
+     {
+         $this->auth->checkIfOperationIsAllowed('leavetypes_delete');
+-        if ($id != 0) {
+-            if ($this->types_model->usage($id) > 0) {
+-                $this->session->set_flashdata('msg', lang('leavetypes_popup_delete_flash_forbidden'));
+-            } else {
+-                $this->types_model->deleteType($id);
+-                $this->session->set_flashdata('msg', lang('leavetypes_popup_delete_flash_msg'));
+-            }
++        if ($this->types_model->usage($id) > 0) {
++            $this->session->set_flashdata('msg', lang('leavetypes_popup_delete_flash_forbidden'));
+         } else {
+-            $this->session->set_flashdata('msg', lang('leavetypes_popup_delete_flash_error'));
++            $this->types_model->deleteType($id);
++            $this->session->set_flashdata('msg', lang('leavetypes_popup_delete_flash_msg'));
+         }
+         redirect('leavetypes');
+     }
