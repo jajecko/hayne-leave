@@ -1,6 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -534,11 +534,87 @@
+@@ -534,12 +534,88 @@
              // Calculate length using the model logic
              $calculationResult = $this->leaves_model->actualLengthAndDaysOff(
                  $startDate,
@@ -88,6 +88,7 @@
 +            if ($hayneHolidayCompensation) {
 +                $this->config->set_item('disallow_requests_without_credit', FALSE);
 +            }
+ 
 @@ -590,2 +667,34 @@
 +            $hayneHolidayTransaction = $hayneHolidayCompensation || $wasHayneHolidayCompensation;
 +            $hayneHolidayGrantId = 0;
