@@ -3,7 +3,7 @@
 @@ -60,4 +60,5 @@
                  <li class="nav-header">Urlopy</li>
                  <li><a href="<?php echo base_url(); ?>leavetypes">Rodzaje nieobecności</a></li>
-+                <li><a href="<?php echo base_url(); ?>hr/employees">Limity urlopowe</a></li>
++                <li><a href="<?php echo base_url(); ?>haynelimits">Limity urlopowe</a></li>
                  <li class="divider"></li>
                  <li class="nav-header">System</li>
 --- a/legacy/application/controllers/Entitleddays.php
