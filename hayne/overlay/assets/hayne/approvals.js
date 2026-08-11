@@ -201,7 +201,9 @@
   };
 
   const buildPage = (table) => {
-    const root = table.parentElement;
+    const wrapper = document.getElementById('leaves_wrapper');
+    const root = wrapper ? wrapper.parentElement : table.parentElement;
+    if (!root) return null;
     const oldTitle = root.querySelector(':scope > h2');
     if (!oldTitle) return null;
 
@@ -299,7 +301,6 @@
     toolbar.appendChild(toolbarRight);
     card.appendChild(toolbar);
 
-    const wrapper = document.getElementById('leaves_wrapper');
     if (wrapper) card.appendChild(wrapper);
     moveSearch(toolbarRight);
 
