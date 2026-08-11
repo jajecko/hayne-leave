@@ -1,6 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -44,6 +44,8 @@
+@@ -44,5 +44,7 @@
          setUserContext($this);
          $this->load->model('leaves_model');
          $this->load->model('types_model');
