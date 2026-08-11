@@ -125,9 +125,15 @@ jobs:
         run: |
           set -euo pipefail
           base="$(date -d '+45 days' +%F)"
-          if [ "$(date -d "$base" +%m)" = "12" ]; then
+          while [ "$(date -d "$base" +%u)" -ne 1 ]; do
+            base="$(date -d "$base +1 day" +%F)"
+          done
+          if [ "$(date -d "$base" +%Y)" != "$(date -d "$base +28 days" +%Y)" ]; then
             next_year="$(( $(date -d "$base" +%Y) + 1 ))"
-            base="${next_year}-01-10"
+            base="${next_year}-01-01"
+            while [ "$(date -d "$base" +%u)" -ne 1 ]; do
+              base="$(date -d "$base +1 day" +%F)"
+            done
           fi
           {
             echo "CG_D1=$base"
@@ -212,12 +218,19 @@ jobs:
       - name: Reach five of five with household request
         run: |
           artifacts/submit-caregiver.sh "$CG_D15" "$CG_D16" 2 2 'CI CAREGIVER FINAL TWO' 'Piotr Nowak' household 'ul. Testowa 1, Warszawa' 'Poważne względy medyczne' artifacts/final-two.html
+          echo '=== FINAL TWO RESPONSE ==='
+          grep -E 'alert|Przekroczony|Pozostało|Nie udało|opiekuńcz' artifacts/final-two.html | head -n 80 || true
+          echo '=== CAREGIVER DB STATE ==='
+          docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -e \"SELECT id,startdate,enddate,status,employee,cause,duration,type FROM leaves WHERE cause LIKE 'CI CAREGIVER%'; SELECT * FROM hayne_caregiver_request_meta ORDER BY leave_id; SELECT id,employee,startdate,enddate,days,type,description FROM entitleddays WHERE employee=1 AND type=4 ORDER BY startdate,id;\""
           final_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI CAREGIVER FINAL TWO' ORDER BY id DESC LIMIT 1\"")"
+          echo "final_id=${final_id}"
           test -n "$final_id"
           docker compose exec -T mysql sh -ec "
             test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT household_address FROM hayne_caregiver_request_meta WHERE leave_id=${final_id}\")\" = \"ul. Testowa 1, Warszawa\"
           "
           curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/counters -o artifacts/balance.html
+          echo '=== CAREGIVER COUNTER HTML ==='
+          grep -n -C 4 'hayne-caregiver' artifacts/balance.html || true
           grep -F 'data-hayne-caregiver-summary="v1"' artifacts/balance.html
           grep -F 'data-used="5"' artifacts/balance.html
           grep -F 'data-remaining="0"' artifacts/balance.html
