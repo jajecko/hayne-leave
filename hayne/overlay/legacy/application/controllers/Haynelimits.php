@@ -13,6 +13,7 @@ class Haynelimits extends CI_Controller
         parent::__construct();
         setUserContext($this);
         $this->assertAccess();
+        $this->load->helper('form');
         $this->load->model('hayne_leave_policy_model');
     }
 
