@@ -1,0 +1,210 @@
+name: verify-pr-leave-03
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/overlay/legacy/application/models/Hayne_on_demand_model.php'
+      - 'hayne/overlay/assets/hayne/on-demand.js'
+      - 'hayne/overlay/assets/hayne/on-demand.css'
+      - 'hayne/patches/200-on-demand-controller.patch'
+      - 'hayne/patches/201-on-demand-controller-hardening.patch'
+      - 'hayne/patches/205-on-demand-views.patch'
+      - 'hayne/patches/210-on-demand-approvals.patch'
+      - 'hayne/sql/001-leave-profiles.sql'
+      - '.github/workflows/verify-pr-leave-03.yml'
+      - 'docs/checkpoints/PR-LEAVE-03_ON_DEMAND_SUBLIMIT.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'hayne/overlay/legacy/application/models/Hayne_on_demand_model.php'
+      - 'hayne/overlay/assets/hayne/on-demand.js'
+      - 'hayne/overlay/assets/hayne/on-demand.css'
+      - 'hayne/patches/200-on-demand-controller.patch'
+      - 'hayne/patches/201-on-demand-controller-hardening.patch'
+      - 'hayne/patches/205-on-demand-views.patch'
+      - 'hayne/patches/210-on-demand-approvals.patch'
+      - 'hayne/sql/001-leave-profiles.sql'
+      - '.github/workflows/verify-pr-leave-03.yml'
+      - 'docs/checkpoints/PR-LEAVE-03_ON_DEMAND_SUBLIMIT.md'
+
+jobs:
+  on-demand-sublimit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build and start HAYNE Leave
+        run: docker compose up --build -d
+
+      - name: Wait for application
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/session/login >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Syntax and source checks
+        run: |
+          docker compose exec -T jorani php -l legacy/application/models/Hayne_on_demand_model.php
+          docker compose exec -T jorani php -l legacy/application/controllers/Leaves.php
+          docker compose exec -T jorani php -l legacy/application/controllers/Requests.php
+          docker compose exec -T jorani php -l legacy/application/views/leaves/create.php
+          docker compose exec -T jorani php -l legacy/application/views/leaves/edit.php
+          docker compose exec -T jorani sh -ec '
+            grep -F "assets/hayne/on-demand.js" legacy/application/views/templates/header.php
+            grep -F "hayne_on_demand" legacy/application/views/leaves/create.php
+            grep -F "hayne_on_demand" legacy/application/views/leaves/edit.php
+            grep -F "ANNUAL_LIMIT_DAYS = 4" legacy/application/models/Hayne_on_demand_model.php
+          '
+
+      - name: Authenticate as administrator
+        run: |
+          mkdir -p artifacts
+          curl -fsS -c artifacts/cookies.txt http://localhost:8080/session/login -o artifacts/login.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/login.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jorani' \
+            --data-urlencode 'password=jorani' \
+            --data-urlencode 'language=en' \
+            http://localhost:8080/session/login \
+            -o artifacts/home.html
+          grep -F 'Cześć Admin!' artifacts/home.html
+
+      - name: Configure vacation profile
+        run: |
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/haynelimits -o artifacts/limits.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/limits.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'employee_id=1' \
+            --data-urlencode 'vacation_type_id=1' \
+            --data-urlencode 'annual_days=26' \
+            --data-urlencode 'auto_renew=1' \
+            http://localhost:8080/haynelimits/save \
+            -o artifacts/limits-saved.html
+          grep -F 'Limit urlopowy został zapisany.' artifacts/limits-saved.html
+
+      - name: Verify request form exposes on-demand option
+        run: |
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/create -o artifacts/create.html
+          grep -F 'id="hayneOnDemandOption"' artifacts/create.html
+          grep -F 'Urlop na żądanie' artifacts/create.html
+          grep -F 'data-vacation-type-id="1"' artifacts/create.html
+          grep -F 'pozostało' artifacts/create.html
+
+      - name: Exercise four-day sublimit and same vacation pool
+        shell: bash
+        run: |
+          set -euo pipefail
+          year="$(date +%Y)"
+          d1="$(date -d "${year}-03-01 next monday" +%F)"
+          d3="$(date -d "${d1} +2 days" +%F)"
+          d8="$(date -d "${d1} +7 days" +%F)"
+          d9="$(date -d "${d1} +8 days" +%F)"
+          d15="$(date -d "${d1} +14 days" +%F)"
+          d22="$(date -d "${d1} +21 days" +%F)"
+          d29="$(date -d "${d1} +28 days" +%F)"
+          d36="$(date -d "${d1} +35 days" +%F)"
+
+          submit_leave() {
+            local start="$1"
+            local end="$2"
+            local duration="$3"
+            local status="$4"
+            local cause="$5"
+            local on_demand="$6"
+            local output="$7"
+
+            curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/create -o artifacts/form.html
+            local csrf_token
+            csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/form.html | head -n 1)"
+            test -n "$csrf_token"
+
+            args=(
+              -fsS -L
+              -c artifacts/cookies.txt
+              -b artifacts/cookies.txt
+              --data-urlencode "csrf_test_jorani=${csrf_token}"
+              --data-urlencode "startdate=${start}"
+              --data-urlencode 'startdatetype=Morning'
+              --data-urlencode "enddate=${end}"
+              --data-urlencode 'enddatetype=Afternoon'
+              --data-urlencode "duration=${duration}"
+              --data-urlencode 'type=1'
+              --data-urlencode "cause=${cause}"
+              --data-urlencode "status=${status}"
+            )
+            if [ "$on_demand" = "1" ]; then
+              args+=(--data-urlencode 'hayne_on_demand=1')
+            fi
+            curl "${args[@]}" http://localhost:8080/leaves/create -o "$output"
+          }
+
+          submit_leave "$d1" "$d3" 3 2 'CI ONDEMAND THREE' 1 artifacts/three.html
+          first_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI ONDEMAND THREE' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$first_id"
+          docker compose exec -T mysql sh -ec "
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM hayne_leave_request_meta WHERE leave_id=${first_id} AND on_demand=1\")\" = \"1\"
+            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CONCAT(type,':',CAST(duration AS UNSIGNED),':',status) FROM leaves WHERE id=${first_id}\")\" = \"1:3:2\"
+          "
+
+          before_two="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM leaves WHERE cause='CI ONDEMAND TWO REJECT'\"")"
+          submit_leave "$d8" "$d9" 2 2 'CI ONDEMAND TWO REJECT' 1 artifacts/two-reject.html
+          after_two="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM leaves WHERE cause='CI ONDEMAND TWO REJECT'\"")"
+          test "$before_two" = "$after_two"
+          grep -F 'Przekroczony limit urlopu na żądanie' artifacts/two-reject.html
+
+          submit_leave "$d15" "$d15" 1 2 'CI ONDEMAND FOURTH' 1 artifacts/fourth.html
+          fourth_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI ONDEMAND FOURTH' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$fourth_id"
+
+          submit_leave "$d22" "$d22" 1 2 'CI ONDEMAND FIFTH REJECT' 1 artifacts/fifth-reject.html
+          test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM leaves WHERE cause='CI ONDEMAND FIFTH REJECT'\"")" = "0"
+          grep -F 'Pozostało: 0 dni' artifacts/fifth-reject.html
+
+          # Ordinary vacation uses the same type/pool but is not blocked by 4/4.
+          submit_leave "$d29" "$d29" 1 2 'CI NORMAL VACATION AFTER FOUR' 0 artifacts/normal.html
+          normal_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI NORMAL VACATION AFTER FOUR' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$normal_id"
+          test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM hayne_leave_request_meta WHERE leave_id=${normal_id}\"")" = "0"
+
+          # A plan may be marked on-demand, but conversion to Requested must recheck the sublimit.
+          submit_leave "$d36" "$d36" 1 1 'CI ONDEMAND PLAN' 1 artifacts/plan.html
+          plan_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI ONDEMAND PLAN' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$plan_id"
+          curl -fsS -L -b artifacts/cookies.txt -c artifacts/cookies.txt "http://localhost:8080/leaves/request/${plan_id}" -o artifacts/plan-request.html
+          test "$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT status FROM leaves WHERE id=${plan_id}\"")" = "1"
+          grep -F 'Przekroczony limit urlopu na żądanie' artifacts/plan-request.html
+
+      - name: Verify counters and visible labels
+        run: |
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/counters -o artifacts/balance.html
+          grep -F 'data-hayne-on-demand-summary="v1"' artifacts/balance.html
+          grep -F 'data-used="4"' artifacts/balance.html
+          grep -F 'data-remaining="0"' artifacts/balance.html
+          grep -F '4 / 4 dni' artifacts/balance.html
+
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves -o artifacts/leaves.html
+          grep -F 'Urlop na żądanie' artifacts/leaves.html
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
