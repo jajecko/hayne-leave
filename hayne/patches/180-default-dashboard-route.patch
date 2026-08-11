@@ -5,6 +5,6 @@
  //_______________________________________________
  //Default controllers
 -$route['default_controller'] = 'leaves';
-+$route['default_controller'] = 'pages/view/home';
++$route['default_controller'] = 'pages/view';
  $route['404_override'] = 'pages/notfound';
  $route['(:any)'] = 'pages/view/$1';
