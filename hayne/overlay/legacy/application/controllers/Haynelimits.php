@@ -18,6 +18,7 @@ class Haynelimits extends CI_Controller
         $this->load->model('hayne_caregiver_leave_model');
         $this->load->model('hayne_force_majeure_model');
         $this->load->model('hayne_childcare_model');
+        $this->load->model('hayne_occasion_leave_model');
     }
 
     public function index(): void
@@ -46,6 +47,7 @@ class Haynelimits extends CI_Controller
         $data['force_majeure_policy'] = $this->hayne_force_majeure_model->getPolicy();
         $data['childcare_policy'] = $this->hayne_childcare_model->getPolicy();
         $data['childcare_allocations'] = $this->hayne_childcare_model->getAllocationMap((int) $year);
+        $data['occasion_policy'] = $this->hayne_occasion_leave_model->getPolicy();
 
         foreach ($data['employees'] as $employee) {
             if ((int) $employee['active'] !== 1) {
@@ -308,6 +310,57 @@ class Haynelimits extends CI_Controller
         redirect('haynelimits');
     }
 
+    public function saveOccasionPolicy(): void
+    {
+        $leaveTypeId = filter_var($this->input->post('occasion_type_id', TRUE), FILTER_VALIDATE_INT);
+        $enabled = $this->input->post('occasion_enabled', TRUE) === '1';
+
+        if ($leaveTypeId === FALSE || $leaveTypeId <= 0) {
+            $this->session->set_flashdata('msg', 'Wybierz prawidłowy rodzaj urlopu okolicznościowego.');
+            redirect('haynelimits');
+            return;
+        }
+
+        $this->load->model('types_model');
+        if (empty($this->types_model->getTypes((int) $leaveTypeId))) {
+            $this->session->set_flashdata('msg', 'Nie znaleziono wybranego rodzaju urlopu okolicznościowego.');
+            redirect('haynelimits');
+            return;
+        }
+
+        if ($enabled) {
+            if ($this->isVacationTypeInUse((int) $leaveTypeId)) {
+                $this->session->set_flashdata('msg', 'Ten rodzaj nieobecności jest już używany jako urlop wypoczynkowy.');
+                redirect('haynelimits');
+                return;
+            }
+            $collision = $this->activeStatutoryPolicyForType((int) $leaveTypeId, 'occasion');
+            if ($collision !== NULL) {
+                $this->session->set_flashdata('msg', 'Ten rodzaj nieobecności jest już używany dla polityki: ' . $collision . '.');
+                redirect('haynelimits');
+                return;
+            }
+        }
+
+        try {
+            $this->hayne_occasion_leave_model->savePolicy((int) $leaveTypeId, $enabled);
+            $this->session->set_flashdata(
+                'msg',
+                $enabled
+                    ? 'Urlop okolicznościowy został włączony. Limit jest liczony osobno dla każdego zdarzenia.'
+                    : 'Urlop okolicznościowy został wyłączony.'
+            );
+        } catch (Throwable $exception) {
+            log_message('error', 'HAYNE occasion policy save failed: ' . $exception->getMessage());
+            $this->session->set_flashdata(
+                'msg',
+                'Nie udało się zapisać ustawień urlopu okolicznościowego: ' . $exception->getMessage()
+            );
+        }
+
+        redirect('haynelimits');
+    }
+
     public function saveChildcareAllocation(): void
     {
         $employeeId = filter_var($this->input->post('employee_id', TRUE), FILTER_VALIDATE_INT);
@@ -361,6 +414,10 @@ class Haynelimits extends CI_Controller
             'childcare' => [
                 'policy' => $this->hayne_childcare_model->getPolicy(),
                 'label' => 'opieka nad dzieckiem do 14 lat',
+            ],
+            'occasion' => [
+                'policy' => $this->hayne_occasion_leave_model->getPolicy(),
+                'label' => 'urlop okolicznościowy',
             ],
         ];
 

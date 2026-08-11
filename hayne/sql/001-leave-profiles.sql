@@ -66,3 +66,24 @@ CREATE TABLE IF NOT EXISTS `hayne_childcare_year_allocations` (
     PRIMARY KEY (`employee_id`, `year`),
     KEY `year` (`year`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `hayne_occasion_request_meta` (
+    `leave_id` int(11) NOT NULL,
+    `event_code` varchar(48) NOT NULL,
+    `event_date` date NOT NULL,
+    `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`leave_id`),
+    KEY `event_lookup` (`event_code`, `event_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `hayne_occasion_events` (
+    `employee_id` int(11) NOT NULL,
+    `event_code` varchar(48) NOT NULL,
+    `event_date` date NOT NULL,
+    `max_days` tinyint(1) NOT NULL,
+    `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`employee_id`, `event_code`, `event_date`),
+    KEY `event_date` (`event_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

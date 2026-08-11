@@ -13,7 +13,7 @@ $editingAutoRenew = $edit_profile ? ((int) $edit_profile['auto_renew'] === 1) : 
         <div class="span12">
             <div class="page-header">
                 <h1>Limity urlopowe</h1>
-                <p class="muted">Ustaw stały roczny wymiar urlopu oraz ustawowe pule obsługiwane automatycznie przez HAYNE.</p>
+                <p class="muted">Ustaw stały roczny wymiar urlopu oraz ustawowe pule i zasady obsługiwane przez HAYNE.</p>
             </div>
 
             <?php echo $flash_partial_view; ?>
@@ -35,6 +35,11 @@ $editingAutoRenew = $edit_profile ? ((int) $edit_profile['auto_renew'] === 1) : 
                 'types' => $types,
                 'selected_year' => $selected_year,
                 'current_year' => $current_year,
+            ]); ?>
+
+            <?php $this->load->view('haynelimits/occasion', [
+                'occasion_policy' => $occasion_policy,
+                'types' => $types,
             ]); ?>
 
             <div class="row-fluid">
