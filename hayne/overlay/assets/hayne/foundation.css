@@ -226,6 +226,41 @@
   border-radius: var(--hayne-radius-sm);
 }
 
+#wrap .dataTables_wrapper button.dt-button,
+#wrap .dataTables_wrapper div.dt-button,
+#wrap .dataTables_wrapper a.dt-button {
+  box-sizing: border-box;
+  display: inline-flex;
+  height: var(--hayne-control-height);
+  min-height: var(--hayne-control-height);
+  align-items: center;
+  justify-content: center;
+  margin: 0 4px 0 0;
+  padding: 0 13px;
+  border: 1px solid #d7d7d2;
+  border-radius: var(--hayne-radius-sm);
+  background: #fff;
+  background-image: none;
+  box-shadow: none;
+  color: var(--hayne-ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  text-shadow: none;
+}
+
+#wrap .dataTables_wrapper button.dt-button:hover,
+#wrap .dataTables_wrapper button.dt-button:focus,
+#wrap .dataTables_wrapper div.dt-button:hover,
+#wrap .dataTables_wrapper div.dt-button:focus,
+#wrap .dataTables_wrapper a.dt-button:hover,
+#wrap .dataTables_wrapper a.dt-button:focus {
+  border-color: #bdbdb7;
+  background: #f5f5f2;
+  background-image: none;
+  color: #000;
+}
+
 #wrap .label,
 #wrap .badge {
   border-radius: 999px;
