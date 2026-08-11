@@ -1,14 +1,14 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -347,4 +347,8 @@
+@@ -348,4 +348,8 @@
              $calculatedDuration = $calculationResult['length'];
  
              // Overwrite the submitted duration with the server-calculated value
-             $duration = $calculatedDuration;
 +            $hayneHolidayCompensation = $this->hayne_holiday_compensation_model->isHolidayCompensationType((int) $leaveTypeId);
 +            if ($hayneHolidayCompensation) {
 +                $this->config->set_item('disallow_requests_without_credit', FALSE);
 +            }
+             $duration = $calculatedDuration;
 @@ -374,2 +378,26 @@
 +            if ($hayneHolidayCompensation) {
 +                try {
