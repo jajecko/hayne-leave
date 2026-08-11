@@ -1,23 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 158 40" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1304 343" role="img" aria-labelledby="title desc">
   <title id="title">HAYNE LEAVE</title>
-  <desc id="desc">HAYNE logo with LEAVE wordmark underneath.</desc>
-  <!-- v2: HAYNE paths copied 1:1 from supplied master logo hayne(1).svg -->
-  <g id="hayne" fill="#000000">
-    <path d="M140.37,18.04v-5.51h10.16v-3.79h-10.16V3.79h17.42V0h-22.54v22.23h22.75v-4.19h-17.63Z"/>
-    <path d="M57.65,22.23h5.76L50.78,0h-4.96l-12.47,22.23h5.12l2.56-4.86h13.96l2.65,4.86ZM43.22,13.36l4.95-9.05,4.74,9.05h-9.7Z"/>
-    <path d="M21.14,22.23h5.18V0h-5.18v8.61H5.13V0H0v22.23h5.13v-9.56h16.01v9.56Z"/>
-    <path d="M78.55,8.52l-7.55-8.52h-6.84l11.44,12.27v9.95h5.18v-10.07L92.18,0h-6.02l-7.61,8.52Z"/>
-    <path d="M124.01,22.23V0h-4.61v11.68c0,.49.07,1.77.22,3.82-.77-.86-1.6-1.67-2.48-2.41L101.57,0h-3.44v22.23h4.61v-12.01c-.02-1.18-.09-2.36-.22-3.54.56.65,1.18,1.26,1.83,1.81l16.16,13.75h3.51Z"/>
-  </g>
-  <!-- LEAVE and side rules are vectors; no font dependency -->
-  <g id="leave" fill="none" stroke="#000000" stroke-width="1.15" stroke-linecap="square" stroke-linejoin="miter">
-    <path d="M0 33.5H38"/>
-    <path d="M50 29V36H56"/>
-    <path d="M63 29H70 M63 29V36 M63 32.5H69 M63 36H70"/>
-    <path d="M77 36L81 29L85 36 M78.6 33.2H83.4"/>
-    <path d="M92 29L96 36L100 29"/>
-    <path d="M107 29H114 M107 29V36 M107 32.5H113 M107 36H114"/>
-    <path d="M120 33.5H158"/>
-  </g>
+  <desc id="desc">HAYNE wordmark with LEAVE centered between horizontal rules.</desc>
+  <path fill="#000000" fill-rule="evenodd" d="M980,312 L981,317 L1298,317 L1298,311Z M3,312 L4,317 L316,317 L316,311Z M872,289 L872,339 L912,339 L912,334 L878,333 L879,315 L909,315 L909,310 L879,310 L878,295 L912,294 L912,289Z M741,290 L768,338 L773,339 L801,289 L794,289 L771,331 L748,289Z M616,338 L623,339 L633,323 L665,323 L676,339 L682,339 L652,289 L646,290Z M636,317 L647,299 L650,297 L663,318 L637,319Z M503,289 L503,339 L544,339 L544,334 L509,333 L510,315 L540,315 L540,310 L510,310 L509,295 L543,294 L544,289Z M387,289 L387,339 L427,339 L426,334 L392,333 L392,289Z M1115,3 L1116,172 L1301,171 L1300,140 L1157,139 L1158,99 L1238,99 L1238,71 L1158,70 L1158,33 L1298,33 L1298,3Z M825,3 L826,172 L865,172 L866,61 L870,63 L994,171 L1030,171 L1030,3 L988,4 L989,103 L987,114 L857,3Z M544,3 L635,99 L636,172 L676,171 L677,98 L770,3 L720,3 L658,68 L597,3Z M281,170 L286,172 L324,171 L345,136 L457,136 L479,172 L523,171 L423,3 L384,3Z M401,38 L403,39 L440,104 L438,106 L368,106 L363,104Z M3,3 L4,172 L48,171 L49,99 L168,99 L170,101 L170,172 L214,171 L214,3 L170,3 L169,68 L49,68 L48,3Z"/>
 </svg>

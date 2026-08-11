@@ -13,6 +13,7 @@ on:
       - 'hayne/patches/060-oauth-authorize-branding.patch'
       - '.github/workflows/verify-pr-login-01.yml'
       - 'docs/checkpoints/PR-LOGIN-01_CENTERED_LOGIN_BRAND_LOCKUP.md'
+      - 'docs/checkpoints/PR-LOGO-01_HAYNE_LEAVE_LOCKUP.md'
   push:
     branches:
       - main
@@ -27,6 +28,7 @@ on:
       - 'hayne/patches/060-oauth-authorize-branding.patch'
       - '.github/workflows/verify-pr-login-01.yml'
       - 'docs/checkpoints/PR-LOGIN-01_CENTERED_LOGIN_BRAND_LOCKUP.md'
+      - 'docs/checkpoints/PR-LOGO-01_HAYNE_LEAVE_LOCKUP.md'
 
 jobs:
   login-brand-lockup:
@@ -39,9 +41,12 @@ jobs:
 
       - name: Guard unified logo source
         run: |
-          grep -F 'viewBox="0 0 158 40"' hayne/overlay/assets/hayne/logo.svg
+          grep -F 'viewBox="0 0 1304 343"' hayne/overlay/assets/hayne/logo.svg
           grep -F '<title id="title">HAYNE LEAVE</title>' hayne/overlay/assets/hayne/logo.svg
-          grep -F '<g id="leave"' hayne/overlay/assets/hayne/logo.svg
+          grep -F 'HAYNE wordmark with LEAVE centered between horizontal rules.' hayne/overlay/assets/hayne/logo.svg
+          grep -F 'fill-rule="evenodd"' hayne/overlay/assets/hayne/logo.svg
+          ! grep -F '<text' hayne/overlay/assets/hayne/logo.svg
+          ! grep -F '<image' hayne/overlay/assets/hayne/logo.svg
           grep -F "target-v2" hayne/overlay/assets/hayne/login.js
           ! grep -F 'makeLeaveSubmark' hayne/overlay/assets/hayne/login.js
           ! grep -F "textContent = 'HAYNE Leave'" hayne/overlay/assets/hayne/login.js
@@ -78,6 +83,9 @@ jobs:
             grep -F "assets/hayne/logo.svg" legacy/application/views/session/failure.php
             grep -F "assets/hayne/logo.svg" legacy/application/views/session/login_simple.php
             grep -F "assets/hayne/logo.svg" legacy/application/views/session/authorize.php
+            grep -F "viewBox=\"0 0 1304 343\"" assets/hayne/logo.svg
+            ! grep -F "<text" assets/hayne/logo.svg
+            ! grep -F "<image" assets/hayne/logo.svg
             ! grep -F "hayne-navbar-product" legacy/application/views/menu/index.php
             ! grep -F "hayne-login-product-name" legacy/application/views/session/login.php
             ! grep -F "hayne-login-product-name" legacy/application/views/session/failure.php
@@ -130,11 +138,11 @@ jobs:
             --screenshot=artifacts/hayne-login-mobile.png \
             http://127.0.0.1:8080/session/login
 
-      - name: Upload PR-LOGIN-01 evidence
+      - name: Upload logo evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pr-login-01-evidence
+          name: pr-logo-01-evidence
           path: artifacts/
           if-no-files-found: warn
           retention-days: 14
