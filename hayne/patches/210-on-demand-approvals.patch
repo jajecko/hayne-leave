@@ -1,0 +1,16 @@
+--- a/legacy/application/controllers/Requests.php
++++ b/legacy/application/controllers/Requests.php
+@@ -43,5 +43,6 @@
+         parent::__construct();
+         setUserContext($this);
+         $this->load->model('leaves_model');
++        $this->load->model('hayne_on_demand_model');
+         $this->lang->load('requests', $this->language);
+         $this->lang->load('global', $this->language);
+@@ -69,5 +70,6 @@
+         } else {
+             $data['requests'] = $this->leaves_model->getLeavesRequestedToManager($this->session->userdata('id'), $showAll);
+         }
++        $data['requests'] = $this->hayne_on_demand_model->decorateRows($data['requests']);
+         $data['types'] = $this->types_model->getTypes();
+         $data['showAll'] = $showAll;

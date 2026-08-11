@@ -1,0 +1,27 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -46,1 +46,2 @@
+         $this->load->model('types_model');
++        $this->load->model('hayne_on_demand_model');
+@@ -68,1 +69,2 @@
++        $data['leaves'] = $this->hayne_on_demand_model->decorateRows($data['leaves']);
+         $data['types'] = $this->types_model->getTypes();
+@@ -132,1 +134,5 @@
++        $hayneVacationProfile = $this->hayne_leave_policy_model->getProfile((int) $this->user_id);
++        if (!empty($hayneVacationProfile)) {
++            $data['hayneOnDemandSummary'] = $this->hayne_on_demand_model->getSummary((int) $this->user_id, $hayneYear);
++        }
+         $data['summary'] = $this->leaves_model->getLeaveBalanceForEmployee($this->user_id, $refDate);
+@@ -167,1 +173,2 @@
++        $data['leave'] = $this->hayne_on_demand_model->decorateLeave($data['leave']);
+         //If the user is not its not HR, not manager and not the creator of the leave
+@@ -276,2 +283,4 @@
+             $data['types'] = $leaveTypesDetails->types;
++            $data['hayneOnDemandState'] = $this->hayne_on_demand_model
++                ->getFormState((int) $this->session->userdata('id'));
+             $this->load->view('templates/header', $data);
+@@ -465,2 +474,4 @@
+             $data['types'] = $leaveTypesDetails->types;
++            $data['hayneOnDemandState'] = $this->hayne_on_demand_model
++                ->getFormState((int) $data['leave']['employee'], (int) $id);
+             $this->load->model('users_model');

@@ -1,0 +1,59 @@
+--- a/legacy/application/views/leaves/create.php
++++ b/legacy/application/views/leaves/create.php
+@@ -20,1 +20,2 @@
++        <?php $this->load->view('templates/flash'); ?>
+         <?php echo validation_errors(); ?>
+@@ -35,1 +36,16 @@
+         </select>
++        <?php if (!empty($hayneOnDemandState['enabled'])) { ?>
++            <div id="hayneOnDemandOption" class="hayne-on-demand-option"
++                data-vacation-type-id="<?php echo (int) $hayneOnDemandState['vacation_type_id']; ?>">
++                <label class="checkbox" for="hayne_on_demand">
++                    <input type="checkbox" name="hayne_on_demand" id="hayne_on_demand" value="1"
++                        <?php echo set_value('hayne_on_demand') === '1' ? 'checked' : ''; ?> />
++                    Urlop na żądanie
++                </label>
++                <span class="hayne-on-demand-option__meta muted">
++                    Limit <?php echo (int) $hayneOnDemandState['year']; ?>: pozostało
++                    <strong><?php echo (float) $hayneOnDemandState['remaining']; ?> z <?php echo (int) $hayneOnDemandState['limit']; ?> dni</strong>.
++                    Nie tworzy dodatkowej puli — schodzi z urlopu wypoczynkowego.
++                </span>
++            </div>
++        <?php } ?>
+--- a/legacy/application/views/leaves/edit.php
++++ b/legacy/application/views/leaves/edit.php
+@@ -22,1 +22,2 @@
++                <?php $this->load->view('templates/flash'); ?>
+                 <?php echo validation_errors(); ?>
+@@ -41,1 +42,16 @@
+                 </select>
++                <?php if (!empty($hayneOnDemandState['enabled'])) { ?>
++                    <div id="hayneOnDemandOption" class="hayne-on-demand-option"
++                        data-vacation-type-id="<?php echo (int) $hayneOnDemandState['vacation_type_id']; ?>">
++                        <label class="checkbox" for="hayne_on_demand">
++                            <input type="checkbox" name="hayne_on_demand" id="hayne_on_demand" value="1"
++                                <?php echo !empty($hayneOnDemandState['current']) ? 'checked' : ''; ?> />
++                            Urlop na żądanie
++                        </label>
++                        <span class="hayne-on-demand-option__meta muted">
++                            Limit <?php echo (int) $hayneOnDemandState['year']; ?> poza tym wnioskiem: pozostało
++                            <strong><?php echo (float) $hayneOnDemandState['remaining']; ?> z <?php echo (int) $hayneOnDemandState['limit']; ?> dni</strong>.
++                            Ta opcja korzysta z tej samej puli urlopu wypoczynkowego.
++                        </span>
++                    </div>
++                <?php } ?>
+--- a/legacy/application/views/leaves/counters.php
++++ b/legacy/application/views/leaves/counters.php
+@@ -48,1 +48,12 @@
+             <tbody>
++                <?php if (isset($hayneOnDemandSummary)) { ?>
++                    <tr class="hayne-on-demand-balance" data-hayne-on-demand-summary="v1"
++                        data-used="<?php echo (float) $hayneOnDemandSummary['used']; ?>"
++                        data-remaining="<?php echo (float) $hayneOnDemandSummary['remaining']; ?>">
++                        <td colspan="7">
++                            <strong>Urlop na żądanie:</strong>
++                            <?php echo (float) $hayneOnDemandSummary['used']; ?> / <?php echo (int) $hayneOnDemandSummary['limit']; ?> dni wykorzystane lub oczekujące.
++                            <span class="muted">Pozostało: <?php echo (float) $hayneOnDemandSummary['remaining']; ?> dni.</span>
++                        </td>
++                    </tr>
++                <?php } ?>

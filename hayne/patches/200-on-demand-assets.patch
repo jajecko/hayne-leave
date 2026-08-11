@@ -1,0 +1,8 @@
+--- a/legacy/application/views/templates/header.php
++++ b/legacy/application/views/templates/header.php
+@@ -20,1 +20,2 @@
+     <link rel="stylesheet" href="<?php echo base_url(); ?>assets/dist/legacy.css">
++    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/on-demand.css">
+@@ -29,1 +30,2 @@
+     <script type="text/javascript" src="<?php echo base_url(); ?>assets/bootstrap/js/bootstrap.min.js"></script>
++    <script defer type="text/javascript" src="<?php echo base_url(); ?>assets/hayne/on-demand.js"></script>

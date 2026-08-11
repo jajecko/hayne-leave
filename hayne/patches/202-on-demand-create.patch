@@ -1,0 +1,37 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -374,1 +374,22 @@
++            $hayneOnDemand = $this->input->post('hayne_on_demand', TRUE) === '1';
++            if ($hayneOnDemand) {
++                try {
++                    $this->db->trans_begin();
++                    $this->hayne_on_demand_model->lockEmployeeProfile((int) $employeeId);
++                    $this->hayne_on_demand_model->assertRequestAllowed(
++                        (int) $employeeId,
++                        (int) $leaveTypeId,
++                        (string) $startDate,
++                        (string) $endDate,
++                        (float) $duration,
++                        (int) $this->input->post('status')
++                    );
++                } catch (Throwable $exception) {
++                    $this->db->trans_rollback();
++                    $this->session->set_flashdata('msg', $exception->getMessage());
++                    redirect('leaves/create');
++                    return;
++                }
++            }
++
+             if (function_exists('triggerCreateLeaveRequest')) {
+@@ -389,1 +410,11 @@
++            if ($hayneOnDemand) {
++                $this->hayne_on_demand_model->setOnDemand((int) $leave_id, TRUE);
++                if ($this->db->trans_status() === FALSE) {
++                    $this->db->trans_rollback();
++                    $this->session->set_flashdata('msg', 'Nie udało się zapisać urlopu na żądanie.');
++                    redirect('leaves/create');
++                    return;
++                }
++                $this->db->trans_commit();
++            }
+             $this->session->set_flashdata('msg', lang('leaves_create_flash_msg_success'));
