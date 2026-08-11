@@ -37,4 +37,18 @@ Doprowadzić główną kolejkę managera `/requests` do systemu wizualnego HAYNE
 
 ## Weryfikacja
 
-Główny `verify` nadal wykonuje pełny regression suite. Dodatkowy path-scoped workflow `verify-ui10-approvals` buduje aplikację, sprawdza obecność klas i endpointów approval workflow w zbudowanym obrazie, loguje się prawdziwym flow CI, pobiera `/requests` i generuje `hayne-approvals.png` w viewport 1440×1000.
+Główny `verify` nadal wykonuje pełny regression suite. Dodatkowy path-scoped workflow `verify-ui10-approvals` buduje aplikację, sprawdza obecność klas i endpointów approval workflow w zbudowanym obrazie, loguje się prawdziwym flow CI, pobiera `/requests`, weryfikuje wyrenderowany DOM HAYNE i generuje `hayne-approvals.png` w viewport 1440×1000.
+
+Finalna weryfikacja warstwy runtime/UI przed zamknięciem checkpointu:
+
+- head runtime: `3214013f467549e47ccf39d3c5a269659678f4bf`,
+- `verify` run #119 / `31459640750`: SUCCESS,
+- `verify-ui10-approvals` run #6 / `31459640759`: SUCCESS,
+- guard kontraktu approval: SUCCESS,
+- logowanie i pobranie realnego `/requests`: SUCCESS,
+- rendered-DOM guard: potwierdzone `data-hayne-view="approvals-v1"`, nagłówek `Do akceptacji` i polski empty state,
+- `hayne-approvals.png` 1440×1000: ręcznie obejrzany i zaakceptowany,
+- visual review potwierdził HAYNE shell, nagłówek, zakładki, wyszukiwarkę, panel filtrów, targetową tabelę, empty state i paginację,
+- wykryty podczas review błąd inicjalizacji po DataTables został naprawiony presentation-only: enhancer wybiera rodzica `#leaves_wrapper` po owinięciu tabeli, bez zmian controller/model/DB/endpointów/handlerów/indeksów DataTables.
+
+Zmiana checkpointu jest dokumentacyjna i uruchamia finalny CI ponownie; merge jest dozwolony dopiero po GREEN tego ostatniego rerunu.
