@@ -1,0 +1,37 @@
+--- a/legacy/application/views/menu/index.php
++++ b/legacy/application/views/menu/index.php
+@@ -60,6 +60,7 @@
+                 <li class="nav-header">Urlopy</li>
+                 <li><a href="<?php echo base_url(); ?>leavetypes">Rodzaje nieobecności</a></li>
++                <li><a href="<?php echo base_url(); ?>hr/employees">Limity urlopowe</a></li>
+                 <li class="divider"></li>
+                 <li class="nav-header">System</li>
+--- a/legacy/application/controllers/Entitleddays.php
++++ b/legacy/application/controllers/Entitleddays.php
+@@ -113,6 +113,10 @@
+             $days = $this->input->post('days', TRUE);
+             $type = $this->input->post('type', TRUE);
+             $description = sanitize($this->input->post('description', TRUE));
++            if (filter_var($days, FILTER_VALIDATE_INT) === FALSE) {
++                $this->output->set_header("HTTP/1.1 422 Unprocessable entity");
++                return;
++            }
+             if (isset($startdate) && isset($enddate) && isset($days) && isset($type) && isset($user_id)) {
+@@ -138,6 +142,10 @@
+             $days = $this->input->post('days', TRUE);
+             $type = $this->input->post('type', TRUE);
+             $description = sanitize($this->input->post('description', TRUE));
++            if (filter_var($days, FILTER_VALIDATE_INT) === FALSE) {
++                $this->output->set_header("HTTP/1.1 422 Unprocessable entity");
++                return;
++            }
+             if (isset($startdate) && isset($enddate) && isset($days) && isset($type) && isset($contract_id)) {
+@@ -168,6 +176,12 @@
+             if (isset($id) && isset($operation)) {
+                 $this->output->set_content_type('text/plain');
+                 $days = $this->input->post('days', TRUE);
++                if ($days !== NULL && filter_var($days, FILTER_VALIDATE_INT) === FALSE) {
++                    $this->output->set_header("HTTP/1.1 422 Unprocessable entity");
++                    return;
++                }
+                 switch ($operation) {
