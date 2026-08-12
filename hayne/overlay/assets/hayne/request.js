@@ -82,44 +82,6 @@
     });
   };
 
-  const enhanceWaitModal = () => {
-    const modal = document.getElementById('frmModalAjaxWait');
-    if (!modal || modal.dataset.hayneWaitEnhanced === 'v1') return;
-
-    modal.dataset.hayneWaitEnhanced = 'v1';
-    modal.classList.add('hayne-request-wait');
-    modal.setAttribute('role', 'status');
-    modal.setAttribute('aria-live', 'polite');
-    modal.setAttribute('aria-busy', 'true');
-    modal.setAttribute('aria-label', 'Trwa przeliczanie');
-
-    const spinner = document.createElement('span');
-    spinner.className = 'hayne-request-wait__spinner';
-    spinner.setAttribute('aria-hidden', 'true');
-
-    const label = document.createElement('span');
-    label.className = 'hayne-request-wait__label';
-    label.textContent = 'Trwa przeliczanie';
-
-    modal.replaceChildren(spinner, label);
-
-    const syncWaitState = () => {
-      document.body.classList.toggle('hayne-request-wait-visible', modal.classList.contains('in'));
-    };
-
-    if (window.jQuery) {
-      window.jQuery(modal)
-        .on('show shown', () => document.body.classList.add('hayne-request-wait-visible'))
-        .on('hide hidden', () => document.body.classList.remove('hayne-request-wait-visible'));
-    }
-
-    new MutationObserver(syncWaitState).observe(modal, {
-      attributes: true,
-      attributeFilter: ['class'],
-    });
-    syncWaitState();
-  };
-
   const enhanceRequest = () => {
     const page = document.querySelector('[data-hayne-view="leave-create-v2"]');
     if (!page || page.dataset.hayneRequestEnhanced === 'target-v1') return;
@@ -324,10 +286,7 @@
     cleanLegacySpacing(form, layout);
   };
 
-  const scheduleEnhancement = () => window.setTimeout(() => {
-    enhanceWaitModal();
-    enhanceRequest();
-  }, 0);
+  const scheduleEnhancement = () => window.setTimeout(enhanceRequest, 0);
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', scheduleEnhancement, { once: true });
   } else {
