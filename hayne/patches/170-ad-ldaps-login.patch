@@ -1,6 +1,6 @@
 --- a/legacy/application/config/config.php
 +++ b/legacy/application/config/config.php
-@@ -470,6 +470,16 @@
+@@ -470,6 +470,19 @@
  $config['ldap_search_password'] = $env_str('LDAP_SEARCH_PASSWORD', '');
  $config['ldap_search_pattern'] = $env_str('LDAP_SEARCH_PATTERN', 'cn=%s'); // Let %s symbolize the user identifier
  
@@ -22,7 +22,7 @@
  $config['oauth2_enabled'] = $env_bool('OAUTH2_ENABLED', false);
 --- a/legacy/application/models/Users_model.php
 +++ b/legacy/application/models/Users_model.php
-@@ -679,6 +679,31 @@
+@@ -679,6 +679,33 @@
          }
      }
  
@@ -58,7 +58,7 @@
       * Mostly used for alternative signin mechanisms such as SSO
 --- a/legacy/application/controllers/Connection.php
 +++ b/legacy/application/controllers/Connection.php
-@@ -102,8 +102,22 @@
+@@ -102,8 +102,24 @@
  
              $password = $this->input->post('password');
              $loggedin = FALSE;
@@ -84,7 +84,7 @@
                  if ($password != "") { //Bind to MS-AD with blank password might return OK
                      $ldapUri = sprintf('ldap://%s:%d', $this->config->item('ldap_host'), $this->config->item('ldap_port'));
                      $ldap = ldap_connect($ldapUri);
-@@ -153,6 +167,95 @@
+@@ -153,6 +169,88 @@
          }
      }
  
