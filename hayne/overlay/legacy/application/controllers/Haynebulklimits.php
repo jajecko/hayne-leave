@@ -34,7 +34,15 @@ class Haynebulklimits extends CI_Controller
         $autoRenew = $this->input->post('auto_renew', TRUE) === '1';
         $overwriteExisting = $this->input->post('overwrite_existing', TRUE) === '1';
         $year = $this->validatedReturnYear($this->input->post('year', TRUE));
+        $currentYear = (int) date('Y');
 
+        if ($year !== $currentYear) {
+            $this->flashAndReturn(
+                'Grupowe przydzielanie limitów działa tylko dla bieżącego roku ' . $currentYear . '. Przełącz rok podglądu i spróbuj ponownie.',
+                $year
+            );
+            return;
+        }
         if (empty($employeeIds)) {
             $this->flashAndReturn('Zaznacz co najmniej jednego pracownika.', $year);
             return;
