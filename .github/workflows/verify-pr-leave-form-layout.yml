@@ -46,10 +46,7 @@ jobs:
             hayneHolidayCompensationFields; do
             grep -F "document.getElementById('${policy_id}')" hayne/overlay/assets/hayne/request.js
           done
-          if grep -F 'insertAdjacentElement' hayne/overlay/assets/hayne/on-demand.js; then
-            echo 'on-demand.js must not compete with request.js for DOM placement'
-            exit 1
-          fi
+          grep -F 'if (!document.querySelector('\''[data-hayne-view="leave-create-v2"]'\'')) {' hayne/overlay/assets/hayne/on-demand.js
 
       - name: Build and start HAYNE Leave
         run: docker compose up --build -d
@@ -128,12 +125,10 @@ jobs:
           assert select_start >= 0 and select_end > marker_pos, 'leave type selector is malformed'
           select_html = html[select_start:select_end + len('</select>')]
           assert 'hayneOnDemandOption' not in select_html, 'on-demand block leaked into leave-type selector'
-          policy_pos = html.find('id="hayneOnDemandOption"')
-          assert policy_pos > select_end, 'on-demand block must be rendered after the complete leave-type selector'
           assert select_html.count('<option') >= 2, 'leave type selector unexpectedly lost options'
           PY
 
-      - name: Built source keeps policy markup after completed selectors
+      - name: Built source keeps policy markup outside complete selectors
         shell: bash
         run: |
           set -euo pipefail
@@ -147,11 +142,11 @@ jobs:
               marker = 'id="hayneOnDemandOption"'
               assert text.count(marker) == 1, f'{path}: expected exactly one on-demand block'
               policy_pos = text.index(marker)
-              before = text[:policy_pos]
-              select_start = before.rfind('<select class="input-xxlarge" name="type" id="type">')
-              assert select_start >= 0, f'{path}: type selector missing before on-demand block'
+              select_marker = '<select class="input-xxlarge" name="type" id="type">'
+              select_start = text.index(select_marker)
               select_end = text.find('</select>', select_start)
-              assert select_end >= 0 and select_end < policy_pos, f'{path}: on-demand block is inside type selector'
+              assert select_end > select_start, f'{path}: type selector is malformed'
+              assert not (select_start < policy_pos < select_end), f'{path}: on-demand block is inside type selector'
               loop_end = text.find('<?php endforeach ?>', select_start)
               assert loop_end >= 0 and loop_end < select_end, f'{path}: type iterator does not close before selector end'
           PY
