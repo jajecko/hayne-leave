@@ -1,0 +1,140 @@
+name: verify-pr-leave-bulk
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/overlay/legacy/application/controllers/Haynebulklimits.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/index.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/bulk.php'
+      - 'hayne/overlay/assets/hayne/limits.css'
+      - 'hayne/overlay/assets/hayne/limits.js'
+      - 'hayne/patches/010-header-branding.patch'
+      - 'hayne/patches/185-hayne-limits-routes.patch'
+      - '.github/workflows/verify-pr-leave-bulk.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'hayne/overlay/legacy/application/controllers/Haynebulklimits.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/index.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/bulk.php'
+      - 'hayne/overlay/assets/hayne/limits.css'
+      - 'hayne/overlay/assets/hayne/limits.js'
+      - 'hayne/patches/010-header-branding.patch'
+      - 'hayne/patches/185-hayne-limits-routes.patch'
+      - '.github/workflows/verify-pr-leave-bulk.yml'
+
+jobs:
+  bulk-leave-limits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Validate Compose and sources
+        run: |
+          docker compose config --quiet
+          grep -F "haynelimits/save-bulk" hayne/patches/185-hayne-limits-routes.patch
+          grep -F "haynelimits/bulk" hayne/overlay/legacy/application/views/haynelimits/index.php
+          grep -F "assets/hayne/limits.css" hayne/patches/010-header-branding.patch
+          grep -F "assets/hayne/limits.js" hayne/patches/010-header-branding.patch
+
+      - name: Build and start HAYNE Leave
+        run: docker compose up --build -d
+
+      - name: Wait for application
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/session/login >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+
+      - name: PHP syntax checks
+        run: |
+          docker compose exec -T jorani php -l legacy/application/controllers/Haynebulklimits.php
+          docker compose exec -T jorani php -l legacy/application/views/haynelimits/bulk.php
+          docker compose exec -T jorani php -l legacy/application/views/haynelimits/index.php
+
+      - name: Authenticate as administrator
+        run: |
+          mkdir -p artifacts
+          curl -fsS -c artifacts/cookies.txt http://localhost:8080/session/login -o artifacts/login.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/login.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L -c artifacts/cookies.txt -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jorani' \
+            --data-urlencode 'password=jorani' \
+            --data-urlencode 'language=pl' \
+            http://localhost:8080/session/login -o artifacts/home.html
+          grep -F 'Cześć Admin!' artifacts/home.html
+
+      - name: Verify bulk picker and assets
+        run: |
+          year="$(date +%Y)"
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${year}" -o artifacts/limits.html
+          grep -F 'data-hayne-bulk="v1"' artifacts/limits.html
+          grep -F 'name="employee_ids[]"' artifacts/limits.html
+          grep -F 'Aktualizuj także osoby z istniejącym limitem' artifacts/limits.html
+          grep -F 'assets/hayne/limits.css' artifacts/limits.html
+          grep -F 'assets/hayne/limits.js' artifacts/limits.html
+          curl -fsS http://localhost:8080/assets/hayne/limits.css -o artifacts/limits.css
+          curl -fsS http://localhost:8080/assets/hayne/limits.js -o artifacts/limits.js
+          grep -F '.hayne-bulk-settings' artifacts/limits.css
+          grep -F 'hayneSelectAllVisible' artifacts/limits.js
+
+      - name: Verify safe create skip and overwrite
+        run: |
+          year="$(date +%Y)"
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/limits.html | head -n 1)"
+          test -n "$csrf_token"
+
+          curl -fsS -L -c artifacts/cookies.txt -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'employee_ids[]=1' \
+            --data-urlencode 'vacation_type_id=1' \
+            --data-urlencode 'annual_days=26' \
+            --data-urlencode 'auto_renew=1' \
+            --data-urlencode "year=${year}" \
+            http://localhost:8080/haynelimits/save-bulk -o artifacts/bulk-created.html
+          grep -F 'Zapisano limit dla 1 pracowników.' artifacts/bulk-created.html
+          docker compose exec -T mysql sh -ec '
+            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT annual_days FROM hayne_leave_profiles WHERE employee_id=1")" = "26"
+          '
+
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/bulk-created.html | head -n 1)"
+          curl -fsS -L -c artifacts/cookies.txt -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'employee_ids[]=1' \
+            --data-urlencode 'vacation_type_id=1' \
+            --data-urlencode 'annual_days=20' \
+            --data-urlencode "year=${year}" \
+            http://localhost:8080/haynelimits/save-bulk -o artifacts/bulk-skipped.html
+          grep -F 'Pominięto 1 istniejących konfiguracji.' artifacts/bulk-skipped.html
+          docker compose exec -T mysql sh -ec '
+            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT annual_days FROM hayne_leave_profiles WHERE employee_id=1")" = "26"
+          '
+
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/bulk-skipped.html | head -n 1)"
+          curl -fsS -L -c artifacts/cookies.txt -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'employee_ids[]=1' \
+            --data-urlencode 'vacation_type_id=1' \
+            --data-urlencode 'annual_days=20' \
+            --data-urlencode 'overwrite_existing=1' \
+            --data-urlencode "year=${year}" \
+            http://localhost:8080/haynelimits/save-bulk -o artifacts/bulk-overwrite.html
+          grep -F 'Zapisano limit dla 1 pracowników.' artifacts/bulk-overwrite.html
+          docker compose exec -T mysql sh -ec '
+            test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT annual_days FROM hayne_leave_profiles WHERE employee_id=1")" = "20"
+          '
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

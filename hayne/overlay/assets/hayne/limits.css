@@ -1,0 +1,359 @@
+/* Bulk annual leave administration. Scoped to the HAYNE limits surface. */
+.hayne-limits-page .hayne-limits-card {
+  box-sizing: border-box;
+  margin: 0 0 28px;
+  padding: 24px;
+  border: 1px solid #deded9;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.hayne-limits-page .hayne-limits-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+}
+
+.hayne-limits-page .hayne-limits-card__head h2 {
+  margin: 3px 0 6px;
+  font-size: 24px;
+}
+
+.hayne-limits-page .hayne-limits-card__head p {
+  max-width: 720px;
+  margin: 0;
+  color: #696965;
+}
+
+.hayne-limits-page .hayne-limits-eyebrow {
+  color: #777773;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.hayne-limits-page .hayne-limits-stats {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.hayne-limits-page .hayne-limits-stats span {
+  padding: 8px 10px;
+  border: 1px solid #e4e4df;
+  border-radius: 8px;
+  background: #f7f7f5;
+  color: #5f5f5b;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.hayne-limits-page .hayne-limits-stats strong {
+  color: #111;
+  font-size: 14px;
+}
+
+.hayne-limits-page .hayne-bulk-settings {
+  display: grid;
+  grid-template-columns: minmax(230px, 1fr) minmax(250px, 1fr) minmax(300px, 1.2fr);
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid #e5e5e0;
+  border-radius: 10px;
+  background: #fafaf8;
+}
+
+.hayne-limits-page .hayne-bulk-field,
+.hayne-limits-page .hayne-bulk-options {
+  min-width: 0;
+}
+
+.hayne-limits-page .hayne-bulk-field select {
+  width: 100%;
+}
+
+.hayne-limits-page .hayne-days-control {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.hayne-limits-page .hayne-days-presets {
+  display: flex;
+  gap: 6px;
+}
+
+.hayne-limits-page .hayne-days-preset {
+  min-width: 68px;
+  min-height: 40px;
+}
+
+.hayne-limits-page .hayne-days-preset.is-active,
+.hayne-limits-page .hayne-filter.is-active {
+  border-color: #111;
+  background: #111;
+  color: #fff;
+}
+
+.hayne-limits-page .hayne-days-custom {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.hayne-limits-page .hayne-days-custom input {
+  width: 74px;
+}
+
+.hayne-limits-page .hayne-bulk-options {
+  display: grid;
+  gap: 10px;
+}
+
+.hayne-limits-page .hayne-option-row {
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #e1e1dc;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.hayne-limits-page .hayne-option-row input {
+  flex: 0 0 auto;
+  margin: 3px 0 0;
+}
+
+.hayne-limits-page .hayne-option-row span {
+  min-width: 0;
+}
+
+.hayne-limits-page .hayne-option-row strong,
+.hayne-limits-page .hayne-option-row small {
+  display: block;
+}
+
+.hayne-limits-page .hayne-option-row small {
+  margin-top: 3px;
+  color: #777773;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.hayne-limits-page .hayne-option-row--warning:has(input:checked) {
+  border-color: #b78a39;
+  background: #fffaf0;
+}
+
+.hayne-limits-page .hayne-employee-picker {
+  margin-top: 18px;
+  border: 1px solid #deded9;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.hayne-limits-page .hayne-employee-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px;
+  border-bottom: 1px solid #deded9;
+  background: #fff;
+}
+
+.hayne-limits-page #hayneEmployeeSearch {
+  width: min(320px, 100%);
+  margin: 0;
+}
+
+.hayne-limits-page .hayne-filter-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.hayne-limits-page .hayne-filter span {
+  display: inline-block;
+  min-width: 16px;
+  margin-left: 4px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.07);
+  font-size: 10px;
+}
+
+.hayne-limits-page .hayne-filter.is-active span {
+  background: rgba(255,255,255,.18);
+}
+
+.hayne-limits-page #hayneSelectVisible {
+  margin-left: auto;
+}
+
+.hayne-limits-page .hayne-employee-table-wrap {
+  max-height: 540px;
+  overflow: auto;
+  background: #fff;
+}
+
+.hayne-limits-page .hayne-employee-table {
+  margin: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+.hayne-limits-page .hayne-employee-table thead th {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  box-shadow: 0 1px 0 #deded9;
+}
+
+.hayne-limits-page .hayne-employee-table td:first-child,
+.hayne-limits-page .hayne-employee-table th:first-child {
+  width: 34px;
+  text-align: center;
+}
+
+.hayne-limits-page .hayne-employee-table input[type="checkbox"],
+.hayne-limits-page .hayne-option-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+}
+
+.hayne-limits-page .hayne-employee-table td:nth-child(2) small {
+  display: block;
+  margin-top: 2px;
+  color: #7a7a75;
+}
+
+.hayne-limits-page .hayne-employee-row.is-selected > td {
+  background: #f1f1ee;
+}
+
+.hayne-limits-page .hayne-limit-status {
+  display: inline-block;
+  padding: 4px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.hayne-limits-page .hayne-limit-status--configured {
+  background: #eaf3eb;
+  color: #315f39;
+}
+
+.hayne-limits-page .hayne-limit-status--missing {
+  background: #f0f0ed;
+  color: #686864;
+}
+
+.hayne-limits-page .hayne-empty-filter {
+  padding: 28px 16px;
+  color: #777773;
+  text-align: center;
+}
+
+.hayne-limits-page .hayne-bulk-actionbar {
+  position: sticky;
+  z-index: 3;
+  bottom: 12px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid #d8d8d3;
+  border-radius: 10px;
+  background: rgba(255,255,255,.97);
+  box-shadow: 0 8px 24px rgba(0,0,0,.08);
+}
+
+.hayne-limits-page .hayne-bulk-actionbar strong,
+.hayne-limits-page .hayne-bulk-actionbar span {
+  display: block;
+}
+
+.hayne-limits-page .hayne-bulk-actionbar span {
+  margin-top: 2px;
+  color: #73736f;
+  font-size: 11px;
+}
+
+.hayne-limits-page .hayne-bulk-actionbar .btn-primary {
+  min-width: 150px;
+  min-height: 42px;
+}
+
+.hayne-limits-page [data-hayne-employee-row][hidden] {
+  display: none !important;
+}
+
+@media (max-width: 1180px) {
+  .hayne-limits-page .hayne-bulk-settings {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .hayne-limits-page .hayne-bulk-options {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  .hayne-limits-page .hayne-limits-card {
+    padding: 16px;
+    border-radius: 9px;
+  }
+
+  .hayne-limits-page .hayne-limits-card__head,
+  .hayne-limits-page .hayne-bulk-actionbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hayne-limits-page .hayne-limits-stats {
+    justify-content: flex-start;
+  }
+
+  .hayne-limits-page .hayne-bulk-settings,
+  .hayne-limits-page .hayne-bulk-options {
+    grid-template-columns: 1fr;
+  }
+
+  .hayne-limits-page .hayne-bulk-options {
+    grid-column: auto;
+  }
+
+  .hayne-limits-page .hayne-days-control {
+    flex-wrap: wrap;
+  }
+
+  .hayne-limits-page #hayneEmployeeSearch,
+  .hayne-limits-page #hayneSelectVisible {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .hayne-limits-page .hayne-employee-table-wrap {
+    max-height: 460px;
+  }
+
+  .hayne-limits-page .hayne-bulk-actionbar .btn-primary {
+    width: 100%;
+  }
+}

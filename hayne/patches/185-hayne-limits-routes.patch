@@ -1,12 +1,13 @@
 --- a/legacy/application/config/routes.php
 +++ b/legacy/application/config/routes.php
-@@ -341,6 +341,10 @@
+@@ -341,6 +341,11 @@
  $route['api/authorization/login'] = 'authorization/login';
  $route['api/authorization/userinfo'] = 'authorization/userinfo';
  
 +// HAYNE Leave administration
 +$route['haynelimits'] = 'haynelimits/index';
 +$route['haynelimits/save'] = 'haynelimits/save';
++$route['haynelimits/save-bulk'] = 'haynebulklimits/save';
 +
  //_______________________________________________
  //Default controllers
