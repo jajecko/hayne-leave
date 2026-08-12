@@ -1,10 +1,12 @@
 --- a/legacy/application/views/leaves/create.php
 +++ b/legacy/application/views/leaves/create.php
-@@ -20,1 +20,2 @@
+@@ -16,3 +16,4 @@
 +        <?php $this->load->view('templates/flash'); ?>
          <?php echo validation_errors(); ?>
-@@ -35,1 +36,16 @@
-         </select>
+ 
+         <?php
+@@ -26,9 +27,24 @@
+         </label>
 +        <?php if (!empty($hayneOnDemandState['enabled'])) { ?>
 +            <div id="hayneOnDemandOption" class="hayne-on-demand-option"
 +                data-vacation-type-id="<?php echo (int) $hayneOnDemandState['vacation_type_id']; ?>">
@@ -20,13 +22,24 @@
 +                </span>
 +            </div>
 +        <?php } ?>
+         <select class="input-xxlarge" name="type" id="type">
+             <?php foreach ($types as $typeId => $TypeName): ?>
+                 <option value="<?php echo $typeId; ?>" <?php if ($typeId == $defaultType)
+                        echo "selected"; ?>>
+                     <?php echo $TypeName; ?>
+                 </option>
+             <?php endforeach ?>
+         </select>
 --- a/legacy/application/views/leaves/edit.php
 +++ b/legacy/application/views/leaves/edit.php
-@@ -22,1 +22,2 @@
+@@ -25,4 +25,5 @@
 +                <?php $this->load->view('templates/flash'); ?>
                  <?php echo validation_errors(); ?>
-@@ -41,1 +42,16 @@
-                 </select>
+ 
+ 
+                 <label for="type">
+@@ -32,9 +33,24 @@
+                 </label>
 +                <?php if (!empty($hayneOnDemandState['enabled'])) { ?>
 +                    <div id="hayneOnDemandOption" class="hayne-on-demand-option"
 +                        data-vacation-type-id="<?php echo (int) $hayneOnDemandState['vacation_type_id']; ?>">
@@ -42,9 +55,18 @@
 +                        </span>
 +                    </div>
 +                <?php } ?>
+                 <select class="input-xxlarge" name="type" id="type">
+                     <?php foreach ($types as $typeId => $TypeName): ?>
+                         <option value="<?php echo $typeId; ?>" <?php if ($typeId == $leave['type'])
+                                echo "selected"; ?>>
+                             <?php echo $TypeName; ?>
+                         </option>
+                     <?php endforeach ?>
+                 </select>
 --- a/legacy/application/views/leaves/counters.php
 +++ b/legacy/application/views/leaves/counters.php
-@@ -48,1 +48,12 @@
+@@ -47,3 +47,14 @@
+             </thead>
              <tbody>
 +                <?php if (isset($hayneOnDemandSummary)) { ?>
 +                    <tr class="hayne-on-demand-balance" data-hayne-on-demand-summary="v1"
@@ -57,3 +79,4 @@
 +                        </td>
 +                    </tr>
 +                <?php } ?>
+                 <?php if (count($summary) > 0) {

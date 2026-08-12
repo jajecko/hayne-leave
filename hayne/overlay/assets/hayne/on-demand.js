@@ -21,21 +21,14 @@
       });
     }
 
-    // The redesigned create form moves known legacy controls into a new layout.
-    // Keep this server-rendered policy control directly below the leave type.
-    const placeInTargetLayout = () => {
-      const typeField = form.querySelector('.hayne-request-field--type');
-      if (typeField && option.parentElement !== typeField.parentElement) {
-        typeField.insertAdjacentElement('afterend', option);
-      } else if (typeField && option.previousElementSibling !== typeField) {
-        typeField.insertAdjacentElement('afterend', option);
-      }
-      updateVisibility();
-    };
+    // The create redesign owns placement of every HAYNE policy field.
+    // Edit keeps the stock layout, so normalize the server-rendered policy
+    // to the position directly after the leave-type selector there only.
+    if (!document.querySelector('[data-hayne-view="leave-create-v2"]')) {
+      type.insertAdjacentElement('afterend', option);
+    }
 
     updateVisibility();
-    window.setTimeout(placeInTargetLayout, 0);
-    window.setTimeout(placeInTargetLayout, 100);
   };
 
   if (document.readyState === 'loading') {

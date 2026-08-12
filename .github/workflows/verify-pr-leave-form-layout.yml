@@ -1,0 +1,166 @@
+name: verify-pr-leave-form-layout
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/patches/205-on-demand-views.patch'
+      - 'hayne/overlay/assets/hayne/on-demand.js'
+      - 'hayne/overlay/assets/hayne/request.js'
+      - 'hayne/overlay/assets/hayne/request.css'
+      - '.github/workflows/verify-pr-leave-form-layout.yml'
+      - 'docs/checkpoints/PR-LEAVE-FORM-01_POLICY_LAYOUT_HOTFIX.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'hayne/patches/205-on-demand-views.patch'
+      - 'hayne/overlay/assets/hayne/on-demand.js'
+      - 'hayne/overlay/assets/hayne/request.js'
+      - 'hayne/overlay/assets/hayne/request.css'
+      - '.github/workflows/verify-pr-leave-form-layout.yml'
+      - 'docs/checkpoints/PR-LEAVE-FORM-01_POLICY_LAYOUT_HOTFIX.md'
+
+jobs:
+  create-form-policy-layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Static JavaScript and policy-layout guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check hayne/overlay/assets/hayne/request.js
+          node --check hayne/overlay/assets/hayne/on-demand.js
+          grep -F "policyGroup.dataset.haynePolicyFields = 'v1'" hayne/overlay/assets/hayne/request.js
+          for policy_id in \
+            hayneOnDemandOption \
+            hayneCaregiverFields \
+            hayneForceMajeureFields \
+            hayneChildcareFields \
+            hayneOccasionFields \
+            hayneHolidayCompensationFields; do
+            grep -F "document.getElementById('${policy_id}')" hayne/overlay/assets/hayne/request.js
+          done
+          grep -F 'if (!document.querySelector('\''[data-hayne-view="leave-create-v2"]'\'')) {' hayne/overlay/assets/hayne/on-demand.js
+
+      - name: Build and start HAYNE Leave
+        run: docker compose up --build -d
+
+      - name: Wait for application
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/session/login >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs --no-color
+          exit 1
+
+      - name: Runtime syntax checks
+        run: |
+          docker compose exec -T jorani php -l legacy/application/views/leaves/create.php
+          docker compose exec -T jorani php -l legacy/application/views/leaves/edit.php
+          docker compose exec -T jorani php -l legacy/application/controllers/Leaves.php
+
+      - name: Authenticate as administrator
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          curl -fsS -c artifacts/cookies.txt http://localhost:8080/session/login -o artifacts/login.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/login.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jorani' \
+            --data-urlencode 'password=jorani' \
+            --data-urlencode 'language=en' \
+            http://localhost:8080/session/login \
+            -o artifacts/home.html
+          grep -F 'Cześć Admin!' artifacts/home.html
+
+      - name: Enable vacation profile so on-demand control is rendered
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/haynelimits -o artifacts/limits.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/limits.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'employee_id=1' \
+            --data-urlencode 'vacation_type_id=1' \
+            --data-urlencode 'annual_days=26' \
+            --data-urlencode 'auto_renew=1' \
+            http://localhost:8080/haynelimits/save \
+            -o artifacts/limits-saved.html
+          grep -F 'Limit urlopowy został zapisany.' artifacts/limits-saved.html
+
+      - name: Request form contains one on-demand block outside the type loop
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/create -o artifacts/create.html
+          test "$(grep -o 'id="hayneOnDemandOption"' artifacts/create.html | wc -l | tr -d ' ')" = "1"
+          grep -F 'Urlop na żądanie' artifacts/create.html
+          python3 - <<'PY'
+          from pathlib import Path
+
+          html = Path('artifacts/create.html').read_text(encoding='utf-8')
+          select_marker = 'name="type" id="type"'
+          marker_pos = html.find(select_marker)
+          assert marker_pos >= 0, 'leave type selector missing'
+          select_start = html.rfind('<select', 0, marker_pos + len(select_marker))
+          select_end = html.find('</select>', marker_pos)
+          assert select_start >= 0 and select_end > marker_pos, 'leave type selector is malformed'
+          select_html = html[select_start:select_end + len('</select>')]
+          assert 'hayneOnDemandOption' not in select_html, 'on-demand block leaked into leave-type selector'
+          assert select_html.count('<option') >= 2, 'leave type selector unexpectedly lost options'
+          PY
+
+      - name: Built source keeps policy markup outside complete selectors
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose exec -T jorani cat legacy/application/views/leaves/create.php > artifacts/built-create.php
+          docker compose exec -T jorani cat legacy/application/views/leaves/edit.php > artifacts/built-edit.php
+          python3 - <<'PY'
+          from pathlib import Path
+
+          for path in [Path('artifacts/built-create.php'), Path('artifacts/built-edit.php')]:
+              text = path.read_text(encoding='utf-8')
+              marker = 'id="hayneOnDemandOption"'
+              assert text.count(marker) == 1, f'{path}: expected exactly one on-demand block'
+              policy_pos = text.index(marker)
+              select_marker = '<select class="input-xxlarge" name="type" id="type">'
+              select_start = text.index(select_marker)
+              select_end = text.find('</select>', select_start)
+              assert select_end > select_start, f'{path}: type selector is malformed'
+              assert not (select_start < policy_pos < select_end), f'{path}: on-demand block is inside type selector'
+              loop_end = text.find('<?php endforeach ?>', select_start)
+              assert loop_end >= 0 and loop_end < select_end, f'{path}: type iterator does not close before selector end'
+          PY
+
+      - name: Reject runtime regressions
+        run: |
+          if docker compose logs --no-color | grep -E 'Undefined variable|Fatal error|Uncaught|Parse error'; then
+            exit 1
+          fi
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
