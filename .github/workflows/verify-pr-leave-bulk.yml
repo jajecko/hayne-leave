@@ -4,23 +4,23 @@ on:
   pull_request:
     paths:
       - 'hayne/overlay/legacy/application/controllers/Haynebulklimits.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/index.php'
       - 'hayne/overlay/legacy/application/views/haynelimits/bulk.php'
       - 'hayne/overlay/assets/hayne/limits.css'
       - 'hayne/overlay/assets/hayne/limits.js'
       - 'hayne/patches/010-header-branding.patch'
       - 'hayne/patches/185-hayne-limits-routes.patch'
-      - 'hayne/patches/187-bulk-leave-limits-ui.patch'
       - '.github/workflows/verify-pr-leave-bulk.yml'
   push:
     branches: [main]
     paths:
       - 'hayne/overlay/legacy/application/controllers/Haynebulklimits.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/index.php'
       - 'hayne/overlay/legacy/application/views/haynelimits/bulk.php'
       - 'hayne/overlay/assets/hayne/limits.css'
       - 'hayne/overlay/assets/hayne/limits.js'
       - 'hayne/patches/010-header-branding.patch'
       - 'hayne/patches/185-hayne-limits-routes.patch'
-      - 'hayne/patches/187-bulk-leave-limits-ui.patch'
       - '.github/workflows/verify-pr-leave-bulk.yml'
 
 jobs:
@@ -32,11 +32,11 @@ jobs:
       - name: Prepare environment
         run: cp .env.example .env
 
-      - name: Validate Compose and patch set
+      - name: Validate Compose and sources
         run: |
           docker compose config --quiet
           grep -F "haynelimits/save-bulk" hayne/patches/185-hayne-limits-routes.patch
-          grep -F "haynelimits/bulk" hayne/patches/187-bulk-leave-limits-ui.patch
+          grep -F "haynelimits/bulk" hayne/overlay/legacy/application/views/haynelimits/index.php
           grep -F "assets/hayne/limits.css" hayne/patches/010-header-branding.patch
           grep -F "assets/hayne/limits.js" hayne/patches/010-header-branding.patch
 
