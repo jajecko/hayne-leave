@@ -137,13 +137,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          docker compose exec -T jorani python3 - <<'PY'
+          docker compose exec -T jorani cat legacy/application/views/leaves/create.php > artifacts/built-create.php
+          docker compose exec -T jorani cat legacy/application/views/leaves/edit.php > artifacts/built-edit.php
+          python3 - <<'PY'
           from pathlib import Path
 
-          for path in [
-              Path('legacy/application/views/leaves/create.php'),
-              Path('legacy/application/views/leaves/edit.php'),
-          ]:
+          for path in [Path('artifacts/built-create.php'), Path('artifacts/built-edit.php')]:
               text = path.read_text(encoding='utf-8')
               marker = 'id="hayneOnDemandOption"'
               assert text.count(marker) == 1, f'{path}: expected exactly one on-demand block'
