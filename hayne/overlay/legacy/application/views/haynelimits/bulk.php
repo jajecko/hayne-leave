@@ -106,7 +106,7 @@ $unconfiguredCount = count($activeEmployees) - $configuredCount;
                             $configured = $profile !== NULL;
                             $summary = $configured ? $profile['summary'] : NULL;
                             $fullName = trim($employee['firstname'] . ' ' . $employee['lastname']); ?>
-                            <tr data-hayne-employee-row data-name="<?php echo html_escape(mb_strtolower($fullName, 'UTF-8')); ?>" data-configured="<?php echo $configured ? '1' : '0'; ?>" data-type-id="<?php echo $configured ? (int) $profile['vacation_type_id'] : 0; ?>">
+                            <tr data-hayne-employee-row data-name="<?php echo html_escape($fullName); ?>" data-configured="<?php echo $configured ? '1' : '0'; ?>" data-type-id="<?php echo $configured ? (int) $profile['vacation_type_id'] : 0; ?>">
                                 <td class="hayne-check-col"><input type="checkbox" class="hayne-employee-checkbox" name="employee_ids[]" value="<?php echo $employeeId; ?>" aria-label="Wybierz <?php echo html_escape($fullName); ?>" /></td>
                                 <td><strong><?php echo html_escape($fullName); ?></strong><?php if ($configured) { ?><small><?php echo html_escape($profile['vacation_type_name']); ?></small><?php } ?></td>
                                 <td><?php if ($configured) { ?><span class="hayne-limit-status hayne-limit-status--configured">Skonfigurowany</span><?php } else { ?><span class="hayne-limit-status hayne-limit-status--missing">Brak limitu</span><?php } ?></td>
