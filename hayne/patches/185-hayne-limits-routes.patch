@@ -7,7 +7,7 @@
 +// HAYNE Leave administration
 +$route['haynelimits'] = 'haynelimits/index';
 +$route['haynelimits/save'] = 'haynelimits/save';
-+$route['haynelimits/save-bulk'] = 'haynelimits/saveBulk';
++$route['haynelimits/save-bulk'] = 'haynebulklimits/save';
 +
  //_______________________________________________
  //Default controllers
