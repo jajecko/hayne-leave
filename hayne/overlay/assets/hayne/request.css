@@ -478,3 +478,67 @@
     min-width: 0;
   }
 }
+
+/* Compact AJAX wait indicator used while Jorani recalculates the request. */
+#frmModalAjaxWait.hayne-request-wait {
+  position: fixed;
+  z-index: 1060;
+  top: 50%;
+  left: 50%;
+  display: none;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#frmModalAjaxWait.hayne-request-wait.in {
+  display: grid;
+  place-items: center;
+}
+
+.hayne-request-wait__spinner {
+  box-sizing: border-box;
+  display: block;
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(17, 17, 17, .18);
+  border-top-color: #111;
+  border-radius: 50%;
+  animation: hayne-request-wait-spin .65s linear infinite;
+}
+
+.hayne-request-wait__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
+}
+
+body.hayne-request-wait-visible .modal-backdrop {
+  background: #fff;
+  opacity: .72;
+}
+
+@keyframes hayne-request-wait-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hayne-request-wait__spinner {
+    animation-duration: 1.2s;
+  }
+}
+
