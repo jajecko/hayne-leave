@@ -63,7 +63,7 @@
              $password = $this->input->post('password');
              $loggedin = FALSE;
 +            $hayneAdAuthEnabled = filter_var($this->config->item('hayne_ad_auth_enabled'), FILTER_VALIDATE_BOOLEAN, ['flags' => FILTER_NULL_ON_FAILURE]);
-             $ldapEnabled = filter_var($this->config->item('ldap_enabled'), FILTER_VALIDATE_BOOLEAN, ['flags' => FILTER_NULL_ON_FAILURE]);
+             $ldapEnabled = filter_var($this->config->item('ldap_enabled'), FILTER_VALIDATE_BOOLEAN, ['' => FILTER_NULL_ON_FAILURE]);
 -            if ($ldapEnabled === TRUE) {
 +            if ($hayneAdAuthEnabled === TRUE) {
 +                $login = (string) $this->input->post('login');
