@@ -16,10 +16,13 @@
     var overwrite = document.getElementById('bulk_overwrite_existing');
     var typeSelect = document.getElementById('bulk_vacation_type_id');
     var daysInput = document.getElementById('bulk_annual_days');
+    var customDays = document.getElementById('bulk_annual_days_custom');
+    var customWrap = document.getElementById('hayneCustomDaysWrap');
     var submit = document.getElementById('hayneBulkSubmit');
     var empty = document.getElementById('hayneEmployeeFilterEmpty');
     var presets = Array.prototype.slice.call(root.querySelectorAll('[data-hayne-days]'));
     var activeFilter = 'all';
+    var bulkEditable = root.getAttribute('data-bulk-editable') !== '0';
 
     function normalize(value) {
       return String(value || '').toLocaleLowerCase('pl-PL').trim();
@@ -74,8 +77,11 @@
 
       selectedCount.textContent = checked.length + (checked.length === 1 ? ' zaznaczony' : ' zaznaczonych');
       submit.textContent = checked.length ? 'Przydziel limit (' + checked.length + ')' : 'Przydziel limit';
+      submit.disabled = !bulkEditable || checked.length === 0;
 
-      if (!overwrite.checked) {
+      if (!bulkEditable) {
+        safetyText.textContent = 'Zapis jest wyłączony dla historycznego widoku.';
+      } else if (!overwrite.checked) {
         safetyText.textContent = configured.length
           ? configured.length + ' zaznaczonych osób ma już limit i zostanie pominiętych.'
           : 'Istniejące konfiguracje zostaną pominięte.';
@@ -92,6 +98,27 @@
         row.classList.toggle('is-selected', !!(box && box.checked));
       });
       syncMaster();
+    }
+
+    function setDaysMode(value) {
+      var custom = value === 'custom';
+      if (customWrap) customWrap.hidden = !custom;
+
+      presets.forEach(function (button) {
+        var isActive = button.getAttribute('data-hayne-days') === value;
+        button.classList.toggle('is-active', isActive);
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+
+      if (custom) {
+        if (customDays && daysInput) {
+          daysInput.value = customDays.value || '26';
+          customDays.focus();
+          customDays.select();
+        }
+      } else if (daysInput) {
+        daysInput.value = value;
+      }
     }
 
     if (search) search.addEventListener('input', applyFilter);
@@ -140,23 +167,13 @@
 
     presets.forEach(function (button) {
       button.addEventListener('click', function () {
-        daysInput.value = button.getAttribute('data-hayne-days');
-        presets.forEach(function (item) {
-          var isActive = item === button;
-          item.classList.toggle('is-active', isActive);
-          item.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-        });
-        daysInput.focus();
+        setDaysMode(button.getAttribute('data-hayne-days'));
       });
     });
 
-    if (daysInput) {
-      daysInput.addEventListener('input', function () {
-        presets.forEach(function (item) {
-          var isActive = item.getAttribute('data-hayne-days') === String(daysInput.value);
-          item.classList.toggle('is-active', isActive);
-          item.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-        });
+    if (customDays) {
+      customDays.addEventListener('input', function () {
+        if (daysInput) daysInput.value = customDays.value;
       });
     }
 
@@ -165,8 +182,9 @@
 
     if (form) {
       form.addEventListener('submit', function (event) {
-        if (checkedRows().length === 0) {
+        if (!bulkEditable || checkedRows().length === 0) {
           event.preventDefault();
+          if (!bulkEditable) return;
           safetyText.textContent = 'Zaznacz co najmniej jednego pracownika.';
           var firstVisible = visibleRows()[0];
           if (firstVisible) {
@@ -178,6 +196,7 @@
     }
 
     applyFilter();
+    setDaysMode('26');
     syncSelection();
   }
 
