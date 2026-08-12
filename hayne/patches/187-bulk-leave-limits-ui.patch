@@ -1,0 +1,17 @@
+--- a/legacy/application/views/haynelimits/index.php
++++ b/legacy/application/views/haynelimits/index.php
+@@ -20,6 +20,15 @@
+ 
+             <?php echo $flash_partial_view; ?>
+ 
++            <?php $this->load->view('haynelimits/bulk', [
++                'employees' => $employees,
++                'profiles' => $profiles,
++                'types' => $types,
++                'default_type' => $default_type,
++                'selected_year' => $selected_year,
++            ]); ?>
++
+             <?php $this->load->view('haynelimits/caregiver', [
+                 'caregiver_policy' => $caregiver_policy,
+                 'types' => $types,
