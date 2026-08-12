@@ -1,0 +1,14 @@
+--- a/legacy/application/helpers/MY_email_helper.php
++++ b/legacy/application/helpers/MY_email_helper.php
+@@ -83 +83 @@
+-                return (boolean)preg_match(
++                return (bool)preg_match(
+@@ -97 +97 @@
+-                return (boolean)preg_match(
++                return (bool)preg_match(
+@@ -115 +115 @@
+-                return (boolean)preg_match(
++                return (bool)preg_match(
+@@ -128 +128 @@
+-                return (boolean)filter_var($address, FILTER_VALIDATE_EMAIL);
++                return (bool)filter_var($address, FILTER_VALIDATE_EMAIL);
