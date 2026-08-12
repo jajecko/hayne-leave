@@ -1,0 +1,66 @@
+name: verify-pr-ad-auth
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - '.env.example'
+      - 'hayne/patches/170-ad-ldaps-login.patch'
+      - '.github/workflows/verify-pr-ad-auth.yml'
+      - 'docs/checkpoints/PR-AD-04_LDAPS_LOGIN.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile'
+      - '.env.example'
+      - 'hayne/patches/170-ad-ldaps-login.patch'
+      - '.github/workflows/verify-pr-ad-auth.yml'
+      - 'docs/checkpoints/PR-AD-04_LDAPS_LOGIN.md'
+
+jobs:
+  ad-auth:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+
+      - name: Guard authentication defaults
+        run: |
+          grep -Fx 'LDAP_ENABLED=FALSE' .env.example
+          grep -Fx 'HAYNE_AD_AUTH_ENABLED=FALSE' .env.example
+          grep -Fx 'HAYNE_AD_AUTH_LOCAL_LOGINS=jadmin' .env.example
+          grep -F "ldaps://%s:%d" hayne/patches/170-ad-ldaps-login.patch
+          grep -F 'LDAP_OPT_X_TLS_CACERTFILE' hayne/patches/170-ad-ldaps-login.patch
+          grep -F 'LDAP_OPT_X_TLS_REQUIRE_CERT' hayne/patches/170-ad-ldaps-login.patch
+          grep -F 'LDAP_OPT_X_TLS_DEMAND' hayne/patches/170-ad-ldaps-login.patch
+          grep -F "hayne_ad_identity" hayne/patches/170-ad-ldaps-login.patch
+          grep -F 'HAYNE AD AUTH FAIL-CLOSED' hayne/patches/170-ad-ldaps-login.patch
+          grep -F 'HAYNE AD AUTH LOCAL FALLBACK' hayne/patches/170-ad-ldaps-login.patch
+
+      - name: Build patched application image
+        run: docker compose build jorani
+
+      - name: Lint patched authentication files
+        run: |
+          docker compose run --rm --no-deps jorani php -l /var/www/html/legacy/application/controllers/Connection.php
+          docker compose run --rm --no-deps jorani php -l /var/www/html/legacy/application/models/Users_model.php
+          docker compose run --rm --no-deps jorani php -l /var/www/html/legacy/application/config/config.php
+
+      - name: Verify built authentication policy
+        run: |
+          docker compose run --rm --no-deps jorani grep -F "hayne_ad_auth_enabled" /var/www/html/legacy/application/controllers/Connection.php
+          docker compose run --rm --no-deps jorani grep -F "getHayneAdDistinguishedName" /var/www/html/legacy/application/models/Users_model.php
+          docker compose run --rm --no-deps jorani grep -F "ldaps://%s:%d" /var/www/html/legacy/application/controllers/Connection.php
+          docker compose run --rm --no-deps jorani grep -F "LDAP_OPT_X_TLS_DEMAND" /var/www/html/legacy/application/controllers/Connection.php
+          docker compose run --rm --no-deps jorani grep -F "HAYNE AD AUTH FAIL-CLOSED" /var/www/html/legacy/application/controllers/Connection.php
+          docker compose run --rm --no-deps jorani grep -F "HAYNE AD AUTH LOCAL FALLBACK" /var/www/html/legacy/application/controllers/Connection.php
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
