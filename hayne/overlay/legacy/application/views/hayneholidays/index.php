@@ -1,6 +1,7 @@
 <?php
 $policyEnabled = !empty($policy) && (int) $policy['enabled'] === 1;
 $typeName = !empty($managed_type['name']) ? (string) $managed_type['name'] : 'Dzień wolny za święto';
+$activeEmployeeCount = isset($active_employee_count) ? (int) $active_employee_count : 0;
 ?>
 
 <main class="hayne-holidays-page" data-hayne-view="holiday-compensation-v1">
@@ -8,14 +9,14 @@ $typeName = !empty($managed_type['name']) ? (string) $managed_type['name'] : 'Dz
         <div class="span12">
             <div class="page-header">
                 <h1>Dzień wolny za święto</h1>
-                <p class="muted">Ręcznie przydzielane dni wolne wynikające z obniżenia wymiaru czasu pracy w konkretnym okresie rozliczeniowym.</p>
+                <p class="muted">Jednorazowo przydzielany dzień wolny dla wszystkich aktywnych pracowników w konkretnym okresie rozliczeniowym.</p>
             </div>
 
             <?php echo $flash_partial_view; ?>
 
             <div class="alert alert-info">
-                HAYNE nie ustala automatycznie, komu należy przyznać odrębny dzień wolny. HR przyznaje grant tylko wtedy,
-                gdy wynika to z harmonogramu pracownika. Grant nie jest urlopem wypoczynkowym i nie przechodzi na kolejny okres rozliczeniowy.
+                HR definiuje święto i okres rozliczeniowy jeden raz. HAYNE tworzy po jednym grancie dla każdego aktywnego pracownika.
+                Grant nie jest urlopem wypoczynkowym i nie przechodzi na kolejny okres rozliczeniowy.
             </div>
 
             <div class="row-fluid">
@@ -37,22 +38,14 @@ $typeName = !empty($managed_type['name']) ? (string) $managed_type['name'] : 'Dz
                     </div>
 
                     <div class="well" data-hayne-holiday-grant-form="v1">
-                        <h3 style="margin-top: 0;">Przyznaj 1 dzień</h3>
+                        <h3 style="margin-top: 0;">Przyznaj 1 dzień wszystkim</h3>
+                        <p>
+                            <strong>Odbiorcy:</strong> wszyscy aktywni pracownicy
+                            <?php if ($activeEmployeeCount > 0) { ?>
+                                (<?php echo $activeEmployeeCount; ?>)
+                            <?php } ?>
+                        </p>
                         <?php echo form_open('hayneholidays/saveGrant', ['class' => 'form-vertical']); ?>
-                            <label for="employee_id">Pracownik</label>
-                            <select name="employee_id" id="employee_id" class="input-xlarge" required>
-                                <option value="">Wybierz pracownika</option>
-                                <?php foreach ($employees as $employee) {
-                                    if ((int) $employee['active'] !== 1) {
-                                        continue;
-                                    }
-                                    ?>
-                                    <option value="<?php echo (int) $employee['id']; ?>">
-                                        <?php echo html_escape(trim($employee['firstname'] . ' ' . $employee['lastname'])); ?>
-                                    </option>
-                                <?php } ?>
-                            </select>
-
                             <label for="source_holiday_date">Data święta źródłowego</label>
                             <input type="date" name="source_holiday_date" id="source_holiday_date" required />
 
@@ -61,9 +54,9 @@ $typeName = !empty($managed_type['name']) ? (string) $managed_type['name'] : 'Dz
 
                             <label for="period_end">Koniec okresu rozliczeniowego</label>
                             <input type="date" name="period_end" id="period_end" required />
-                            <span class="help-block">Dzień wolny będzie można wskazać tylko pomiędzy tymi datami.</span>
+                            <span class="help-block">Każdy aktywny pracownik będzie mógł wskazać swój dzień wolny tylko pomiędzy tymi datami.</span>
 
-                            <button type="submit" class="btn btn-primary">Przyznaj dzień wolny</button>
+                            <button type="submit" class="btn btn-primary">Przyznaj wszystkim aktywnym pracownikom</button>
                         </form>
                     </div>
                 </div>
