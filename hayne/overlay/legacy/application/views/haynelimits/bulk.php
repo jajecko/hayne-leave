@@ -21,13 +21,15 @@ foreach ($activeEmployees as $employee) {
     }
 }
 $unconfiguredCount = count($activeEmployees) - $configuredCount;
+$currentYear = (int) date('Y');
+$bulkEditable = (int) $selected_year === $currentYear;
 ?>
 
 <section class="hayne-limits-card hayne-annual-limits" id="hayneAnnualLimits" data-hayne-bulk="v1" aria-labelledby="hayneAnnualLimitsTitle">
     <div class="hayne-limits-card__head">
         <div>
             <span class="hayne-limits-eyebrow">Urlop wypoczynkowy</span>
-            <h2 id="hayneAnnualLimitsTitle">Przydziel limit pracownikom</h2>
+            <h2 id="hayneAnnualLimitsTitle">Przydziel limit pracownikom — <?php echo $currentYear; ?></h2>
             <p>Wybierz osoby, ustaw wymiar i zapisz jednym ruchem. Istniejące konfiguracje są domyślnie chronione przed nadpisaniem.</p>
         </div>
         <div class="hayne-limits-stats" aria-label="Stan konfiguracji">
@@ -36,6 +38,13 @@ $unconfiguredCount = count($activeEmployees) - $configuredCount;
             <span><strong><?php echo $unconfiguredCount; ?></strong> bez limitu</span>
         </div>
     </div>
+
+    <?php if (!$bulkEditable) { ?>
+        <div class="alert alert-info hayne-bulk-year-warning">
+            Podglądasz rok <strong><?php echo (int) $selected_year; ?></strong>. Grupowe przydzielanie zmienia bieżący profil, dlatego zapis jest dostępny tylko w widoku roku <strong><?php echo $currentYear; ?></strong>.
+            <a href="<?php echo base_url(); ?>haynelimits?year=<?php echo $currentYear; ?>#hayneAnnualLimits">Przejdź do <?php echo $currentYear; ?></a>.
+        </div>
+    <?php } ?>
 
     <?php echo form_open('haynelimits/save-bulk', ['class' => 'hayne-bulk-form', 'id' => 'hayneBulkLeaveForm']); ?>
         <input type="hidden" name="year" value="<?php echo (int) $selected_year; ?>" />
@@ -122,8 +131,8 @@ $unconfiguredCount = count($activeEmployees) - $configuredCount;
         </div>
 
         <div class="hayne-bulk-actionbar">
-            <div><strong id="hayneSelectedCount" aria-live="polite">0 zaznaczonych</strong><span id="hayneBulkSafetyText">Istniejące konfiguracje zostaną pominięte.</span></div>
-            <button type="submit" class="btn btn-primary" id="hayneBulkSubmit">Przydziel limit</button>
+            <div><strong id="hayneSelectedCount" aria-live="polite">0 zaznaczonych</strong><span id="hayneBulkSafetyText"><?php echo $bulkEditable ? 'Istniejące konfiguracje zostaną pominięte.' : 'Zapis jest wyłączony dla historycznego widoku.'; ?></span></div>
+            <button type="submit" class="btn btn-primary" id="hayneBulkSubmit" <?php echo $bulkEditable ? '' : 'disabled'; ?>>Przydziel limit</button>
         </div>
     </form>
 </section>
