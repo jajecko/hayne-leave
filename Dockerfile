@@ -1,15 +1,22 @@
 FROM alpine:3.22 AS upstream
 ARG JORANI_VERSION=v1.0.4
-RUN apk add --no-cache curl tar \
-    && mkdir -p /src \
-    && curl -fL \
-      --retry 5 \
-      --retry-delay 2 \
-      --retry-all-errors \
-      -o /tmp/jorani.tar.gz \
-      "https://github.com/jorani/jorani/archive/refs/tags/${JORANI_VERSION}.tar.gz" \
-    && tar -xzf /tmp/jorani.tar.gz --strip-components=1 -C /src \
-    && rm -f /tmp/jorani.tar.gz
+RUN set -eux; \
+    apk add --no-cache git; \
+    fetched=0; \
+    for attempt in 1 2 3 4 5; do \
+      rm -rf /src; \
+      if GIT_TERMINAL_PROMPT=0 git -c http.version=HTTP/1.1 clone \
+        --depth 1 \
+        --branch "${JORANI_VERSION}" \
+        --single-branch \
+        https://github.com/jorani/jorani.git /src; then \
+        fetched=1; \
+        break; \
+      fi; \
+      sleep $((attempt * 2)); \
+    done; \
+    test "$fetched" = "1"; \
+    rm -rf /src/.git
 
 FROM composer:2 AS composer
 WORKDIR /app/legacy
