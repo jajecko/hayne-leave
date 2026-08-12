@@ -1,0 +1,175 @@
+--- a/legacy/application/config/config.php
++++ b/legacy/application/config/config.php
+@@ -470,6 +470,16 @@
+ $config['ldap_search_password'] = $env_str('LDAP_SEARCH_PASSWORD', '');
+ $config['ldap_search_pattern'] = $env_str('LDAP_SEARCH_PATTERN', 'cn=%s'); // Let %s symbolize the user identifier
+ 
++//____________________________________________________________________________
++// HAYNE Active Directory authentication.
++// This is intentionally separate from Jorani's native LDAP implementation so
++// synced employees can authenticate fail-closed over LDAPS while selected
++// break-glass accounts (for example jadmin) remain local.
++$config['hayne_ad_auth_enabled'] = $env_bool('HAYNE_AD_AUTH_ENABLED', false);
++$config['hayne_ad_auth_hosts'] = $env_str('HAYNE_AD_HOSTS', '');
++$config['hayne_ad_auth_port'] = $env_int('HAYNE_AD_PORT', 636);
++$config['hayne_ad_auth_ca_file'] = $env_str('HAYNE_AD_CA_FILE', '');
++$config['hayne_ad_auth_network_timeout'] = $env_int('HAYNE_AD_NETWORK_TIMEOUT', 5);
++$config['hayne_ad_auth_time_limit'] = $env_int('HAYNE_AD_TIME_LIMIT', 10);
++$config['hayne_ad_auth_local_logins'] = $env_str('HAYNE_AD_AUTH_LOCAL_LOGINS', 'jadmin');
++
+ //____________________________________________________________________________
+ //Oauth2 configuration
+ $config['oauth2_enabled'] = $env_bool('OAUTH2_ENABLED', false);
+--- a/legacy/application/models/Users_model.php
++++ b/legacy/application/models/Users_model.php
+@@ -679,6 +679,31 @@
+         }
+     }
+ 
++    /**
++     * Return the AD distinguished name for an active HAYNE-managed user.
++     * Presence in hayne_ad_identity is the authority boundary between AD
++     * accounts and local break-glass accounts.
++     * @param string $login user login
++     * @return string distinguished name or an empty string when not AD-managed
++     */
++    public function getHayneAdDistinguishedName(string $login): string
++    {
++        if (!$this->db->table_exists('hayne_ad_identity')) {
++            return '';
++        }
++
++        $this->db->select('hayne_ad_identity.distinguished_name');
++        $this->db->from('users');
++        $this->db->join('hayne_ad_identity', 'hayne_ad_identity.user_id = users.id');
++        $this->db->where('users.login', $login);
++        $this->db->where('users.active = TRUE');
++        $query = $this->db->get();
++
++        if ($query->num_rows() !== 1) {
++            return '';
++        }
++
++        return (string) ($query->row()->distinguished_name ?? '');
++    }
++
+     /**
+      * Check the provided credentials and load user's profile if they are correct
+      * Mostly used for alternative signin mechanisms such as SSO
+--- a/legacy/application/controllers/Connection.php
++++ b/legacy/application/controllers/Connection.php
+@@ -102,8 +102,22 @@
+ 
+             $password = $this->input->post('password');
+             $loggedin = FALSE;
++            $hayneAdAuthEnabled = filter_var($this->config->item('hayne_ad_auth_enabled'), FILTER_VALIDATE_BOOLEAN, ['flags' => FILTER_NULL_ON_FAILURE]);
+             $ldapEnabled = filter_var($this->config->item('ldap_enabled'), FILTER_VALIDATE_BOOLEAN, ['flags' => FILTER_NULL_ON_FAILURE]);
+-            if ($ldapEnabled === TRUE) {
++            if ($hayneAdAuthEnabled === TRUE) {
++                $login = (string) $this->input->post('login');
++                $distinguishedName = $this->users_model->getHayneAdDistinguishedName($login);
++
++                // HAYNE AD AUTH FAIL-CLOSED: an AD-managed account never falls
++                // back to the password hash stored in the Jorani database.
++                if ($distinguishedName !== '') {
++                    if ($password !== '') {
++                        $loggedin = $this->authenticateHayneAd($login, $distinguishedName, $password);
++                    }
++                } elseif ($this->isHayneLocalLoginAllowed($login)) {
++                    // HAYNE AD AUTH LOCAL FALLBACK: only explicitly allow-listed
++                    // break-glass accounts are permitted to use local passwords.
++                    $loggedin = $this->users_model->checkCredentials($login, $password);
++                }
++            } elseif ($ldapEnabled === TRUE) {
+                 if ($password != "") { //Bind to MS-AD with blank password might return OK
+                     $ldapUri = sprintf('ldap://%s:%d', $this->config->item('ldap_host'), $this->config->item('ldap_port'));
+                     $ldap = ldap_connect($ldapUri);
+@@ -153,6 +167,95 @@
+         }
+     }
+ 
++    /**
++     * Authenticate one active, synchronized HAYNE employee against AD over
++     * LDAPS. The exact DN comes from hayne_ad_identity; no directory search or
++     * service-account bind is needed during interactive login.
++     */
++    private function authenticateHayneAd(string $login, string $distinguishedName, string $password): bool
++    {
++        if ($password === '' || $distinguishedName === '') {
++            return FALSE;
++        }
++
++        $caFile = (string) $this->config->item('hayne_ad_auth_ca_file');
++        if ($caFile === '' || !is_readable($caFile)) {
++            log_message('error', '{controllers/session/login} HAYNE AD CA file is missing or unreadable');
++            return FALSE;
++        }
++
++        if (!defined('LDAP_OPT_X_TLS_CACERTFILE') ||
++            !defined('LDAP_OPT_X_TLS_REQUIRE_CERT') ||
++            !defined('LDAP_OPT_X_TLS_DEMAND')) {
++            log_message('error', '{controllers/session/login} HAYNE AD TLS options are unavailable');
++            return FALSE;
++        }
++
++        // TLS options must be configured before ldap_connect() creates the
++        // connection object used by the LDAPS bind.
++        if (!ldap_set_option(NULL, LDAP_OPT_X_TLS_CACERTFILE, $caFile) ||
++            !ldap_set_option(NULL, LDAP_OPT_X_TLS_REQUIRE_CERT, LDAP_OPT_X_TLS_DEMAND)) {
++            log_message('error', '{controllers/session/login} HAYNE AD TLS configuration failed');
++            return FALSE;
++        }
++
++        $hosts = array_values(array_filter(array_map('trim', explode(',', (string) $this->config->item('hayne_ad_auth_hosts')))));
++        if (count($hosts) === 0) {
++            log_message('error', '{controllers/session/login} HAYNE AD has no configured hosts');
++            return FALSE;
++        }
++
++        $port = (int) $this->config->item('hayne_ad_auth_port');
++        $networkTimeout = max(1, (int) $this->config->item('hayne_ad_auth_network_timeout'));
++        $timeLimit = max(1, (int) $this->config->item('hayne_ad_auth_time_limit'));
++
++        foreach ($hosts as $host) {
++            $ldapUri = sprintf('ldaps://%s:%d', $host, $port);
++            $ldap = ldap_connect($ldapUri);
++            if ($ldap === FALSE) {
++                continue;
++            }
++
++            ldap_set_option($ldap, LDAP_OPT_PROTOCOL_VERSION, 3);
++            ldap_set_option($ldap, LDAP_OPT_REFERRALS, 0);
++            ldap_set_option($ldap, LDAP_OPT_NETWORK_TIMEOUT, $networkTimeout);
++            ldap_set_option($ldap, LDAP_OPT_TIMELIMIT, $timeLimit);
++
++            // ldap_bind() warnings deliberately do not expose bind details to
++            // the UI. A failure simply tries the second configured DC.
++            $bind = @ldap_bind($ldap, $distinguishedName, $password);
++            ldap_unbind($ldap);
++
++            if ($bind === TRUE) {
++                return $this->users_model->checkCredentialsLDAP($login);
++            }
++        }
++
++        log_message('error', '{controllers/session/login} HAYNE AD authentication failed for user=' . $login);
++        return FALSE;
++    }
++
++    /**
++     * Check the comma-separated local break-glass allow-list.
++     */
++    private function isHayneLocalLoginAllowed(string $login): bool
++    {
++        $allowed = array_values(array_filter(array_map('trim', explode(',', (string) $this->config->item('hayne_ad_auth_local_logins')))));
++        foreach ($allowed as $allowedLogin) {
++            if (strcasecmp($login, $allowedLogin) === 0) {
++                return TRUE;
++            }
++        }
++        return FALSE;
++    }
++
+     /**
+      * Logout the user and destroy the session data
+      */
