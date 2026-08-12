@@ -5,11 +5,14 @@
          <?php echo validation_errors(); ?>
  
          <?php
-@@ -26,9 +27,24 @@
+@@ -26,9 +27,27 @@
          </label>
 +        <?php if (!empty($hayneOnDemandState['enabled'])) { ?>
 +            <div id="hayneOnDemandOption" class="hayne-on-demand-option"
-+                data-vacation-type-id="<?php echo (int) $hayneOnDemandState['vacation_type_id']; ?>">
++                data-vacation-type-id="<?php echo (int) $hayneOnDemandState['vacation_type_id']; ?>"
++                data-year="<?php echo (int) $hayneOnDemandState['year']; ?>"
++                data-remaining="<?php echo (float) $hayneOnDemandState['remaining']; ?>"
++                data-limit="<?php echo (int) $hayneOnDemandState['limit']; ?>">
 +                <label class="checkbox" for="hayne_on_demand">
 +                    <input type="checkbox" name="hayne_on_demand" id="hayne_on_demand" value="1"
 +                        <?php echo set_value('hayne_on_demand') === '1' ? 'checked' : ''; ?> />
@@ -38,11 +41,14 @@
  
  
                  <label for="type">
-@@ -32,9 +33,24 @@
+@@ -32,9 +33,27 @@
                  </label>
 +                <?php if (!empty($hayneOnDemandState['enabled'])) { ?>
 +                    <div id="hayneOnDemandOption" class="hayne-on-demand-option"
-+                        data-vacation-type-id="<?php echo (int) $hayneOnDemandState['vacation_type_id']; ?>">
++                        data-vacation-type-id="<?php echo (int) $hayneOnDemandState['vacation_type_id']; ?>"
++                        data-year="<?php echo (int) $hayneOnDemandState['year']; ?>"
++                        data-remaining="<?php echo (float) $hayneOnDemandState['remaining']; ?>"
++                        data-limit="<?php echo (int) $hayneOnDemandState['limit']; ?>">
 +                        <label class="checkbox" for="hayne_on_demand">
 +                            <input type="checkbox" name="hayne_on_demand" id="hayne_on_demand" value="1"
 +                                <?php echo !empty($hayneOnDemandState['current']) ? 'checked' : ''; ?> />

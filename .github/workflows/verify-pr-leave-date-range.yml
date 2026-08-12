@@ -1,0 +1,206 @@
+name: verify-pr-leave-date-range
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/overlay/assets/hayne/full-day.js'
+      - 'hayne/overlay/assets/hayne/on-demand.js'
+      - 'hayne/overlay/assets/hayne/on-demand.css'
+      - 'hayne/patches/205-on-demand-views.patch'
+      - '.github/workflows/verify-pr-leave-date-range.yml'
+      - 'docs/checkpoints/PR-LEAVE-FORM-02_DATE_RANGE_AND_ON_DEMAND_CAP.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'hayne/overlay/assets/hayne/full-day.js'
+      - 'hayne/overlay/assets/hayne/on-demand.js'
+      - 'hayne/overlay/assets/hayne/on-demand.css'
+      - 'hayne/patches/205-on-demand-views.patch'
+      - '.github/workflows/verify-pr-leave-date-range.yml'
+      - 'docs/checkpoints/PR-LEAVE-FORM-02_DATE_RANGE_AND_ON_DEMAND_CAP.md'
+
+jobs:
+  leave-date-range:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Static guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check hayne/overlay/assets/hayne/full-day.js
+          node --check hayne/overlay/assets/hayne/on-demand.js
+          grep -F "node.hidden = true" hayne/overlay/assets/hayne/full-day.js
+          grep -F "options.timeout = 15000" hayne/overlay/assets/hayne/full-day.js
+          if grep -F "document.querySelectorAll('.hayne-request-grid--dayparts').forEach((node) => node.remove())" hayne/overlay/assets/hayne/full-day.js; then
+            echo 'Full-day controls must stay in the DOM.'
+            exit 1
+          fi
+          grep -F 'data-remaining="<?php echo (float) $hayneOnDemandState['\''remaining'\'']; ?>"' hayne/patches/205-on-demand-views.patch
+          grep -F 'data-year="<?php echo (int) $hayneOnDemandState['\''year'\'']; ?>"' hayne/patches/205-on-demand-views.patch
+          grep -F 'Zakres dat został automatycznie skrócony.' hayne/overlay/assets/hayne/on-demand.js
+
+      - name: Build and start HAYNE Leave
+        run: docker compose up --build -d
+
+      - name: Wait for application
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/session/login >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs --no-color
+          exit 1
+
+      - name: Runtime syntax and source checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose exec -T jorani php -l legacy/application/controllers/Leaves.php
+          docker compose exec -T jorani php -l legacy/application/views/leaves/create.php
+          docker compose exec -T jorani php -l legacy/application/views/leaves/edit.php
+          docker compose exec -T jorani sh -ec '
+            grep -F "id=\"startdatetype\"" legacy/application/views/leaves/create.php
+            grep -F "id=\"enddatetype\"" legacy/application/views/leaves/create.php
+            grep -F "data-remaining=\"<?php echo (float) \$hayneOnDemandState['\''remaining'\'']; ?>\"" legacy/application/views/leaves/create.php
+          '
+
+      - name: Authenticate as administrator
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          curl -fsS -c artifacts/cookies.txt http://localhost:8080/session/login -o artifacts/login.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/login.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jorani' \
+            --data-urlencode 'password=jorani' \
+            --data-urlencode 'language=en' \
+            http://localhost:8080/session/login \
+            -o artifacts/home.html
+          grep -F 'Cześć Admin!' artifacts/home.html
+
+      - name: Configure vacation profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/haynelimits -o artifacts/limits.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/limits.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'employee_id=1' \
+            --data-urlencode 'vacation_type_id=1' \
+            --data-urlencode 'annual_days=26' \
+            --data-urlencode 'auto_renew=1' \
+            http://localhost:8080/haynelimits/save \
+            -o artifacts/limits-saved.html
+          grep -F 'Limit urlopowy został zapisany.' artifacts/limits-saved.html
+
+      - name: Validate a real full-day date range over AJAX endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          year="$(date +%Y)"
+          start="$(date -d "${year}-03-01 next monday" +%F)"
+          end="$(date -d "${start} +2 days" +%F)"
+
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/create -o artifacts/create.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/create.html | head -n 1)"
+          test -n "$csrf_token"
+          vacation_type="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT name FROM types WHERE id=1\"")"
+          test -n "$vacation_type"
+
+          http_code="$(curl -sS --max-time 15 \
+            -o artifacts/validate.json \
+            -w '%{http_code}' \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'id=1' \
+            --data-urlencode "type=${vacation_type}" \
+            --data-urlencode "startdate=${start}" \
+            --data-urlencode "enddate=${end}" \
+            --data-urlencode 'startdatetype=Morning' \
+            --data-urlencode 'enddatetype=Afternoon' \
+            --data-urlencode 'leave_id=' \
+            http://localhost:8080/leaves/validate)"
+          test "$http_code" = "200"
+
+          START="$start" END="$end" python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = json.loads(Path('artifacts/validate.json').read_text(encoding='utf-8'))
+          assert payload['RequestStartDate'] == os.environ['START'], payload
+          assert payload['RequestEndDate'] == os.environ['END'], payload
+          assert float(payload['length']) == 3.0, payload
+          PY
+
+      - name: Remaining on-demand days are exposed to the browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          year="$(date +%Y)"
+          start="$(date -d "${year}-04-01 next monday" +%F)"
+          end="$(date -d "${start} +1 day" +%F)"
+
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/create -o artifacts/form.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/form.html | head -n 1)"
+          test -n "$csrf_token"
+
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode "startdate=${start}" \
+            --data-urlencode 'startdatetype=Morning' \
+            --data-urlencode "enddate=${end}" \
+            --data-urlencode 'enddatetype=Afternoon' \
+            --data-urlencode 'duration=2' \
+            --data-urlencode 'type=1' \
+            --data-urlencode 'cause=CI ONDEMAND REMAINING TWO' \
+            --data-urlencode 'status=2' \
+            --data-urlencode 'hayne_on_demand=1' \
+            http://localhost:8080/leaves/create \
+            -o artifacts/on-demand-two.html
+
+          request_id="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT id FROM leaves WHERE cause='CI ONDEMAND REMAINING TWO' ORDER BY id DESC LIMIT 1\"")"
+          test -n "$request_id"
+
+          curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/create -o artifacts/create-after-two.html
+          grep -F 'data-remaining="2"' artifacts/create-after-two.html
+          grep -F 'data-limit="4"' artifacts/create-after-two.html
+          grep -F "data-year=\"${year}\"" artifacts/create-after-two.html
+
+      - name: Reject runtime regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          if docker compose logs --no-color | grep -E 'Undefined variable|Fatal error|Uncaught|Parse error|TypeError'; then
+            exit 1
+          fi
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
