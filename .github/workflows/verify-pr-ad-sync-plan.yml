@@ -1,0 +1,98 @@
+name: verify-pr-ad-sync-plan
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - 'docker/mysql/Dockerfile'
+      - '.env.example'
+      - 'hayne/tools/ad-sync-plan.php'
+      - 'hayne/sql/002-ad-identity.sql'
+      - '.github/workflows/verify-pr-ad-sync-plan.yml'
+      - 'docs/checkpoints/PR-AD-03_SYNC_PLANNER.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile'
+      - 'docker/mysql/Dockerfile'
+      - '.env.example'
+      - 'hayne/tools/ad-sync-plan.php'
+      - 'hayne/sql/002-ad-identity.sql'
+      - '.github/workflows/verify-pr-ad-sync-plan.yml'
+      - 'docs/checkpoints/PR-AD-03_SYNC_PLANNER.md'
+
+jobs:
+  ad-sync-plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+
+      - name: Lint and self-test planner
+        run: |
+          php -l hayne/tools/ad-sync-plan.php
+          php hayne/tools/ad-sync-plan.php --self-test
+
+      - name: Guard synchronization policy
+        run: |
+          grep -F 'HAYNE_AD_APPLY_ENABLED=FALSE' .env.example
+          grep -F 'HAYNE_AD_MAX_USER_CHANGES=50' .env.example
+          grep -F 'HAYNE_AD_PROTECTED_LOGINS=jadmin' .env.example
+          grep -F 'SKIP_DISABLED_NEW' hayne/tools/ad-sync-plan.php
+          grep -F 'PRESERVE_LOCAL' hayne/tools/ad-sync-plan.php
+          grep -F 'PRESERVE_MISSING_FROM_AD' hayne/tools/ad-sync-plan.php
+          grep -F 'LOCAL_LOGIN_CONFLICT' hayne/tools/ad-sync-plan.php
+          grep -F 'MASS_CHANGE_GUARD' hayne/tools/ad-sync-plan.php
+          grep -F 'MIGRATION_REQUIRED' hayne/tools/ad-sync-plan.php
+          grep -F 'Apply requires --confirm=<PLAN_SHA256>' hayne/tools/ad-sync-plan.php
+          grep -F 'Migration requires --confirm=MIGRATE_HAYNE_AD_IDENTITY' hayne/tools/ad-sync-plan.php
+          ! grep -Eqi '\bDELETE[[:space:]]+FROM\b|\bDROP[[:space:]]+TABLE\b|\bTRUNCATE\b' hayne/tools/ad-sync-plan.php
+          ! grep -Eqi '\bDELETE[[:space:]]+FROM\b|\bDROP[[:space:]]+TABLE\b|\bTRUNCATE\b' hayne/sql/002-ad-identity.sql
+
+      - name: Guard identity schema
+        run: |
+          grep -F 'PRIMARY KEY (`user_id`)' hayne/sql/002-ad-identity.sql
+          grep -F 'UNIQUE KEY `object_guid` (`object_guid`)' hayne/sql/002-ad-identity.sql
+          grep -F 'COPY hayne/sql/002-ad-identity.sql' docker/mysql/Dockerfile
+          grep -F 'COPY hayne/tools/ad-sync-plan.php /opt/hayne/ad-sync-plan.php' Dockerfile
+
+      - name: Build application and database images
+        run: docker compose build jorani mysql
+
+      - name: Verify planner in built image
+        run: |
+          docker compose run --rm --no-deps jorani php -l /opt/hayne/ad-sync-plan.php
+          docker compose run --rm --no-deps jorani php /opt/hayne/ad-sync-plan.php --self-test
+
+      - name: Verify fresh database identity schema
+        run: |
+          docker compose up -d mysql
+          for i in $(seq 1 30); do
+            if docker compose exec -T mysql sh -c 'mysqladmin ping -h 127.0.0.1 -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" --silent'; then
+              break
+            fi
+            sleep 2
+          done
+          docker compose exec -T mysql sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SHOW CREATE TABLE hayne_ad_identity\\G"' | tee /tmp/identity-schema.out
+          grep -F 'object_guid' /tmp/identity-schema.out
+          grep -F 'UNIQUE KEY' /tmp/identity-schema.out
+
+      - name: Verify migration write gate is disabled by default
+        run: |
+          set +e
+          docker compose run --rm --no-deps jorani php /opt/hayne/ad-sync-plan.php --migrate --confirm=MIGRATE_HAYNE_AD_IDENTITY > /tmp/ad-plan-gate.out 2>&1
+          rc=$?
+          set -e
+          cat /tmp/ad-plan-gate.out
+          test "$rc" -ne 0
+          grep -F 'HAYNE_AD_APPLY_ENABLED is not TRUE' /tmp/ad-plan-gate.out
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

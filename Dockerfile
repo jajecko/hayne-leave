@@ -1,9 +1,22 @@
 FROM alpine:3.22 AS upstream
 ARG JORANI_VERSION=v1.0.4
-RUN apk add --no-cache curl tar \
-    && mkdir -p /src \
-    && curl -fsSL "https://github.com/jorani/jorani/archive/refs/tags/${JORANI_VERSION}.tar.gz" \
-      | tar -xz --strip-components=1 -C /src
+RUN set -eux; \
+    apk add --no-cache git; \
+    fetched=0; \
+    for attempt in 1 2 3 4 5; do \
+      rm -rf /src; \
+      if GIT_TERMINAL_PROMPT=0 git -c http.version=HTTP/1.1 clone \
+        --depth 1 \
+        --branch "${JORANI_VERSION}" \
+        --single-branch \
+        https://github.com/jorani/jorani.git /src; then \
+        fetched=1; \
+        break; \
+      fi; \
+      sleep $((attempt * 2)); \
+    done; \
+    test "$fetched" = "1"; \
+    rm -rf /src/.git
 
 FROM composer:2 AS composer
 WORKDIR /app/legacy
@@ -32,9 +45,10 @@ COPY --from=upstream /src ./
 COPY --from=composer /app/legacy/vendor ./legacy/vendor
 COPY hayne/overlay/ ./
 COPY hayne/tools/ad-sync-preview.php /opt/hayne/ad-sync-preview.php
+COPY hayne/tools/ad-sync-plan.php /opt/hayne/ad-sync-plan.php
 COPY hayne/patches/ /tmp/hayne-patches/
 RUN set -eux; \
-    chmod 0555 /opt/hayne/ad-sync-preview.php; \
+    chmod 0555 /opt/hayne/ad-sync-preview.php /opt/hayne/ad-sync-plan.php; \
     for patch_file in /tmp/hayne-patches/*.patch; do \
       patch --batch --forward -p1 < "$patch_file"; \
     done; \
