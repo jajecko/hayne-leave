@@ -18,6 +18,14 @@ $editingAutoRenew = $edit_profile ? ((int) $edit_profile['auto_renew'] === 1) : 
 
             <?php echo $flash_partial_view; ?>
 
+            <?php $this->load->view('haynelimits/bulk', [
+                'employees' => $employees,
+                'profiles' => $profiles,
+                'types' => $types,
+                'default_type' => $default_type,
+                'selected_year' => $selected_year,
+            ]); ?>
+
             <?php $this->load->view('haynelimits/caregiver', [
                 'caregiver_policy' => $caregiver_policy,
                 'types' => $types,
