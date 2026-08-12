@@ -21,10 +21,13 @@
       });
     }
 
-    // Source markup keeps this policy immediately after the leave-type selector.
-    // The redesigned create form moves all HAYNE policy fields as one group.
-    // Do not perform a second DOM reparent here: competing reparent operations
-    // were the source of layout instability when multiple policies were enabled.
+    // The create redesign owns placement of every HAYNE policy field.
+    // Edit keeps the stock layout, so normalize the server-rendered policy
+    // to the position directly after the leave-type selector there only.
+    if (!document.querySelector('[data-hayne-view="leave-create-v2"]')) {
+      type.insertAdjacentElement('afterend', option);
+    }
+
     updateVisibility();
   };
 
