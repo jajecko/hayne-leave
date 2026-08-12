@@ -2,3 +2,7 @@
 .DS_Store
 .idea/
 .vscode/
+
+# Deployment-local AD trust material must never be committed.
+certs/*
+!certs/README.md
