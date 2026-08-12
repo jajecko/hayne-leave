@@ -80,7 +80,13 @@ jobs:
           curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${year}" -o artifacts/limits-empty.html
           grep -F 'data-hayne-view="leave-limits-v1"' artifacts/limits-empty.html
           grep -F 'Limity urlopowe' artifacts/limits-empty.html
-          grep -F 'Automatycznie odnawiaj pulę' artifacts/limits-empty.html
+          grep -F 'data-hayne-bulk="v1"' artifacts/limits-empty.html
+          grep -F 'Inny wymiar' artifacts/limits-empty.html
+          grep -F 'Szczegóły rozliczenia FIFO' artifacts/limits-empty.html
+          if grep -F 'id="hayneLeaveProfileForm"' artifacts/limits-empty.html; then
+            echo 'Single-edit form must not render in the normal limits view.'
+            exit 1
+          fi
 
           csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/limits-empty.html | head -n 1)"
           test -n "$csrf_token"
@@ -102,6 +108,11 @@ jobs:
           docker compose exec -T mysql sh -ec "
             test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CAST(days AS UNSIGNED) FROM entitleddays WHERE employee=1 AND type=1 AND description='[HAYNE_POOL|annual|${year}]'\")\" = \"26\"
           "
+
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?edit=1&year=${year}" -o artifacts/limits-edit.html
+          grep -F 'id="hayneLeaveProfileForm"' artifacts/limits-edit.html
+          grep -F 'Edytuj ustawienia pracownika' artifacts/limits-edit.html
+          grep -F 'Automatycznie odnawiaj pulę' artifacts/limits-edit.html
 
       - name: Verify FIFO and yearly rollover
         run: |
