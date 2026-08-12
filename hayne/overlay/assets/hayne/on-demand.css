@@ -26,6 +26,21 @@
   font-variant-numeric: tabular-nums;
 }
 
+.hayne-on-demand-option__warning {
+  box-sizing: border-box;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(17, 24, 39, 0.16);
+  border-radius: 6px;
+  background: rgba(17, 24, 39, 0.045);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.hayne-on-demand-option__warning[hidden] {
+  display: none !important;
+}
+
 .hayne-on-demand-balance {
   margin-top: 10px;
 }
