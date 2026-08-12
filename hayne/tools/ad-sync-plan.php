@@ -136,6 +136,15 @@ function normalizedDn(string $dn): string
     return strtolower(trim($dn));
 }
 
+function unicodeLength(string $value): int
+{
+    if (function_exists('mb_strlen')) {
+        return mb_strlen($value, 'UTF-8');
+    }
+    $count = preg_match_all('/./us', $value, $matches);
+    return $count === false ? strlen($value) : $count;
+}
+
 function foldText(string $value): string
 {
     $value = preg_replace('/\s+/u', ' ', trim($value)) ?? trim($value);
@@ -450,7 +459,7 @@ function detectDictionaryQuality(array $values, string $kind): array
                     'Title contains a suspicious long alphanumeric token; review the AD source value before apply.'
                 );
             }
-            if (strlen($value) > 64) {
+            if (unicodeLength($value) > 64) {
                 addIssue(
                     $issues,
                     'BLOCKER',
@@ -622,6 +631,11 @@ function buildPlan(array $adSnapshot, array $dbSnapshot, array $config): array
         if (!isset($usersById[$userId])) {
             continue;
         }
+        $loginOwner = $usersByLogin[$loginKey] ?? null;
+        if ($loginOwner !== null && (int) $loginOwner['id'] !== $userId) {
+            addIssue($issues, 'BLOCKER', 'SYNCED_LOGIN_COLLISION', $ad['login'], 'AD login would collide with a different Jorani user.');
+            continue;
+        }
         $local = $usersById[$userId];
         $changes = [];
         $expected = [
@@ -641,9 +655,16 @@ function buildPlan(array $adSnapshot, array $dbSnapshot, array $config): array
         if ($ad['enabled']) {
             if ($ad['department'] === '' || $ad['title'] === '') {
                 addIssue($issues, 'BLOCKER', 'ACTIVE_SYNCED_USER_MISSING_DICTIONARY_FIELD', $ad['login'], 'Active synced user is missing department or title.');
+            } else {
+                $targetOrgId = $orgByExact[$ad['department']] ?? null;
+                $targetPositionId = $posByExact[$ad['title']] ?? null;
+                if ($targetOrgId === null || (int) ($local['organization'] ?? -1) !== $targetOrgId) {
+                    $changes['organization_name'] = ['from' => (int) ($local['organization'] ?? -1), 'to' => $ad['department']];
+                }
+                if ($targetPositionId === null || (int) ($local['position'] ?? -1) !== $targetPositionId) {
+                    $changes['position_name'] = ['from' => (int) ($local['position'] ?? -1), 'to' => $ad['title']];
+                }
             }
-            $changes['organization_name'] = ['to' => $ad['department']];
-            $changes['position_name'] = ['to' => $ad['title']];
         }
         if ($changes) {
             $type = 'UPDATE_USER';
@@ -1008,6 +1029,21 @@ function runSelfTest(): void
     if ($sha1 !== $sha2) {
         throw new RuntimeException('SELF-TEST FAIL: plan hash is not deterministic');
     }
+
+    $postDb = $db;
+    $postDb['organizations'][] = ['id' => 10, 'name' => 'Sales', 'parent_id' => 0, 'supervisor' => null];
+    $postDb['positions'][] = ['id' => 20, 'name' => 'Rep', 'description' => 'Synced from Active Directory.'];
+    $postDb['users'][] = ['id' => 5, 'firstname' => 'Alice', 'lastname' => 'A', 'login' => 'alice', 'email' => 'alice@example.com', 'role' => 2, 'manager' => null, 'organization' => 10, 'contract' => 1, 'position' => 20, 'identifier' => '', 'ldap_path' => 'CN=Alice,DC=x', 'active' => 1];
+    $postDb['users'][] = ['id' => 6, 'firstname' => 'Bob', 'lastname' => 'B', 'login' => 'bob', 'email' => 'bob@example.com', 'role' => 2, 'manager' => 5, 'organization' => 10, 'contract' => 1, 'position' => 20, 'identifier' => '', 'ldap_path' => 'CN=Bob,DC=x', 'active' => 1];
+    $postDb['identities'] = [
+        ['user_id' => 5, 'object_guid' => 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'distinguished_name' => 'CN=Alice,DC=x', 'last_seen_at' => '2026-01-01', 'last_synced_at' => '2026-01-01', 'source_dc' => 'AD01'],
+        ['user_id' => 6, 'object_guid' => 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'distinguished_name' => 'CN=Bob,DC=x', 'last_seen_at' => '2026-01-01', 'last_synced_at' => '2026-01-01', 'source_dc' => 'AD01'],
+    ];
+    $postPlan = buildPlan($ad, $postDb, $config);
+    if ($postPlan['user_changes'] !== 0 || ($postPlan['payload']['summary']['UNCHANGED_SYNCED'] ?? 0) !== 2) {
+        throw new RuntimeException('SELF-TEST FAIL: repeated sync should plan zero user mutations');
+    }
+
     foreach ($plan['payload']['actions'] as $action) {
         if (str_starts_with($action['type'], 'DELETE')) {
             throw new RuntimeException('SELF-TEST FAIL: delete action generated');
