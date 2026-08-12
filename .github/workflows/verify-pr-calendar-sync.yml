@@ -1,0 +1,60 @@
+name: verify-pr-calendar-sync
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - '.env.example'
+      - 'hayne/tools/calendar-sync.php'
+      - '.github/workflows/verify-pr-calendar-sync.yml'
+      - 'docs/checkpoints/PR-CAL-01_MANAGED_WORK_CALENDAR.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile'
+      - '.env.example'
+      - 'hayne/tools/calendar-sync.php'
+      - '.github/workflows/verify-pr-calendar-sync.yml'
+      - 'docs/checkpoints/PR-CAL-01_MANAGED_WORK_CALENDAR.md'
+
+jobs:
+  calendar-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+
+      - name: Guard safe defaults
+        run: |
+          grep -Fx 'HAYNE_CALENDAR_SYNC_ENABLED=FALSE' .env.example
+          grep -Fx 'HAYNE_CALENDAR_APPLY_ENABLED=FALSE' .env.example
+          grep -Fx 'HAYNE_CALENDAR_CONTRACT_IDS=1' .env.example
+          grep -Fx 'HAYNE_CALENDAR_COUNTRY_CODE=PL' .env.example
+          grep -F 'https://date.nager.at/api/v4/Holidays/%s/%d' .env.example
+          grep -F "const MANAGED_PREFIX = 'HAYNE-CALENDAR|'" hayne/tools/calendar-sync.php
+          grep -F "Holiday API URL must use HTTPS" hayne/tools/calendar-sync.php
+          grep -F "Apply requested but HAYNE_CALENDAR_APPLY_ENABLED is not TRUE" hayne/tools/calendar-sync.php
+
+      - name: Build application image
+        run: docker compose build jorani
+
+      - name: Lint calendar tool
+        run: docker compose run --rm --no-deps jorani php -l /opt/hayne/calendar-sync.php
+
+      - name: Run deterministic calendar self-test
+        run: docker compose run --rm --no-deps jorani php /opt/hayne/calendar-sync.php --self-test
+
+      - name: Verify tool is installed read-only
+        run: |
+          docker compose run --rm --no-deps jorani test -x /opt/hayne/calendar-sync.php
+          docker compose run --rm --no-deps jorani grep -F 'HAYNE CALENDAR SYNC PLAN (READ ONLY)' /opt/hayne/calendar-sync.php
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
