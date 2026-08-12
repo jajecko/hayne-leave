@@ -32,9 +32,10 @@ COPY --from=upstream /src ./
 COPY --from=composer /app/legacy/vendor ./legacy/vendor
 COPY hayne/overlay/ ./
 COPY hayne/tools/ad-sync-preview.php /opt/hayne/ad-sync-preview.php
+COPY hayne/tools/ad-sync-plan.php /opt/hayne/ad-sync-plan.php
 COPY hayne/patches/ /tmp/hayne-patches/
 RUN set -eux; \
-    chmod 0555 /opt/hayne/ad-sync-preview.php; \
+    chmod 0555 /opt/hayne/ad-sync-preview.php /opt/hayne/ad-sync-plan.php; \
     for patch_file in /tmp/hayne-patches/*.patch; do \
       patch --batch --forward -p1 < "$patch_file"; \
     done; \
