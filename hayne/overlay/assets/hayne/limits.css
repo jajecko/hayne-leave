@@ -13,18 +13,20 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 
 .hayne-limits-page .hayne-limits-card__head h2 {
-  margin: 3px 0 6px;
+  margin: 4px 0 8px;
   font-size: 24px;
+  line-height: 1.2;
 }
 
 .hayne-limits-page .hayne-limits-card__head p {
   max-width: 720px;
   margin: 0;
   color: #696965;
+  line-height: 1.45;
 }
 
 .hayne-limits-page .hayne-limits-eyebrow {
@@ -58,11 +60,15 @@
   font-size: 14px;
 }
 
+.hayne-limits-page .hayne-bulk-year-warning {
+  margin: 0 0 20px;
+}
+
 .hayne-limits-page .hayne-bulk-settings {
   display: grid;
-  grid-template-columns: minmax(230px, 1fr) minmax(250px, 1fr) minmax(300px, 1.2fr);
-  gap: 18px;
-  padding: 18px;
+  grid-template-columns: minmax(230px, 1fr) minmax(280px, 1.15fr) minmax(300px, 1.2fr);
+  gap: 20px;
+  padding: 20px;
   border: 1px solid #e5e5e0;
   border-radius: 10px;
   background: #fafaf8;
@@ -73,24 +79,58 @@
   min-width: 0;
 }
 
+.hayne-limits-page .hayne-bulk-field > label,
+.hayne-limits-page .hayne-field-label,
+.hayne-limits-page .hayne-days-custom label {
+  display: block;
+  margin: 0 0 8px;
+  color: #20201f;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.hayne-limits-page .hayne-bulk-field select,
+.hayne-limits-page .hayne-bulk-field input[type="number"],
+.hayne-limits-page #hayneEmployeeSearch {
+  box-sizing: border-box;
+  height: 40px;
+  margin: 0;
+  border-color: #d5d5d0;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: none;
+}
+
 .hayne-limits-page .hayne-bulk-field select {
   width: 100%;
 }
 
-.hayne-limits-page .hayne-days-control {
-  display: flex;
-  align-items: stretch;
-  gap: 8px;
+.hayne-limits-page .hayne-bulk-field .help-block {
+  display: block;
+  margin: 8px 0 0;
+  color: #777773;
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .hayne-limits-page .hayne-days-presets {
   display: flex;
-  gap: 6px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .hayne-limits-page .hayne-days-preset {
-  min-width: 68px;
+  min-width: 82px;
   min-height: 40px;
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.hayne-limits-page .hayne-days-preset[data-hayne-days="custom"] {
+  min-width: 112px;
 }
 
 .hayne-limits-page .hayne-days-preset.is-active,
@@ -101,26 +141,31 @@
 }
 
 .hayne-limits-page .hayne-days-custom {
-  margin: 0;
-  white-space: nowrap;
+  margin-top: 12px;
+}
+
+.hayne-limits-page .hayne-days-custom[hidden] {
+  display: none !important;
 }
 
 .hayne-limits-page .hayne-days-custom input {
-  width: 74px;
+  width: 118px;
+  padding: 8px 10px;
 }
 
 .hayne-limits-page .hayne-bulk-options {
   display: grid;
   gap: 10px;
+  align-content: start;
 }
 
 .hayne-limits-page .hayne-option-row {
   box-sizing: border-box;
   display: flex;
   align-items: flex-start;
-  gap: 9px;
+  gap: 10px;
   margin: 0;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid #e1e1dc;
   border-radius: 8px;
   background: #fff;
@@ -129,7 +174,7 @@
 
 .hayne-limits-page .hayne-option-row input {
   flex: 0 0 auto;
-  margin: 3px 0 0;
+  margin: 2px 0 0;
 }
 
 .hayne-limits-page .hayne-option-row span {
@@ -141,12 +186,16 @@
   display: block;
 }
 
+.hayne-limits-page .hayne-option-row strong {
+  line-height: 1.3;
+}
+
 .hayne-limits-page .hayne-option-row small {
-  margin-top: 3px;
+  margin-top: 4px;
   color: #777773;
   font-size: 11px;
   font-weight: 400;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .hayne-limits-page .hayne-option-row--warning:has(input:checked) {
@@ -155,7 +204,7 @@
 }
 
 .hayne-limits-page .hayne-employee-picker {
-  margin-top: 18px;
+  margin-top: 20px;
   border: 1px solid #deded9;
   border-radius: 10px;
   overflow: hidden;
@@ -173,13 +222,18 @@
 
 .hayne-limits-page #hayneEmployeeSearch {
   width: min(320px, 100%);
-  margin: 0;
+  padding: 8px 10px;
 }
 
 .hayne-limits-page .hayne-filter-group {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+.hayne-limits-page .hayne-filter-group .btn,
+.hayne-limits-page #hayneSelectVisible {
+  margin: 0;
 }
 
 .hayne-limits-page .hayne-filter span {
@@ -219,6 +273,11 @@
   box-shadow: 0 1px 0 #deded9;
 }
 
+.hayne-limits-page .hayne-employee-table td,
+.hayne-limits-page .hayne-employee-table th {
+  vertical-align: middle;
+}
+
 .hayne-limits-page .hayne-employee-table td:first-child,
 .hayne-limits-page .hayne-employee-table th:first-child {
   width: 34px;
@@ -233,11 +292,11 @@
 
 .hayne-limits-page .hayne-employee-table td:nth-child(2) small {
   display: block;
-  margin-top: 2px;
+  margin-top: 3px;
   color: #7a7a75;
 }
 
-.hayne-limits-page .hayne-employee-row.is-selected > td {
+.hayne-limits-page [data-hayne-employee-row].is-selected > td {
   background: #f1f1ee;
 }
 
@@ -289,7 +348,7 @@
 }
 
 .hayne-limits-page .hayne-bulk-actionbar span {
-  margin-top: 2px;
+  margin-top: 3px;
   color: #73736f;
   font-size: 11px;
 }
@@ -297,10 +356,58 @@
 .hayne-limits-page .hayne-bulk-actionbar .btn-primary {
   min-width: 150px;
   min-height: 42px;
+  margin: 0;
 }
 
 .hayne-limits-page [data-hayne-employee-row][hidden] {
   display: none !important;
+}
+
+.hayne-limits-page .hayne-single-edit {
+  margin-bottom: 20px;
+}
+
+.hayne-limits-page .hayne-single-edit h3,
+.hayne-limits-page .hayne-fifo-panel h3 {
+  margin-top: 0;
+}
+
+.hayne-limits-page .hayne-single-edit .form-vertical > label {
+  margin: 0 0 7px;
+  font-weight: 700;
+}
+
+.hayne-limits-page .hayne-single-edit select,
+.hayne-limits-page .hayne-single-edit input[type="number"] {
+  box-sizing: border-box;
+  height: 40px;
+  margin: 0 0 8px;
+  border-radius: 6px;
+}
+
+.hayne-limits-page .hayne-single-edit .help-block {
+  margin: 0 0 16px;
+  line-height: 1.45;
+}
+
+.hayne-limits-page .hayne-single-edit .hayne-inline-unit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.hayne-limits-page .hayne-single-edit .hayne-inline-unit input {
+  width: 110px;
+  margin: 0;
+}
+
+.hayne-limits-page .hayne-single-edit .hayne-inline-unit span {
+  color: #696965;
+}
+
+.hayne-limits-page .hayne-fifo-panel .hayne-fifo-intro {
+  margin-bottom: 16px;
 }
 
 @media (max-width: 1180px) {
@@ -339,8 +446,8 @@
     grid-column: auto;
   }
 
-  .hayne-limits-page .hayne-days-control {
-    flex-wrap: wrap;
+  .hayne-limits-page .hayne-days-presets .hayne-days-preset {
+    flex: 1 1 auto;
   }
 
   .hayne-limits-page #hayneEmployeeSearch,
