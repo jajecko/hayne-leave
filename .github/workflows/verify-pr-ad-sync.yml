@@ -1,0 +1,85 @@
+name: verify-pr-ad-sync
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - '.env.example'
+      - 'certs/**'
+      - 'hayne/tools/ad-sync-preview.php'
+      - '.github/workflows/verify-pr-ad-sync.yml'
+      - 'docs/checkpoints/PR-AD-01-02_LDAPS_READONLY_PREVIEW.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - '.env.example'
+      - 'certs/**'
+      - 'hayne/tools/ad-sync-preview.php'
+      - '.github/workflows/verify-pr-ad-sync.yml'
+      - 'docs/checkpoints/PR-AD-01-02_LDAPS_READONLY_PREVIEW.md'
+
+jobs:
+  ad-readonly-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+
+      - name: Lint and self-test AD preview
+        run: |
+          php -l hayne/tools/ad-sync-preview.php
+          php hayne/tools/ad-sync-preview.php --self-test
+
+      - name: Guard read-only LDAP implementation
+        run: |
+          grep -F 'ldaps://' hayne/tools/ad-sync-preview.php
+          grep -F 'LDAP_OPT_X_TLS_CACERTFILE' hayne/tools/ad-sync-preview.php
+          grep -F 'LDAP_OPT_X_TLS_REQUIRE_CERT' hayne/tools/ad-sync-preview.php
+          grep -F 'LDAP_OPT_X_TLS_HARD' hayne/tools/ad-sync-preview.php
+          grep -F 'employeeType=%s' hayne/tools/ad-sync-preview.php
+          grep -F 'objectGUID' hayne/tools/ad-sync-preview.php
+          grep -F 'manager_outside_scope' hayne/tools/ad-sync-preview.php
+          grep -F 'HAYNE_AD_HOSTS' hayne/tools/ad-sync-preview.php
+          ! grep -Eqi 'ldap_(add|modify|mod_add|mod_del|mod_replace|delete|rename)\s*\(' hayne/tools/ad-sync-preview.php
+          ! grep -Eqi '\b(PDO|mysqli|INSERT[[:space:]]+INTO|UPDATE[[:space:]]+users|DELETE[[:space:]]+FROM)\b' hayne/tools/ad-sync-preview.php
+
+      - name: Guard configuration secrets and auth scope
+        run: |
+          grep -F 'LDAP_ENABLED=FALSE' .env.example
+          grep -F 'HAYNE_AD_SYNC_ENABLED=FALSE' .env.example
+          grep -F 'HAYNE_AD_BIND_PASSWORD=' .env.example
+          ! grep -E '^HAYNE_AD_BIND_PASSWORD=.+$' .env.example
+          grep -F 'LDAP_CA_HOST_DIR=./certs' .env.example
+          grep -F '/opt/hayne/certs:ro' docker-compose.yml
+          grep -F 'COPY hayne/tools/ad-sync-preview.php /opt/hayne/ad-sync-preview.php' Dockerfile
+
+      - name: Build application image
+        run: docker compose build jorani
+
+      - name: Verify CLI in built image
+        run: |
+          docker compose run --rm --no-deps jorani php -l /opt/hayne/ad-sync-preview.php
+          docker compose run --rm --no-deps jorani php /opt/hayne/ad-sync-preview.php --self-test
+
+      - name: Verify disabled-by-default runtime guard
+        run: |
+          set +e
+          docker compose run --rm --no-deps jorani php /opt/hayne/ad-sync-preview.php > /tmp/ad-preview.out 2>&1
+          rc=$?
+          set -e
+          cat /tmp/ad-preview.out
+          test "$rc" -ne 0
+          grep -F 'HAYNE_AD_SYNC_ENABLED is not TRUE' /tmp/ad-preview.out
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
