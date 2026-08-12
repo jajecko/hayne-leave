@@ -40,8 +40,14 @@
       const input = document.querySelector(selector);
       if (input) input.checked = enabled.includes(key);
     });
+
+    // The legacy Jorani filter is wired with jQuery while the HAYNE tabs use
+    // native listeners. Dispatch a real DOM change event so both listener
+    // systems receive the same state transition.
     const trigger = document.querySelector('#chkPlanned');
-    if (trigger && window.jQuery) window.jQuery(trigger).trigger('change');
+    if (trigger) {
+      trigger.dispatchEvent(new Event('change', { bubbles: true }));
+    }
   };
 
   const checkedStatuses = () => Object.entries(statusInputs)
@@ -264,6 +270,7 @@
           rejected: ['rejected'],
         };
         setStatuses(values[preset]);
+        syncStatusTabs(tabs, filterDetails);
       });
       tabs.appendChild(button);
     });
