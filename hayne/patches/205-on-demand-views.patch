@@ -65,8 +65,7 @@
                  </select>
 --- a/legacy/application/views/leaves/counters.php
 +++ b/legacy/application/views/leaves/counters.php
-@@ -46,5 +46,16 @@
-                 </tr>
+@@ -47,3 +47,14 @@
              </thead>
              <tbody>
 +                <?php if (isset($hayneOnDemandSummary)) { ?>
@@ -81,4 +80,3 @@
 +                    </tr>
 +                <?php } ?>
                  <?php if (count($summary) > 0) {
-                     foreach ($summary as $key => $value) {
