@@ -8,6 +8,8 @@ services:
       - "${APP_PORT:-8080}:80"
     env_file:
       - .env
+    volumes:
+      - ${LDAP_CA_HOST_DIR:-./certs}:/opt/hayne/certs:ro
     depends_on:
       mysql:
         condition: service_healthy
