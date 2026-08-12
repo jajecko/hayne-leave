@@ -479,17 +479,14 @@
   }
 }
 
-/* Compact AJAX wait indicator used while Jorani recalculates the request. */
-#frmModalAjaxWait.hayne-request-wait {
+/* Compact CSS-only wait indicator; the original text remains available to assistive technology. */
+#frmModalAjaxWait {
   position: fixed;
-  z-index: 1060;
   top: 50%;
   left: 50%;
-  display: none;
-  width: 28px;
-  height: 28px;
-  margin: -14px 0 0 -14px;
-  padding: 0;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
   overflow: visible;
   border: 0;
   border-radius: 0;
@@ -497,23 +494,7 @@
   box-shadow: none;
 }
 
-#frmModalAjaxWait.hayne-request-wait.in {
-  display: grid;
-  place-items: center;
-}
-
-.hayne-request-wait__spinner {
-  box-sizing: border-box;
-  display: block;
-  width: 24px;
-  height: 24px;
-  border: 2px solid rgba(17, 17, 17, .18);
-  border-top-color: #111;
-  border-radius: 50%;
-  animation: hayne-request-wait-spin .65s linear infinite;
-}
-
-.hayne-request-wait__label {
+#frmModalAjaxWait .modal-header {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -525,7 +506,30 @@
   white-space: nowrap;
 }
 
-body.hayne-request-wait-visible .modal-backdrop {
+#frmModalAjaxWait .modal-body {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  overflow: visible;
+}
+
+#frmModalAjaxWait .modal-body img {
+  display: none;
+}
+
+#frmModalAjaxWait .modal-body::before {
+  box-sizing: border-box;
+  display: block;
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(17, 17, 17, .18);
+  border-top-color: #111;
+  border-radius: 50%;
+  animation: hayne-request-wait-spin .65s linear infinite;
+  content: "";
+}
+
+body:has(#frmModalAjaxWait.in) .modal-backdrop {
   background: #fff;
   opacity: .72;
 }
@@ -537,7 +541,7 @@ body.hayne-request-wait-visible .modal-backdrop {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hayne-request-wait__spinner {
+  #frmModalAjaxWait .modal-body::before {
     animation-duration: 1.2s;
   }
 }
