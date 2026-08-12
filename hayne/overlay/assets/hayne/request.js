@@ -154,6 +154,25 @@
       layout.appendChild(field);
     }
 
+    const policyFields = [
+      document.getElementById('hayneOnDemandOption'),
+      document.getElementById('hayneCaregiverFields'),
+      document.getElementById('hayneForceMajeureFields'),
+      document.getElementById('hayneChildcareFields'),
+      document.getElementById('hayneOccasionFields'),
+      document.getElementById('hayneHolidayCompensationFields'),
+    ].filter(Boolean);
+    if (policyFields.length) {
+      const policyGroup = document.createElement('div');
+      policyGroup.className = 'hayne-request-policy-fields';
+      policyGroup.dataset.haynePolicyFields = 'v1';
+      policyFields.forEach((policyField) => {
+        policyField.classList.add('hayne-request-policy-field');
+        policyGroup.appendChild(policyField);
+      });
+      layout.appendChild(policyGroup);
+    }
+
     const dates = document.createElement('div');
     dates.className = 'hayne-request-grid hayne-request-grid--dates';
     [
