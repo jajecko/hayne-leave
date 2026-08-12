@@ -478,3 +478,71 @@
     min-width: 0;
   }
 }
+
+/* Compact CSS-only wait indicator; the original text remains available to assistive technology. */
+#frmModalAjaxWait {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#frmModalAjaxWait .modal-header {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
+}
+
+#frmModalAjaxWait .modal-body {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  overflow: visible;
+}
+
+#frmModalAjaxWait .modal-body img {
+  display: none;
+}
+
+#frmModalAjaxWait .modal-body::before {
+  box-sizing: border-box;
+  display: block;
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(17, 17, 17, .18);
+  border-top-color: #111;
+  border-radius: 50%;
+  animation: hayne-request-wait-spin .65s linear infinite;
+  content: "";
+}
+
+body:has(#frmModalAjaxWait.in) .modal-backdrop {
+  background: #fff;
+  opacity: .72;
+}
+
+@keyframes hayne-request-wait-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #frmModalAjaxWait .modal-body::before {
+    animation-duration: 1.2s;
+  }
+}
+
