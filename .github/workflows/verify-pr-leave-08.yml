@@ -153,7 +153,6 @@ jobs:
             -c artifacts/cookies.txt \
             -b artifacts/cookies.txt \
             --data-urlencode "csrf_test_jorani=${csrf_token}" \
-            --data-urlencode 'employee_id=1' \
             --data-urlencode 'source_holiday_date=2026-08-15' \
             --data-urlencode 'period_start=2026-08-01' \
             --data-urlencode 'period_end=2026-08-31' \
@@ -247,7 +246,6 @@ jobs:
             -c artifacts/cookies.txt \
             -b artifacts/cookies.txt \
             --data-urlencode "csrf_test_jorani=${csrf_token}" \
-            --data-urlencode 'employee_id=1' \
             --data-urlencode 'source_holiday_date=2026-12-26' \
             --data-urlencode 'period_start=2026-12-01' \
             --data-urlencode 'period_end=2026-12-31' \
@@ -298,9 +296,11 @@ jobs:
 
       - name: Keep holiday compensation out of annual entitlements
         run: |
+          grant_count="$(docker compose exec -T mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_holiday_compensation_grants"')"
+          expected_grant_count="$(docker compose exec -T mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) * 2 FROM users WHERE active=1"')"
+          test "$grant_count" = "$expected_grant_count"
           docker compose exec -T mysql sh -ec "
             test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM entitleddays WHERE type=${HOLIDAY_TYPE_ID}\")\" = \"0\"
-            test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM hayne_holiday_compensation_grants\")\" = \"2\"
             test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM hayne_holiday_compensation_request_meta\")\" -ge \"3\"
           "
 
