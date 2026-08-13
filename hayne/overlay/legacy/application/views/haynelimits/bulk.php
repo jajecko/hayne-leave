@@ -52,7 +52,7 @@ $bulkEditable = (int) $selected_year === $currentYear;
                 <div class="hayne-workspace-head">
                     <div>
                         <h2 id="hayneAnnualLimitsTitle">Limity pracowników</h2>
-                        <p>W jednym miejscu przydzielaj limity grupowo, edytuj wyjątki, koryguj wykorzystanie i sprawdzaj FIFO.</p>
+                        <p>W jednym miejscu przydzielaj limity grupowo, edytuj wyjątki i koryguj wykorzystanie.</p>
                     </div>
                     <button type="button" class="btn" id="hayneSelectVisible">Zaznacz widocznych</button>
                 </div>
@@ -101,7 +101,7 @@ $bulkEditable = (int) $selected_year === $currentYear;
                                     </td>
                                 </tr>
                                 <?php if ($configured && (!empty($summary['rows']) || (float) $summary['unallocated_usage'] > 0)) { ?>
-                                    <tr class="hayne-pool-breakdown" data-hayne-fifo-row data-employee-id="<?php echo $employeeId; ?>">
+                                    <tr class="hayne-pool-breakdown" hidden aria-hidden="true">
                                         <td colspan="7">
                                             <details class="hayne-fifo-details">
                                                 <summary>Rozliczenie FIFO</summary>
