@@ -8,7 +8,7 @@ on:
       - 'hayne/overlay/legacy/application/views/hayneusage/edit.php'
       - 'hayne/overlay/legacy/application/views/haynelimits/bulk.php'
       - 'hayne/overlay/assets/hayne/usage-correction.css'
-      - 'hayne/patches/269-usage-correction-assets.patch'
+      - 'hayne/overlay/assets/hayne/leave-detail.css'
       - 'hayne/patches/270-hide-usage-corrections.patch'
       - '.github/workflows/verify-pr-leave-usage-correction.yml'
   push:
@@ -19,7 +19,7 @@ on:
       - 'hayne/overlay/legacy/application/views/hayneusage/edit.php'
       - 'hayne/overlay/legacy/application/views/haynelimits/bulk.php'
       - 'hayne/overlay/assets/hayne/usage-correction.css'
-      - 'hayne/patches/269-usage-correction-assets.patch'
+      - 'hayne/overlay/assets/hayne/leave-detail.css'
       - 'hayne/patches/270-hide-usage-corrections.patch'
       - '.github/workflows/verify-pr-leave-usage-correction.yml'
 
@@ -42,7 +42,7 @@ jobs:
           grep -F "hayneusage/edit/" hayne/overlay/legacy/application/views/haynelimits/bulk.php
           grep -F "Koryguj wykorzystanie" hayne/overlay/legacy/application/views/haynelimits/bulk.php
           grep -F "HAYNE_USAGE_CORRECTION" hayne/patches/270-hide-usage-corrections.patch
-          grep -F "usage-correction.css" hayne/patches/269-usage-correction-assets.patch
+          grep -F '@import url("usage-correction.css");' hayne/overlay/assets/hayne/leave-detail.css
 
       - name: Build and start HAYNE Leave
         run: docker compose up --build -d
@@ -99,7 +99,6 @@ jobs:
           grep -F 'data-hayne-view="leave-usage-correction-v1"' artifacts/correction-before.html
           grep -F 'Łącznie wykorzystano urlopu wypoczynkowego' artifacts/correction-before.html
           grep -F 'W tym urlop na żądanie' artifacts/correction-before.html
-          grep -F 'assets/hayne/usage-correction.css' artifacts/correction-before.html
           csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/correction-before.html | head -n 1)"
           test -n "$csrf_token"
 
@@ -142,6 +141,8 @@ jobs:
           curl -fsS -b artifacts/cookies.txt "http://localhost:8080/leaves" -o artifacts/leaves.html
           ! grep -F 'HAYNE_USAGE_CORRECTION' artifacts/leaves.html
 
+          curl -fsS http://localhost:8080/assets/hayne/leave-detail.css -o artifacts/leave-detail.css
+          grep -F '@import url("usage-correction.css");' artifacts/leave-detail.css
           curl -fsS http://localhost:8080/assets/hayne/usage-correction.css -o artifacts/usage-correction.css
           grep -F '.hayne-usage-card' artifacts/usage-correction.css
 
