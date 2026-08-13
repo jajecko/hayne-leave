@@ -1,7 +1,0 @@
---- a/legacy/application/views/templates/header.php
-+++ b/legacy/application/views/templates/header.php
-@@ -18,3 +18,4 @@
-     <link href="<?php echo base_url(); ?>assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-     <link href="<?php echo base_url(); ?>assets/bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet">
-     <link rel="stylesheet" href="<?php echo base_url(); ?>assets/dist/legacy.css">
-+    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/push.css">
