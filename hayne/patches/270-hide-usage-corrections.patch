@@ -47,9 +47,7 @@
          $this->db->join('types', 'leaves.type = types.id');
 +        $this->excludeHayneUsageCorrections();
          $this->db->where('employee', $user_id);
-@@ -985,3 +1001,4 @@
-         $this->db->join('users', 'users.id = leaves.employee');
-         $this->db->where('users.manager', $user_id);
+@@ -987,1 +1003,2 @@
          $this->db->where('leaves.status < ', LMS_REJECTED);       //Exclude rejected requests
 +        $this->excludeHayneUsageCorrections();
 @@ -1057,2 +1074,3 @@
