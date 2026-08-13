@@ -1,0 +1,16 @@
+--- a/legacy/application/helpers/tools_helper.php
++++ b/legacy/application/helpers/tools_helper.php
+@@ -155,6 +155,13 @@ function sendMailByWrapper(CI_Controller $controller, string $subject, string $message, string $to, ?string $cc = NULL): void
+     }
+     $controller->email->message($message);
+     $controller->email->send();
++    try {
++        $controller->load->helper('hayne_push');
++        hayne_push_send_for_mail($controller, $to, $cc);
++    } catch (Throwable $error) {
++        // Push is best-effort and must never break the leave workflow or e-mail delivery.
++        log_message('error', 'HAYNE Push bridge failed: ' . $error->getMessage());
++    }
+ }
+ 
+ /**
