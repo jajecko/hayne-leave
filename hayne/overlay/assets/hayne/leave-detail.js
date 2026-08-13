@@ -55,8 +55,7 @@
   const collectActions = (container) => {
     const candidates = Array.from(container.children).filter((node) => {
       if (!(node instanceof HTMLElement)) return false;
-      if (!node.matches('a.btn, button.btn')) return false;
-      return true;
+      return node.matches('a.btn, button.btn');
     });
 
     if (!candidates.length) return;
@@ -140,6 +139,26 @@
     });
   };
 
+  const directChild = (parent, predicate) => Array.from(parent?.children || []).find(predicate) || null;
+
+  const findScope = (anchor, isEdit, form) => {
+    let node = isEdit ? form.parentElement : anchor.parentElement;
+    const wrap = document.getElementById('wrap');
+
+    while (node) {
+      const hasTitle = Boolean(directChild(node, (child) => child.tagName === 'H2'));
+      const hasBody = isEdit
+        ? Boolean(directChild(node, (child) => child === form))
+        : Boolean(directChild(node, (child) => child.classList?.contains('row')));
+
+      if (hasTitle && hasBody) return node;
+      if (node === wrap) break;
+      node = node.parentElement;
+    }
+
+    return null;
+  };
+
   const enhance = () => {
     if (document.querySelector('[data-hayne-view="leave-create-v2"]')) return;
     if (document.querySelector('[data-hayne-view="leave-detail-v1"]')) return;
@@ -151,16 +170,13 @@
     if (!isEdit && !isView) return;
 
     const form = isEdit ? editForm : null;
-    const root = isEdit ? form.parentElement : commentForm.closest('#wrap > .container, #wrap > .container-fluid, #wrap') || commentForm.parentElement;
-    const scope = root || document.getElementById('wrap') || document.body;
-    const title = isEdit
-      ? Array.from(scope.children || []).find((node) => node.tagName === 'H2')
-      : scope.querySelector('h2');
+    const scope = findScope(isEdit ? form : commentForm, isEdit, form);
+    if (!scope) return;
 
+    const title = directChild(scope, (node) => node.tagName === 'H2');
     const row = isEdit
       ? form.querySelector(':scope > .row')
-      : Array.from(scope.children || []).find((node) => node.classList && node.classList.contains('row'));
-
+      : directChild(scope, (node) => node.classList?.contains('row'));
     if (!title || !row) return;
 
     scope.dataset.hayneView = 'leave-detail-v1';
