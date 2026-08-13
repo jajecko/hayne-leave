@@ -1,0 +1,68 @@
+name: verify-pr-ui12-leave-workflow-ux
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/overlay/assets/hayne/approvals-term.css'
+      - 'hayne/overlay/assets/hayne/approvals-term.js'
+      - 'hayne/overlay/assets/hayne/leave-detail.css'
+      - 'hayne/overlay/assets/hayne/leave-detail.js'
+      - 'hayne/patches/261-calendar-hide-canceled.patch'
+      - 'hayne/patches/262-leave-workflow-ux-assets.patch'
+      - '.github/workflows/verify-pr-ui12-leave-workflow-ux.yml'
+      - 'docs/checkpoints/PR-UI-12_LEAVE_WORKFLOW_UX.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'hayne/overlay/assets/hayne/approvals-term.css'
+      - 'hayne/overlay/assets/hayne/approvals-term.js'
+      - 'hayne/overlay/assets/hayne/leave-detail.css'
+      - 'hayne/overlay/assets/hayne/leave-detail.js'
+      - 'hayne/patches/261-calendar-hide-canceled.patch'
+      - 'hayne/patches/262-leave-workflow-ux-assets.patch'
+      - '.github/workflows/verify-pr-ui12-leave-workflow-ux.yml'
+      - 'docs/checkpoints/PR-UI-12_LEAVE_WORKFLOW_UX.md'
+
+jobs:
+  leave-workflow-ux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Guard source intent
+        run: |
+          grep -F "startHeader.textContent = 'Termin';" hayne/overlay/assets/hayne/approvals-term.js
+          grep -F "nth-child(4)" hayne/overlay/assets/hayne/approvals-term.css
+          grep -F "leaves.status !=', LMS_CANCELED" hayne/patches/261-calendar-hide-canceled.patch
+          grep -F "case LMS_CANCELLATION:" hayne/patches/261-calendar-hide-canceled.patch
+          grep -F "data-hayne-view=\"leave-detail-v1\"" hayne/overlay/assets/hayne/leave-detail.js || grep -F "leave-detail-v1" hayne/overlay/assets/hayne/leave-detail.js
+          grep -F "assets/hayne/leave-detail.css" hayne/patches/262-leave-workflow-ux-assets.patch
+
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+
+      - name: Build patched application image
+        run: docker compose build jorani
+
+      - name: Verify patched calendar behavior
+        run: |
+          docker compose run --rm --no-deps jorani grep -F "where('leaves.status !=', LMS_CANCELED)" /var/www/html/legacy/application/models/Leaves_model.php
+          docker compose run --rm --no-deps jorani grep -F "case LMS_CANCELLATION:" /var/www/html/legacy/application/models/Leaves_model.php
+          docker compose run --rm --no-deps jorani php -l /var/www/html/legacy/application/models/Leaves_model.php
+
+      - name: Verify UX assets in built image
+        run: |
+          docker compose run --rm --no-deps jorani test -s /var/www/html/assets/hayne/approvals-term.css
+          docker compose run --rm --no-deps jorani test -s /var/www/html/assets/hayne/approvals-term.js
+          docker compose run --rm --no-deps jorani test -s /var/www/html/assets/hayne/leave-detail.css
+          docker compose run --rm --no-deps jorani test -s /var/www/html/assets/hayne/leave-detail.js
+          docker compose run --rm --no-deps jorani grep -F "assets/hayne/approvals-term.css" /var/www/html/legacy/application/views/templates/header.php
+          docker compose run --rm --no-deps jorani grep -F "assets/hayne/leave-detail.js" /var/www/html/legacy/application/views/templates/header.php
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
