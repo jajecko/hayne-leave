@@ -64,15 +64,14 @@ $bulkEditable = (int) $selected_year === $currentYear;
 
             <div class="hayne-bulk-field hayne-bulk-field--days">
                 <span class="hayne-field-label" id="hayneAnnualDaysLabel">Roczny wymiar</span>
-                <input type="hidden" name="annual_days" id="bulk_annual_days" value="26" />
                 <div class="hayne-days-presets" role="group" aria-labelledby="hayneAnnualDaysLabel">
                     <button type="button" class="btn hayne-days-preset" data-hayne-days="20" aria-pressed="false">20 dni</button>
                     <button type="button" class="btn hayne-days-preset is-active" data-hayne-days="26" aria-pressed="true">26 dni</button>
                     <button type="button" class="btn hayne-days-preset" data-hayne-days="custom" aria-pressed="false">Inny wymiar</button>
                 </div>
-                <div class="hayne-days-custom" id="hayneCustomDaysWrap" hidden>
-                    <label for="bulk_annual_days_custom">Liczba dni</label>
-                    <input type="number" min="0" max="366" step="1" inputmode="numeric" id="bulk_annual_days_custom" value="26" />
+                <div class="hayne-days-custom" id="hayneCustomDaysWrap">
+                    <label for="bulk_annual_days">Liczba dni</label>
+                    <input type="number" name="annual_days" min="0" max="366" step="1" inputmode="numeric" id="bulk_annual_days" value="26" required />
                 </div>
                 <span class="help-block">Wybierz standardowy wymiar 20 lub 26 dni albo wpisz inną pełnodniową wartość wyliczoną przez HR.</span>
             </div>
