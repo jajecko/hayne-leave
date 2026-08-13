@@ -23,7 +23,7 @@ WORKDIR /app/legacy
 COPY --from=upstream /src/legacy/composer.json /src/legacy/composer.lock ./
 RUN composer install --ignore-platform-reqs --no-dev --no-interaction --prefer-dist \
     && composer config allow-plugins.php-http/discovery true \
-    && composer require --ignore-platform-reqs --no-dev --no-interaction --prefer-dist --with-all-dependencies \
+    && composer require --ignore-platform-reqs --update-no-dev --no-interaction --prefer-dist --with-all-dependencies \
       minishlink/web-push:11.0.0 guzzlehttp/guzzle:^7.9
 
 FROM php:8.5-apache
