@@ -105,7 +105,7 @@ $bulkEditable = (int) $selected_year === $currentYear;
                     <thead>
                         <tr>
                             <th class="hayne-check-col"><input type="checkbox" id="hayneSelectAllVisible" aria-label="Zaznacz wszystkich widocznych pracowników" /></th>
-                            <th>Pracownik</th><th>Status</th><th>Roczny</th><th>Wykorzystano <?php echo (int) $selected_year; ?></th><th>Pozostało <?php echo (int) $selected_year; ?></th>
+                            <th>Pracownik</th><th>Status</th><th>Roczny</th><th>Wykorzystano <?php echo (int) $selected_year; ?></th><th>Pozostało <?php echo (int) $selected_year; ?></th><th>Akcje</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -122,6 +122,7 @@ $bulkEditable = (int) $selected_year === $currentYear;
                                 <td><?php echo $configured ? (int) $profile['annual_days'] . ' dni' : '—'; ?></td>
                                 <td><?php echo $configured ? (float) $summary['used'] . ' dni' : '—'; ?></td>
                                 <td><?php echo $configured ? '<strong>' . (float) $summary['remaining'] . ' dni</strong>' : '—'; ?></td>
+                                <td class="hayne-employee-actions"><a class="btn btn-small" href="<?php echo base_url(); ?>hayneusage/edit/<?php echo $employeeId; ?>?year=<?php echo (int) $selected_year; ?>">Koryguj wykorzystanie</a></td>
                             </tr>
                         <?php } ?>
                     </tbody>

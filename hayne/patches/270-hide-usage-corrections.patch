@@ -1,0 +1,67 @@
+--- a/legacy/application/models/Leaves_model.php
++++ b/legacy/application/models/Leaves_model.php
+@@ -42,12 +42,24 @@
+     private function isValidYmdDate(string $date): bool
+     {
+         $dateTime = \DateTime::createFromFormat('Y-m-d', $date);
+         return $dateTime !== false && $dateTime->format('Y-m-d') === $date;
+     }
+ 
++    /**
++     * Keep HR balance corrections out of request, calendar and presence surfaces.
++     */
++    private function excludeHayneUsageCorrections(string $field = 'leaves.cause'): void
++    {
++        $this->db->where(
++            '(' . $field . " IS NULL OR " . $field . " NOT LIKE '[HAYNE_USAGE_CORRECTION|%')",
++            NULL,
++            FALSE
++        );
++    }
++
+     /**
+      * Get the list of all leave requests or one leave
+      * @param int $leaveRequestId Id of the leave request
+      * @return array<string, mixed>|null list of leave(s) or NULL if leave was not found
+      */
+     public function getLeaves(int $leaveRequestId = 0): ?array
+@@ -51,6 +62,7 @@
+         $this->db->select('leaves.*');
+         $this->db->select('status.name as status_name, types.name as type_name');
+         $this->db->from('leaves');
++        $this->excludeHayneUsageCorrections();
+         $this->db->join('status', 'leaves.status = status.id');
+         $this->db->join('types', 'leaves.type = types.id');
+         if ($leaveRequestId === 0) {
+@@ -79,6 +91,7 @@
+         $this->db->join('status', 'leaves.status = status.id');
+         $this->db->join('types', 'leaves.type = types.id');
+         $this->db->where('leaves.employee', $employeeId);
++        $this->excludeHayneUsageCorrections();
+         $this->db->order_by('leaves.id', 'desc');
+         return $this->db->get()->result_array();
+     }
+@@ -133,6 +146,7 @@
+         $this->db->where('employee', $employeeId);
+         $this->db->where("(startdate <= STR_TO_DATE('" . $endDate . "', '%Y-%m-%d') AND enddate >= STR_TO_DATE('" . $startDate . "', '%Y-%m-%d'))");
+         $this->db->where('leaves.status', LMS_ACCEPTED);
++        $this->excludeHayneUsageCorrections();
+         $this->db->order_by('startdate', 'asc');
+         return $this->db->get()->result_array();
+     }
+@@ -532,2 +546,3 @@
+         $overlapping = FALSE;
+         $this->db->where('employee', $employeeId);
++        $this->excludeHayneUsageCorrections('cause');
+@@ -914,3 +929,4 @@
+         $this->db->select('leaves.*, types.name as type');
+         $this->db->join('types', 'leaves.type = types.id');
++        $this->excludeHayneUsageCorrections();
+         $this->db->where('employee', $user_id);
+@@ -987,1 +1003,2 @@
+         $this->db->where('leaves.status < ', LMS_REJECTED);       //Exclude rejected requests
++        $this->excludeHayneUsageCorrections();
+@@ -1057,2 +1074,3 @@
+         $this->db->join('users', 'users.id = leaves.employee');
+         $this->db->where('users.manager', $user_id);
++        $this->excludeHayneUsageCorrections();

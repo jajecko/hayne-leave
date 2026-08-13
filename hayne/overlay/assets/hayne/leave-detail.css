@@ -1,3 +1,5 @@
+@import url("usage-correction.css");
+
 /* HAYNE Leave — request detail/edit surface.
  * Loaded globally but inert until leave-detail.js marks the legacy view/edit DOM.
  */

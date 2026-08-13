@@ -1,0 +1,37 @@
+name: verify-pr-leave-usage-lint-debug
+
+on:
+  pull_request:
+
+jobs:
+  lint-correction-model:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env
+      - run: docker compose build jorani
+      - run: docker compose run --rm --no-deps jorani php -l legacy/application/models/Hayne_usage_correction_model.php
+
+  lint-correction-controller:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env
+      - run: docker compose build jorani
+      - run: docker compose run --rm --no-deps jorani php -l legacy/application/controllers/Hayneusage.php
+
+  lint-correction-view:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env
+      - run: docker compose build jorani
+      - run: docker compose run --rm --no-deps jorani php -l legacy/application/views/hayneusage/edit.php
+
+  lint-leaves-model:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env
+      - run: docker compose build jorani
+      - run: docker compose run --rm --no-deps jorani php -l legacy/application/models/Leaves_model.php

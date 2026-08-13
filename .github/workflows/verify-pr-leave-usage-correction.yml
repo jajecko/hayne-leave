@@ -1,0 +1,155 @@
+name: verify-pr-leave-usage-correction
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/overlay/legacy/application/models/Hayne_usage_correction_model.php'
+      - 'hayne/overlay/legacy/application/controllers/Hayneusage.php'
+      - 'hayne/overlay/legacy/application/views/hayneusage/edit.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/bulk.php'
+      - 'hayne/overlay/assets/hayne/usage-correction.css'
+      - 'hayne/overlay/assets/hayne/leave-detail.css'
+      - 'hayne/patches/270-hide-usage-corrections.patch'
+      - '.github/workflows/verify-pr-leave-usage-correction.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'hayne/overlay/legacy/application/models/Hayne_usage_correction_model.php'
+      - 'hayne/overlay/legacy/application/controllers/Hayneusage.php'
+      - 'hayne/overlay/legacy/application/views/hayneusage/edit.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/bulk.php'
+      - 'hayne/overlay/assets/hayne/usage-correction.css'
+      - 'hayne/overlay/assets/hayne/leave-detail.css'
+      - 'hayne/patches/270-hide-usage-corrections.patch'
+      - '.github/workflows/verify-pr-leave-usage-correction.yml'
+
+jobs:
+  manual-usage-correction:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Guard correction design
+        run: |
+          docker compose config --quiet
+          grep -F "CAUSE_PREFIX = '[HAYNE_USAGE_CORRECTION|'" hayne/overlay/legacy/application/models/Hayne_usage_correction_model.php
+          grep -F "'vacation_regular'" hayne/overlay/legacy/application/models/Hayne_usage_correction_model.php
+          grep -F "'on_demand'" hayne/overlay/legacy/application/models/Hayne_usage_correction_model.php
+          grep -F '$onDemandDays > $totalDays' hayne/overlay/legacy/application/models/Hayne_usage_correction_model.php
+          grep -F "hayneusage/edit/" hayne/overlay/legacy/application/views/haynelimits/bulk.php
+          grep -F "Koryguj wykorzystanie" hayne/overlay/legacy/application/views/haynelimits/bulk.php
+          grep -F "HAYNE_USAGE_CORRECTION" hayne/patches/270-hide-usage-corrections.patch
+          grep -F '@import url("usage-correction.css");' hayne/overlay/assets/hayne/leave-detail.css
+
+      - name: Build and start HAYNE Leave
+        run: docker compose up --build -d
+
+      - name: Wait for application
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/session/login >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+
+      - name: PHP syntax checks
+        run: |
+          docker compose exec -T jorani php -l legacy/application/models/Hayne_usage_correction_model.php
+          docker compose exec -T jorani php -l legacy/application/controllers/Hayneusage.php
+          docker compose exec -T jorani php -l legacy/application/views/hayneusage/edit.php
+          docker compose exec -T jorani php -l legacy/application/models/Leaves_model.php
+
+      - name: Authenticate as administrator
+        run: |
+          mkdir -p artifacts
+          curl -fsS -c artifacts/cookies.txt http://localhost:8080/session/login -o artifacts/login.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/login.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L -c artifacts/cookies.txt -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jorani' \
+            --data-urlencode 'password=jorani' \
+            --data-urlencode 'language=pl' \
+            http://localhost:8080/session/login -o artifacts/home.html
+          grep -F 'Cześć Admin!' artifacts/home.html
+
+      - name: Assign 26-day vacation profile
+        run: |
+          year="$(date +%Y)"
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${year}" -o artifacts/limits.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/limits.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L -c artifacts/cookies.txt -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'employee_ids[]=1' \
+            --data-urlencode 'vacation_type_id=1' \
+            --data-urlencode 'annual_days=26' \
+            --data-urlencode 'auto_renew=1' \
+            --data-urlencode "year=${year}" \
+            http://localhost:8080/haynelimits/save-bulk -o artifacts/profile-created.html
+          grep -F 'Zapisano limit dla 1 pracowników.' artifacts/profile-created.html
+
+      - name: Verify correction screen and submit vacation usage
+        run: |
+          year="$(date +%Y)"
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/hayneusage/edit/1?year=${year}" -o artifacts/correction-before.html
+          grep -F 'data-hayne-view="leave-usage-correction-v1"' artifacts/correction-before.html
+          grep -F 'Łącznie wykorzystano urlopu wypoczynkowego' artifacts/correction-before.html
+          grep -F 'W tym urlop na żądanie' artifacts/correction-before.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/correction-before.html | head -n 1)"
+          test -n "$csrf_token"
+
+          curl -fsS -L -c artifacts/cookies.txt -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode "year=${year}" \
+            --data-urlencode 'vacation_used=8' \
+            --data-urlencode 'on_demand_used=2' \
+            --data-urlencode 'caregiver_used=0' \
+            --data-urlencode 'force_majeure_used=0' \
+            --data-urlencode 'childcare_used=0' \
+            http://localhost:8080/hayneusage/save/1 -o artifacts/correction-after.html
+          grep -F 'Korekta wykorzystania została zapisana.' artifacts/correction-after.html
+
+      - name: Verify accounting and audit rows
+        run: |
+          year="$(date +%Y)"
+          regular="$(docker compose exec -T -e YEAR="$year" mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT days FROM hayne_usage_corrections WHERE employee_id=1 AND year=$YEAR AND code=\"vacation_regular\""')"
+          ondemand="$(docker compose exec -T -e YEAR="$year" mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT days FROM hayne_usage_corrections WHERE employee_id=1 AND year=$YEAR AND code=\"on_demand\""')"
+          total="$(docker compose exec -T -e YEAR="$year" mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COALESCE(SUM(days),0) FROM hayne_usage_corrections WHERE employee_id=1 AND year=$YEAR AND code IN (\"vacation_regular\",\"on_demand\")"')"
+          leave_total="$(docker compose exec -T mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COALESCE(SUM(duration),0) FROM leaves WHERE employee=1 AND status=3 AND cause LIKE \"[HAYNE_USAGE_CORRECTION|%\""')"
+          on_demand_meta="$(docker compose exec -T -e YEAR="$year" mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_leave_request_meta m JOIN hayne_usage_corrections c ON c.leave_id=m.leave_id WHERE c.employee_id=1 AND c.year=$YEAR AND c.code=\"on_demand\" AND m.on_demand=1"')"
+          history_count="$(docker compose exec -T -e YEAR="$year" mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_usage_correction_history WHERE employee_id=1 AND year=$YEAR"')"
+
+          test "$regular" = "6"
+          test "$ondemand" = "2"
+          test "$total" = "8"
+          test "$leave_total" = "8.000"
+          test "$on_demand_meta" = "1"
+          test "$history_count" -ge 2
+
+      - name: Verify corrected balance and hidden technical rows
+        run: |
+          year="$(date +%Y)"
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${year}" -o artifacts/limits-after.html
+          grep -F '>8 dni<' artifacts/limits-after.html
+          grep -F '>18 dni<' artifacts/limits-after.html
+          ! grep -F 'HAYNE_USAGE_CORRECTION' artifacts/limits-after.html
+
+          curl -fsS -b artifacts/cookies.txt "http://localhost:8080/leaves" -o artifacts/leaves.html
+          ! grep -F 'HAYNE_USAGE_CORRECTION' artifacts/leaves.html
+
+          curl -fsS http://localhost:8080/assets/hayne/leave-detail.css -o artifacts/leave-detail.css
+          grep -F '@import url("usage-correction.css");' artifacts/leave-detail.css
+          curl -fsS http://localhost:8080/assets/hayne/usage-correction.css -o artifacts/usage-correction.css
+          grep -F '.hayne-usage-card' artifacts/usage-correction.css
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
