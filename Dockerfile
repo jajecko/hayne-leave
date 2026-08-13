@@ -49,6 +49,8 @@ WORKDIR /var/www/html
 COPY --from=upstream /src ./
 COPY --from=composer /app/legacy/vendor ./legacy/vendor
 COPY hayne/overlay/ ./
+COPY manifest.webmanifest ./manifest.webmanifest
+COPY service-worker.js ./service-worker.js
 COPY hayne/tools/ad-sync-preview.php /opt/hayne/ad-sync-preview.php
 COPY hayne/tools/ad-sync-plan.php /opt/hayne/ad-sync-plan.php
 COPY hayne/tools/calendar-sync.php /opt/hayne/calendar-sync.php
