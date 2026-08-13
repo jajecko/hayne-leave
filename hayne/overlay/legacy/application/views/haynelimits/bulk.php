@@ -25,7 +25,7 @@ $currentYear = (int) date('Y');
 $bulkEditable = (int) $selected_year === $currentYear;
 ?>
 
-<section class="hayne-annual-limits" id="hayneAnnualLimits" data-hayne-bulk="v2" data-bulk-editable="<?php echo $bulkEditable ? '1' : '0'; ?>" aria-labelledby="hayneAnnualLimitsTitle">
+<section class="hayne-annual-limits" id="hayneAnnualLimits" data-hayne-bulk="v3" data-bulk-editable="<?php echo $bulkEditable ? '1' : '0'; ?>" aria-labelledby="hayneAnnualLimitsTitle">
     <div class="hayne-kpi-strip" aria-label="Stan konfiguracji limitów">
         <button type="button" class="hayne-kpi-tile hayne-kpi-tile--attention" data-hayne-kpi-filter="missing">
             <strong><?php echo $unconfiguredCount; ?></strong><span>Bez limitu</span><small>Wymaga działania</small>
@@ -51,8 +51,8 @@ $bulkEditable = (int) $selected_year === $currentYear;
             <section class="hayne-bulk-main" aria-labelledby="hayneAnnualLimitsTitle">
                 <div class="hayne-workspace-head">
                     <div>
-                        <h2 id="hayneAnnualLimitsTitle">Pracownicy</h2>
-                        <p>Zaznacz osoby, którym chcesz przydzielić lub zaktualizować roczny limit.</p>
+                        <h2 id="hayneAnnualLimitsTitle">Limity pracowników</h2>
+                        <p>W jednym miejscu przydzielaj limity grupowo, edytuj wyjątki, koryguj wykorzystanie i sprawdzaj FIFO.</p>
                     </div>
                     <button type="button" class="btn" id="hayneSelectVisible">Zaznacz widocznych</button>
                 </div>
@@ -86,15 +86,49 @@ $bulkEditable = (int) $selected_year === $currentYear;
                                 $configured = $profile !== NULL;
                                 $summary = $configured ? $profile['summary'] : NULL;
                                 $fullName = trim($employee['firstname'] . ' ' . $employee['lastname']); ?>
-                                <tr data-hayne-employee-row data-name="<?php echo html_escape($fullName); ?>" data-configured="<?php echo $configured ? '1' : '0'; ?>" data-type-id="<?php echo $configured ? (int) $profile['vacation_type_id'] : 0; ?>">
+                                <tr data-hayne-employee-row data-employee-id="<?php echo $employeeId; ?>" data-name="<?php echo html_escape($fullName); ?>" data-configured="<?php echo $configured ? '1' : '0'; ?>" data-type-id="<?php echo $configured ? (int) $profile['vacation_type_id'] : 0; ?>">
                                     <td class="hayne-check-col"><input type="checkbox" class="hayne-employee-checkbox" name="employee_ids[]" value="<?php echo $employeeId; ?>" aria-label="Wybierz <?php echo html_escape($fullName); ?>" /></td>
                                     <td><strong><?php echo html_escape($fullName); ?></strong><?php if ($configured) { ?><small><?php echo html_escape($profile['vacation_type_name']); ?></small><?php } ?></td>
                                     <td><?php if ($configured) { ?><span class="hayne-limit-status hayne-limit-status--configured">Skonfigurowany</span><?php } else { ?><span class="hayne-limit-status hayne-limit-status--missing">Brak limitu</span><?php } ?></td>
                                     <td><?php echo $configured ? (int) $profile['annual_days'] . ' dni' : '—'; ?></td>
                                     <td><?php echo $configured ? (float) $summary['used'] . ' dni' : '—'; ?></td>
                                     <td><?php echo $configured ? '<strong>' . (float) $summary['remaining'] . ' dni</strong>' : '—'; ?></td>
-                                    <td class="hayne-employee-actions"><a class="btn btn-small" href="<?php echo base_url(); ?>hayneusage/edit/<?php echo $employeeId; ?>?year=<?php echo (int) $selected_year; ?>">Koryguj wykorzystanie</a></td>
+                                    <td class="hayne-employee-actions">
+                                        <?php if ($configured) { ?>
+                                            <a class="btn btn-small" href="<?php echo base_url(); ?>haynelimits?edit=<?php echo $employeeId; ?>&amp;year=<?php echo (int) $selected_year; ?>#hayneSingleEdit">Edytuj limit</a>
+                                        <?php } ?>
+                                        <a class="btn btn-small" href="<?php echo base_url(); ?>hayneusage/edit/<?php echo $employeeId; ?>?year=<?php echo (int) $selected_year; ?>">Koryguj wykorzystanie</a>
+                                    </td>
                                 </tr>
+                                <?php if ($configured && (!empty($summary['rows']) || (float) $summary['unallocated_usage'] > 0)) { ?>
+                                    <tr class="hayne-pool-breakdown" data-hayne-fifo-row data-employee-id="<?php echo $employeeId; ?>">
+                                        <td colspan="7">
+                                            <details class="hayne-fifo-details">
+                                                <summary>Rozliczenie FIFO</summary>
+                                                <?php if (!empty($summary['rows'])) { ?>
+                                                    <table class="table table-condensed">
+                                                        <thead><tr><th>Źródło puli</th><th>Przyznane</th><th>Rozliczone FIFO</th><th>Pozostało</th></tr></thead>
+                                                        <tbody>
+                                                            <?php foreach ($summary['rows'] as $pool) {
+                                                                $sourceYear = (int) $pool['source_year'];
+                                                                $label = $sourceYear < $selected_year ? 'Zaległy z ' . $sourceYear : 'Bieżący ' . $sourceYear; ?>
+                                                                <tr data-source-year="<?php echo $sourceYear; ?>" data-kind="<?php echo html_escape($pool['kind']); ?>" data-granted="<?php echo (float) $pool['granted']; ?>" data-used="<?php echo (float) $pool['used']; ?>" data-remaining="<?php echo (float) $pool['remaining']; ?>">
+                                                                    <td><?php echo $label; ?></td>
+                                                                    <td><?php echo (float) $pool['granted']; ?></td>
+                                                                    <td><?php echo (float) $pool['used']; ?></td>
+                                                                    <td><strong><?php echo (float) $pool['remaining']; ?></strong></td>
+                                                                </tr>
+                                                            <?php } ?>
+                                                        </tbody>
+                                                    </table>
+                                                <?php } ?>
+                                                <?php if ((float) $summary['unallocated_usage'] > 0) { ?>
+                                                    <div class="alert alert-error">Wykorzystanie przekracza pule zarządzane przez HAYNE o <?php echo (float) $summary['unallocated_usage']; ?> dni.</div>
+                                                <?php } ?>
+                                            </details>
+                                        </td>
+                                    </tr>
+                                <?php } ?>
                             <?php } ?>
                         </tbody>
                     </table>
