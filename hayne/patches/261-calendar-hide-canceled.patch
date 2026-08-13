@@ -1,0 +1,22 @@
+--- a/legacy/application/models/Leaves_model.php
++++ b/legacy/application/models/Leaves_model.php
+@@ -912,6 +912,9 @@
+         $this->db->select('leaves.*, types.name as type');
+         $this->db->join('types', 'leaves.type = types.id');
+         $this->db->where('employee', $user_id);
++        // Fully canceled requests remain in the database for audit/history,
++        // but no longer represent an absence and must not be rendered.
++        $this->db->where('leaves.status !=', LMS_CANCELED);
+         $this->db->where('(leaves.startdate <= DATE(' . $this->db->escape($end) . ') AND leaves.enddate >= DATE(' . $this->db->escape($start) . '))');
+         $this->db->order_by('startdate', 'desc');
+         $this->db->limit(1024);  //Security limit
+@@ -963,6 +966,9 @@
+                 case 4:
+                     $color = '#ff0000';
+                     break;  // Rejected
++                case LMS_CANCELLATION:
++                    $color = '#468847';
++                    break;  // Cancellation pending: absence still active until approved
+             }
+ 
+             $jsonevents[] = array(
