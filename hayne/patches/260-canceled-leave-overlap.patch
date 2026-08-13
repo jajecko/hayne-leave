@@ -1,0 +1,14 @@
+--- a/legacy/application/models/Leaves_model.php
++++ b/legacy/application/models/Leaves_model.php
+@@ -526,7 +526,10 @@
+ 
+         $overlapping = FALSE;
+         $this->db->where('employee', $employeeId);
+-        $this->db->where('status != 4');
++        // Rejected and fully canceled requests are terminal and must not
++        // reserve calendar time. A pending cancellation remains blocking
++        // until it is actually accepted and becomes LMS_CANCELED.
++        $this->db->where_not_in('status', [LMS_REJECTED, LMS_CANCELED]);
+         $this->db->where('(startdate <= DATE(\'' . $enddate . '\') AND enddate >= DATE(\'' . $startdate . '\'))');
+         if (!is_null($leave_id)) {
+             $this->db->where('id != ', $leave_id);
