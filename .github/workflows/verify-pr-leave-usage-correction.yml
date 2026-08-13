@@ -38,7 +38,7 @@ jobs:
           grep -F "CAUSE_PREFIX = '[HAYNE_USAGE_CORRECTION|'" hayne/overlay/legacy/application/models/Hayne_usage_correction_model.php
           grep -F "'vacation_regular'" hayne/overlay/legacy/application/models/Hayne_usage_correction_model.php
           grep -F "'on_demand'" hayne/overlay/legacy/application/models/Hayne_usage_correction_model.php
-          grep -F "onDemandDays > totalDays" hayne/overlay/legacy/application/models/Hayne_usage_correction_model.php
+          grep -F '$onDemandDays > $totalDays' hayne/overlay/legacy/application/models/Hayne_usage_correction_model.php
           grep -F "hayneusage/edit/" hayne/overlay/legacy/application/views/haynelimits/bulk.php
           grep -F "Koryguj wykorzystanie" hayne/overlay/legacy/application/views/haynelimits/bulk.php
           grep -F "HAYNE_USAGE_CORRECTION" hayne/patches/270-hide-usage-corrections.patch
@@ -117,16 +117,19 @@ jobs:
       - name: Verify accounting and audit rows
         run: |
           year="$(date +%Y)"
-          docker compose exec -T mysql sh -ec '
-            db="$MYSQL_DATABASE"
-            mysql_cmd="mysql -u$MYSQL_USER -p$MYSQL_PASSWORD $db -Nse"
-            test "$(eval "$mysql_cmd \"SELECT COALESCE(SUM(days),0) FROM hayne_usage_corrections WHERE employee_id=1 AND year=$year AND code IN ('vacation_regular','on_demand')\"")" = "8"
-            test "$(eval "$mysql_cmd \"SELECT days FROM hayne_usage_corrections WHERE employee_id=1 AND year=$year AND code='vacation_regular'\"")" = "6"
-            test "$(eval "$mysql_cmd \"SELECT days FROM hayne_usage_corrections WHERE employee_id=1 AND year=$year AND code='on_demand'\"")" = "2"
-            test "$(eval "$mysql_cmd \"SELECT COALESCE(SUM(duration),0) FROM leaves WHERE employee=1 AND status=3 AND cause LIKE '[HAYNE_USAGE_CORRECTION|%'\"")" = "8.000"
-            test "$(eval "$mysql_cmd \"SELECT COUNT(*) FROM hayne_leave_request_meta m JOIN hayne_usage_corrections c ON c.leave_id=m.leave_id WHERE c.employee_id=1 AND c.year=$year AND c.code='on_demand' AND m.on_demand=1\"")" = "1"
-            test "$(eval "$mysql_cmd \"SELECT COUNT(*) FROM hayne_usage_correction_history WHERE employee_id=1 AND year=$year\"")" -ge 2
-          ' year="$year"
+          regular="$(docker compose exec -T -e YEAR="$year" mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT days FROM hayne_usage_corrections WHERE employee_id=1 AND year=$YEAR AND code=\"vacation_regular\""')"
+          ondemand="$(docker compose exec -T -e YEAR="$year" mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT days FROM hayne_usage_corrections WHERE employee_id=1 AND year=$YEAR AND code=\"on_demand\""')"
+          total="$(docker compose exec -T -e YEAR="$year" mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COALESCE(SUM(days),0) FROM hayne_usage_corrections WHERE employee_id=1 AND year=$YEAR AND code IN (\"vacation_regular\",\"on_demand\")"')"
+          leave_total="$(docker compose exec -T mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COALESCE(SUM(duration),0) FROM leaves WHERE employee=1 AND status=3 AND cause LIKE \"[HAYNE_USAGE_CORRECTION|%\""')"
+          on_demand_meta="$(docker compose exec -T -e YEAR="$year" mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_leave_request_meta m JOIN hayne_usage_corrections c ON c.leave_id=m.leave_id WHERE c.employee_id=1 AND c.year=$YEAR AND c.code=\"on_demand\" AND m.on_demand=1"')"
+          history_count="$(docker compose exec -T -e YEAR="$year" mysql sh -ec 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM hayne_usage_correction_history WHERE employee_id=1 AND year=$YEAR"')"
+
+          test "$regular" = "6"
+          test "$ondemand" = "2"
+          test "$total" = "8"
+          test "$leave_total" = "8.000"
+          test "$on_demand_meta" = "1"
+          test "$history_count" -ge 2
 
       - name: Verify corrected balance and hidden technical rows
         run: |
