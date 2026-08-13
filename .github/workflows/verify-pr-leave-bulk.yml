@@ -37,9 +37,13 @@ jobs:
           docker compose config --quiet
           grep -F "haynelimits/save-bulk" hayne/patches/185-hayne-limits-routes.patch
           grep -F "haynelimits/bulk" hayne/overlay/legacy/application/views/haynelimits/index.php
-          grep -F 'data-hayne-view="leave-limits-v2"' hayne/overlay/legacy/application/views/haynelimits/index.php
-          grep -F 'data-hayne-bulk="v2"' hayne/overlay/legacy/application/views/haynelimits/bulk.php
+          grep -F 'data-hayne-view="leave-limits-v3"' hayne/overlay/legacy/application/views/haynelimits/index.php
+          grep -F 'data-hayne-bulk="v3"' hayne/overlay/legacy/application/views/haynelimits/bulk.php
+          grep -F 'Limity pracowników' hayne/overlay/legacy/application/views/haynelimits/index.php
           grep -F 'Koryguj wykorzystanie' hayne/overlay/legacy/application/views/haynelimits/bulk.php
+          grep -F 'Edytuj limit' hayne/overlay/legacy/application/views/haynelimits/bulk.php
+          grep -F 'Rozliczenie FIFO' hayne/overlay/legacy/application/views/haynelimits/bulk.php
+          ! grep -F 'data-hayne-tab-target="employees"' hayne/overlay/legacy/application/views/haynelimits/index.php
           grep -F "assets/hayne/limits.css" hayne/patches/010-header-branding.patch
           grep -F "assets/hayne/limits.js" hayne/patches/010-header-branding.patch
 
@@ -74,17 +78,19 @@ jobs:
             http://localhost:8080/session/login -o artifacts/home.html
           grep -F 'Cześć Admin!' artifacts/home.html
 
-      - name: Verify enterprise limits surface and assets
+      - name: Verify consolidated limits surface and assets
         run: |
           year="$(date +%Y)"
           curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${year}" -o artifacts/limits.html
-          grep -F 'data-hayne-view="leave-limits-v2"' artifacts/limits.html
-          grep -F 'data-hayne-bulk="v2"' artifacts/limits.html
-          grep -F 'Przydzielanie limitów' artifacts/limits.html
+          grep -F 'data-hayne-view="leave-limits-v3"' artifacts/limits.html
+          grep -F 'data-hayne-bulk="v3"' artifacts/limits.html
+          grep -F 'Limity pracowników' artifacts/limits.html
           grep -F 'Uprawnienia ustawowe' artifacts/limits.html
-          grep -F 'Pracownicy' artifacts/limits.html
+          ! grep -F 'data-hayne-tab-target="employees"' artifacts/limits.html
           grep -F 'name="employee_ids[]"' artifacts/limits.html
           grep -F 'Koryguj wykorzystanie' artifacts/limits.html
+          grep -F 'Edytuj limit' artifacts/limits.html
+          grep -F 'Rozliczenie FIFO' artifacts/limits.html
           ! grep -F '>Nowy limit<' artifacts/limits.html
           grep -F 'assets/hayne/limits.css' artifacts/limits.html
           grep -F 'assets/hayne/limits.js' artifacts/limits.html
@@ -93,7 +99,7 @@ jobs:
           grep -F '.hayne-bulk-workspace' artifacts/limits.css
           grep -F '.hayne-policy-disclosure' artifacts/limits.css
           grep -F 'initLimitsTabs' artifacts/limits.js
-          grep -F 'hayneSelectAllVisible' artifacts/limits.js
+          grep -F 'syncFifoRows' artifacts/limits.js
 
       - name: Verify safe create skip and overwrite
         run: |
