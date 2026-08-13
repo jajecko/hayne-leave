@@ -1,0 +1,76 @@
+name: verify-pr-pwa-02
+
+on:
+  pull_request:
+
+jobs:
+  web-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build HAYNE Leave with Web Push dependencies
+        run: docker compose build jorani
+
+      - name: Verify runtime dependencies and source
+        run: |
+          docker compose run --rm --no-deps jorani sh -ec '
+            php -m | grep -Fx curl
+            php -m | grep -Fx mbstring
+            php -r "require '\''legacy/vendor/autoload.php'\''; exit(class_exists('\''Minishlink\\WebPush\\WebPush'\'') ? 0 : 1);"
+            php -l legacy/application/controllers/Push.php
+            php -l legacy/application/helpers/hayne_push_helper.php
+            grep -F "hayne_push_send_for_mail" legacy/application/helpers/tools_helper.php
+            grep -F "assets/hayne/push.css" legacy/application/views/templates/header.php
+            test -s manifest.webmanifest
+            test -s service-worker.js
+            grep -F "self.addEventListener('\''push'\''" service-worker.js
+            grep -F "self.addEventListener('\''notificationclick'\''" service-worker.js
+            ! grep -F "self.addEventListener('\''fetch'\''" service-worker.js
+            ! grep -F "caches." service-worker.js
+          '
+
+      - name: Start stack and install push schema
+        run: |
+          docker compose up -d
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/session/login >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          docker compose exec -T jorani php /opt/hayne/push-install.php
+
+      - name: Verify authenticated push settings stay disabled without secrets
+        run: |
+          mkdir -p artifacts
+          curl -fsS -c artifacts/cookies.txt http://127.0.0.1:8080/session/login -o artifacts/login.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/login.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jorani' \
+            --data-urlencode 'password=jorani' \
+            --data-urlencode 'language=en' \
+            http://127.0.0.1:8080/session/login \
+            -o artifacts/home.html
+          curl -fsS \
+            -H 'X-Requested-With: XMLHttpRequest' \
+            -b artifacts/cookies.txt \
+            http://127.0.0.1:8080/push/settings \
+            -o artifacts/push-settings.json
+          grep -F '"enabled":false' artifacts/push-settings.json
+          ! grep -F 'VAPID_PRIVATE_KEY' artifacts/push-settings.json
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
