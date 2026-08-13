@@ -6,7 +6,7 @@ $editingEmployee = $edit_profile ? (int) $edit_profile['employee_id'] : 0;
 $editingType = $edit_profile ? (int) $edit_profile['vacation_type_id'] : (int) $default_type;
 $editingDays = $edit_profile ? (int) $edit_profile['annual_days'] : 26;
 $editingAutoRenew = $edit_profile ? ((int) $edit_profile['auto_renew'] === 1) : TRUE;
-$defaultTab = $edit_profile ? 'employees' : 'allocation';
+$defaultTab = 'allocation';
 
 $caregiverEnabled = !empty($caregiver_policy) && (int) $caregiver_policy['enabled'] === 1;
 $forceMajeureEnabled = !empty($force_majeure_policy) && (int) $force_majeure_policy['enabled'] === 1;
@@ -14,13 +14,13 @@ $childcareEnabled = !empty($childcare_policy) && (int) $childcare_policy['enable
 $occasionEnabled = !empty($occasion_policy) && (int) $occasion_policy['enabled'] === 1;
 ?>
 
-<main class="hayne-limits-page" data-hayne-view="leave-limits-v2" data-hayne-default-tab="<?php echo $defaultTab; ?>">
+<main class="hayne-limits-page" data-hayne-view="leave-limits-v3" data-hayne-default-tab="<?php echo $defaultTab; ?>">
     <div class="row-fluid">
         <div class="span12">
             <header class="hayne-limits-pagehead">
                 <div>
                     <h1>Limity urlopowe</h1>
-                    <p>Przydzielaj limity grupowo, konfiguruj uprawnienia ustawowe i kontroluj rozliczenia pracowników.</p>
+                    <p>Zarządzaj limitami pracowników i konfiguruj uprawnienia ustawowe.</p>
                 </div>
                 <form method="get" action="<?php echo base_url(); ?>haynelimits" class="hayne-year-switcher">
                     <label for="year">Rok</label>
@@ -35,126 +35,18 @@ $occasionEnabled = !empty($occasion_policy) && (int) $occasion_policy['enabled']
             <?php echo $flash_partial_view; ?>
 
             <nav class="hayne-limits-tabs" aria-label="Sekcje zarządzania limitami" data-hayne-limits-tabs>
-                <button type="button" class="hayne-limits-tab is-active" data-hayne-tab-target="allocation" aria-selected="true">Przydzielanie limitów</button>
+                <button type="button" class="hayne-limits-tab is-active" data-hayne-tab-target="allocation" aria-selected="true">Limity pracowników</button>
                 <button type="button" class="hayne-limits-tab" data-hayne-tab-target="statutory" aria-selected="false">Uprawnienia ustawowe</button>
-                <button type="button" class="hayne-limits-tab" data-hayne-tab-target="employees" aria-selected="false">Pracownicy</button>
             </nav>
 
             <section class="hayne-limits-tabpanel is-active" data-hayne-tab-panel="allocation">
-                <?php $this->load->view('haynelimits/bulk', [
-                    'employees' => $employees,
-                    'profiles' => $profiles,
-                    'types' => $types,
-                    'default_type' => $default_type,
-                    'selected_year' => $selected_year,
-                ]); ?>
-            </section>
-
-            <section class="hayne-limits-tabpanel" data-hayne-tab-panel="statutory" hidden>
-                <div class="hayne-section-intro">
-                    <div>
-                        <span class="hayne-limits-eyebrow">Polityki ustawowe</span>
-                        <h2>Uprawnienia ustawowe</h2>
-                        <p>Na co dzień widzisz tylko stan polityki. Szczegóły i konfiguracja są dostępne po rozwinięciu konkretnej pozycji.</p>
-                    </div>
-                </div>
-
-                <div class="hayne-policy-list">
-                    <details class="hayne-policy-disclosure">
-                        <summary>
-                            <span class="hayne-policy-summary__copy"><strong>Urlop opiekuńczy</strong><small>5 dni rocznie</small></span>
-                            <span class="hayne-policy-summary__state <?php echo $caregiverEnabled ? 'is-enabled' : 'is-disabled'; ?>"><?php echo $caregiverEnabled ? 'Włączone' : 'Wyłączone'; ?></span>
-                        </summary>
-                        <div class="hayne-policy-disclosure__body">
-                            <?php $this->load->view('haynelimits/caregiver', [
-                                'caregiver_policy' => $caregiver_policy,
-                                'types' => $types,
-                            ]); ?>
-                        </div>
-                    </details>
-
-                    <details class="hayne-policy-disclosure">
-                        <summary>
-                            <span class="hayne-policy-summary__copy"><strong>Siła wyższa</strong><small>2 dni rocznie</small></span>
-                            <span class="hayne-policy-summary__state <?php echo $forceMajeureEnabled ? 'is-enabled' : 'is-disabled'; ?>"><?php echo $forceMajeureEnabled ? 'Włączone' : 'Wyłączone'; ?></span>
-                        </summary>
-                        <div class="hayne-policy-disclosure__body">
-                            <?php $this->load->view('haynelimits/force_majeure', [
-                                'force_majeure_policy' => $force_majeure_policy,
-                                'types' => $types,
-                            ]); ?>
-                        </div>
-                    </details>
-
-                    <details class="hayne-policy-disclosure">
-                        <summary>
-                            <span class="hayne-policy-summary__copy"><strong>Opieka nad dzieckiem do 14 lat</strong><small>Indywidualna pula 0 / 1 / 2 dni</small></span>
-                            <span class="hayne-policy-summary__state <?php echo $childcareEnabled ? 'is-enabled' : 'is-disabled'; ?>"><?php echo $childcareEnabled ? 'Włączone' : 'Wyłączone'; ?></span>
-                        </summary>
-                        <div class="hayne-policy-disclosure__body">
-                            <?php $this->load->view('haynelimits/childcare', [
-                                'childcare_policy' => $childcare_policy,
-                                'childcare_allocations' => $childcare_allocations,
-                                'employees' => $employees,
-                                'types' => $types,
-                                'selected_year' => $selected_year,
-                                'current_year' => $current_year,
-                            ]); ?>
-                        </div>
-                    </details>
-
-                    <details class="hayne-policy-disclosure">
-                        <summary>
-                            <span class="hayne-policy-summary__copy"><strong>Urlop okolicznościowy</strong><small>Limit zależny od zdarzenia</small></span>
-                            <span class="hayne-policy-summary__state <?php echo $occasionEnabled ? 'is-enabled' : 'is-disabled'; ?>"><?php echo $occasionEnabled ? 'Włączone' : 'Wyłączone'; ?></span>
-                        </summary>
-                        <div class="hayne-policy-disclosure__body">
-                            <?php $this->load->view('haynelimits/occasion', [
-                                'occasion_policy' => $occasion_policy,
-                                'types' => $types,
-                            ]); ?>
-                        </div>
-                    </details>
-
-                    <details class="hayne-policy-disclosure">
-                        <summary>
-                            <span class="hayne-policy-summary__copy"><strong>Dzień wolny za święto</strong><small>1 dzień za konkretny grant HR</small></span>
-                            <span class="hayne-policy-summary__state is-neutral">Granty</span>
-                        </summary>
-                        <div class="hayne-policy-disclosure__body">
-                            <div class="well hayne-statutory-policy hayne-holiday-policy-card" data-hayne-policy="holiday_compensation">
-                                <div class="row-fluid">
-                                    <div class="span8">
-                                        <h3 style="margin-top: 0;">Dzień wolny za święto</h3>
-                                        <p><strong>1 dzień za konkretny grant HR</strong>, ważny wyłącznie w przypisanym okresie rozliczeniowym.</p>
-                                        <p class="muted" style="margin-bottom: 0;">Nie jest częścią puli 20/26, nie korzysta z FIFO i nie przechodzi na kolejny okres rozliczeniowy.</p>
-                                    </div>
-                                    <div class="span4 hayne-policy-actions">
-                                        <a class="btn btn-primary" href="<?php echo base_url(); ?>hayneholidays">Zarządzaj dniami za święta</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </details>
-                </div>
-            </section>
-
-            <section class="hayne-limits-tabpanel" data-hayne-tab-panel="employees" hidden>
-                <div class="hayne-section-intro">
-                    <div>
-                        <span class="hayne-limits-eyebrow">Kartoteka limitów</span>
-                        <h2>Pracownicy</h2>
-                        <p>Edytuj wyjątki, koryguj wykorzystanie i sprawdzaj rozliczenie FIFO bez mieszania tych operacji z przydziałem grupowym.</p>
-                    </div>
-                </div>
-
                 <?php if ($edit_profile) { ?>
                     <section class="hayne-employee-edit-card hayne-single-edit" id="hayneSingleEdit">
                         <div class="hayne-employee-edit-card__head">
                             <div>
-                                <span class="hayne-limits-eyebrow">Wyjątek pracownika</span>
+                                <span class="hayne-limits-eyebrow">Edycja limitu</span>
                                 <h3>Edytuj ustawienia pracownika</h3>
-                                <p>Tryb pojedynczy służy do korekt istniejącej konfiguracji. Do nowych przydziałów używaj zakładki „Przydzielanie limitów”.</p>
+                                <p>Zmiana dotyczy pojedynczego pracownika. Przydziały grupowe wykonuj bezpośrednio z tabeli poniżej.</p>
                             </div>
                         </div>
 
@@ -168,9 +60,7 @@ $occasionEnabled = !empty($occasion_policy) && (int) $occasion_policy['enabled']
                                                 continue;
                                             }
                                             $employeeId = (int) $employee['id']; ?>
-                                            <option value="<?php echo $employeeId; ?>" <?php echo $employeeId === $editingEmployee ? 'selected' : ''; ?>>
-                                                <?php echo html_escape(trim($employee['firstname'] . ' ' . $employee['lastname'])); ?>
-                                            </option>
+                                            <option value="<?php echo $employeeId; ?>" <?php echo $employeeId === $editingEmployee ? 'selected' : ''; ?>><?php echo html_escape(trim($employee['firstname'] . ' ' . $employee['lastname'])); ?></option>
                                         <?php } ?>
                                     </select>
                                 </div>
@@ -210,77 +100,93 @@ $occasionEnabled = !empty($occasion_policy) && (int) $occasion_policy['enabled']
                     </section>
                 <?php } ?>
 
-                <section class="hayne-employee-ledger" id="hayneFifoDetails">
-                    <div class="hayne-employee-ledger__head">
-                        <div>
-                            <h3>Limity pracowników — <?php echo $selected_year; ?></h3>
-                            <p>Rozwinięcie FIFO jest dostępne tylko wtedy, gdy potrzebujesz diagnostyki konkretnej puli.</p>
-                        </div>
-                    </div>
+                <?php $this->load->view('haynelimits/bulk', [
+                    'employees' => $employees,
+                    'profiles' => $profiles,
+                    'types' => $types,
+                    'default_type' => $default_type,
+                    'selected_year' => $selected_year,
+                ]); ?>
+            </section>
 
-                    <?php if (empty($profiles)) { ?>
-                        <div class="hayne-empty-state">Nie skonfigurowano jeszcze żadnego pracownika.</div>
-                    <?php } else { ?>
-                        <div class="hayne-ledger-table-wrap">
-                            <table class="table table-hover hayne-ledger-table" id="hayneLeaveProfiles">
-                                <thead>
-                                    <tr>
-                                        <th>Pracownik</th>
-                                        <th>Roczny</th>
-                                        <th>Wykorzystano</th>
-                                        <th>Pozostało</th>
-                                        <th>Akcje</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($profiles as $profile) {
-                                        $summary = $profile['summary'];
-                                        $profileEmployeeId = (int) $profile['employee_id']; ?>
-                                        <tr data-employee-id="<?php echo $profileEmployeeId; ?>" data-year="<?php echo $selected_year; ?>" data-granted="<?php echo (float) $summary['granted']; ?>" data-used="<?php echo (float) $summary['used']; ?>" data-remaining="<?php echo (float) $summary['remaining']; ?>">
-                                            <td><strong><?php echo html_escape(trim($profile['firstname'] . ' ' . $profile['lastname'])); ?></strong><small><?php echo html_escape($profile['vacation_type_name']); ?></small></td>
-                                            <td><?php echo (int) $profile['annual_days']; ?> dni</td>
-                                            <td><?php echo (float) $summary['used']; ?> dni</td>
-                                            <td><strong><?php echo (float) $summary['remaining']; ?> dni</strong></td>
-                                            <td class="hayne-ledger-actions">
-                                                <a class="btn btn-small" href="<?php echo base_url(); ?>haynelimits?edit=<?php echo $profileEmployeeId; ?>&amp;year=<?php echo $selected_year; ?>#hayneSingleEdit">Edytuj</a>
-                                                <a class="btn btn-small" href="<?php echo base_url(); ?>hayneusage/edit/<?php echo $profileEmployeeId; ?>?year=<?php echo (int) $selected_year; ?>">Koryguj wykorzystanie</a>
-                                            </td>
-                                        </tr>
-                                        <?php if (!empty($summary['rows']) || (float) $summary['unallocated_usage'] > 0) { ?>
-                                            <tr class="hayne-pool-breakdown">
-                                                <td colspan="5">
-                                                    <details class="hayne-fifo-details">
-                                                        <summary>Rozliczenie FIFO</summary>
-                                                        <?php if (!empty($summary['rows'])) { ?>
-                                                            <table class="table table-condensed">
-                                                                <thead><tr><th>Źródło puli</th><th>Przyznane</th><th>Rozliczone FIFO</th><th>Pozostało</th></tr></thead>
-                                                                <tbody>
-                                                                    <?php foreach ($summary['rows'] as $pool) {
-                                                                        $sourceYear = (int) $pool['source_year'];
-                                                                        $label = $sourceYear < $selected_year ? 'Zaległy z ' . $sourceYear : 'Bieżący ' . $sourceYear; ?>
-                                                                        <tr data-source-year="<?php echo $sourceYear; ?>" data-kind="<?php echo html_escape($pool['kind']); ?>" data-granted="<?php echo (float) $pool['granted']; ?>" data-used="<?php echo (float) $pool['used']; ?>" data-remaining="<?php echo (float) $pool['remaining']; ?>">
-                                                                            <td><?php echo $label; ?></td>
-                                                                            <td><?php echo (float) $pool['granted']; ?></td>
-                                                                            <td><?php echo (float) $pool['used']; ?></td>
-                                                                            <td><strong><?php echo (float) $pool['remaining']; ?></strong></td>
-                                                                        </tr>
-                                                                    <?php } ?>
-                                                                </tbody>
-                                                            </table>
-                                                        <?php } ?>
-                                                        <?php if ((float) $summary['unallocated_usage'] > 0) { ?>
-                                                            <div class="alert alert-error">Wykorzystanie przekracza pule zarządzane przez HAYNE o <?php echo (float) $summary['unallocated_usage']; ?> dni.</div>
-                                                        <?php } ?>
-                                                    </details>
-                                                </td>
-                                            </tr>
-                                        <?php } ?>
-                                    <?php } ?>
-                                </tbody>
-                            </table>
+            <section class="hayne-limits-tabpanel" data-hayne-tab-panel="statutory" hidden>
+                <div class="hayne-section-intro">
+                    <div>
+                        <span class="hayne-limits-eyebrow">Polityki ustawowe</span>
+                        <h2>Uprawnienia ustawowe</h2>
+                        <p>Na co dzień widzisz tylko stan polityki. Szczegóły i konfiguracja są dostępne po rozwinięciu konkretnej pozycji.</p>
+                    </div>
+                </div>
+
+                <div class="hayne-policy-list">
+                    <details class="hayne-policy-disclosure">
+                        <summary>
+                            <span class="hayne-policy-summary__copy"><strong>Urlop opiekuńczy</strong><small>5 dni rocznie</small></span>
+                            <span class="hayne-policy-summary__state <?php echo $caregiverEnabled ? 'is-enabled' : 'is-disabled'; ?>"><?php echo $caregiverEnabled ? 'Włączone' : 'Wyłączone'; ?></span>
+                        </summary>
+                        <div class="hayne-policy-disclosure__body">
+                            <?php $this->load->view('haynelimits/caregiver', ['caregiver_policy' => $caregiver_policy, 'types' => $types]); ?>
                         </div>
-                    <?php } ?>
-                </section>
+                    </details>
+
+                    <details class="hayne-policy-disclosure">
+                        <summary>
+                            <span class="hayne-policy-summary__copy"><strong>Siła wyższa</strong><small>2 dni rocznie</small></span>
+                            <span class="hayne-policy-summary__state <?php echo $forceMajeureEnabled ? 'is-enabled' : 'is-disabled'; ?>"><?php echo $forceMajeureEnabled ? 'Włączone' : 'Wyłączone'; ?></span>
+                        </summary>
+                        <div class="hayne-policy-disclosure__body">
+                            <?php $this->load->view('haynelimits/force_majeure', ['force_majeure_policy' => $force_majeure_policy, 'types' => $types]); ?>
+                        </div>
+                    </details>
+
+                    <details class="hayne-policy-disclosure">
+                        <summary>
+                            <span class="hayne-policy-summary__copy"><strong>Opieka nad dzieckiem do 14 lat</strong><small>Indywidualna pula 0 / 1 / 2 dni</small></span>
+                            <span class="hayne-policy-summary__state <?php echo $childcareEnabled ? 'is-enabled' : 'is-disabled'; ?>"><?php echo $childcareEnabled ? 'Włączone' : 'Wyłączone'; ?></span>
+                        </summary>
+                        <div class="hayne-policy-disclosure__body">
+                            <?php $this->load->view('haynelimits/childcare', [
+                                'childcare_policy' => $childcare_policy,
+                                'childcare_allocations' => $childcare_allocations,
+                                'employees' => $employees,
+                                'types' => $types,
+                                'selected_year' => $selected_year,
+                                'current_year' => $current_year,
+                            ]); ?>
+                        </div>
+                    </details>
+
+                    <details class="hayne-policy-disclosure">
+                        <summary>
+                            <span class="hayne-policy-summary__copy"><strong>Urlop okolicznościowy</strong><small>Limit zależny od zdarzenia</small></span>
+                            <span class="hayne-policy-summary__state <?php echo $occasionEnabled ? 'is-enabled' : 'is-disabled'; ?>"><?php echo $occasionEnabled ? 'Włączone' : 'Wyłączone'; ?></span>
+                        </summary>
+                        <div class="hayne-policy-disclosure__body">
+                            <?php $this->load->view('haynelimits/occasion', ['occasion_policy' => $occasion_policy, 'types' => $types]); ?>
+                        </div>
+                    </details>
+
+                    <details class="hayne-policy-disclosure">
+                        <summary>
+                            <span class="hayne-policy-summary__copy"><strong>Dzień wolny za święto</strong><small>1 dzień za konkretny grant HR</small></span>
+                            <span class="hayne-policy-summary__state is-neutral">Granty</span>
+                        </summary>
+                        <div class="hayne-policy-disclosure__body">
+                            <div class="well hayne-statutory-policy hayne-holiday-policy-card" data-hayne-policy="holiday_compensation">
+                                <div class="row-fluid">
+                                    <div class="span8">
+                                        <h3 style="margin-top: 0;">Dzień wolny za święto</h3>
+                                        <p><strong>1 dzień za konkretny grant HR</strong>, ważny wyłącznie w przypisanym okresie rozliczeniowym.</p>
+                                        <p class="muted" style="margin-bottom: 0;">Nie jest częścią puli 20/26, nie korzysta z FIFO i nie przechodzi na kolejny okres rozliczeniowy.</p>
+                                    </div>
+                                    <div class="span4 hayne-policy-actions">
+                                        <a class="btn btn-primary" href="<?php echo base_url(); ?>hayneholidays">Zarządzaj dniami za święta</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+                </div>
             </section>
         </div>
     </div>
