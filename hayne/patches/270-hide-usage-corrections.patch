@@ -1,0 +1,137 @@
+--- a/legacy/application/models/Leaves_model.php
++++ b/legacy/application/models/Leaves_model.php
+@@ -38,6 +38,14 @@
+         return $dateTime !== false && $dateTime->format('Y-m-d') === $date;
+     }
++
++    /** Keep HR balance corrections out of request, calendar and presence surfaces. */
++    private function excludeHayneUsageCorrections(string $field = 'leaves.cause'): void
++    {
++        $this->db->where(
++            '(' . $field . " IS NULL OR " . $field . " NOT LIKE '[HAYNE_USAGE_CORRECTION|%')",
++            NULL,
++            FALSE
++        );
++    }
+ 
+     /**
+      * Get the list of all leave requests or one leave
+@@ -49,6 +57,7 @@
+         $this->db->select('leaves.*');
+         $this->db->select('status.name as status_name, types.name as type_name');
+         $this->db->from('leaves');
++        $this->excludeHayneUsageCorrections();
+         $this->db->join('status', 'leaves.status = status.id');
+         $this->db->join('types', 'leaves.type = types.id');
+         if ($leaveRequestId === 0) {
+@@ -72,6 +81,7 @@
+         $this->db->join('status', 'leaves.status = status.id');
+         $this->db->join('types', 'leaves.type = types.id');
+         $this->db->where('leaves.employee', $employeeId);
++        $this->excludeHayneUsageCorrections();
+         $this->db->order_by('leaves.id', 'desc');
+         return $this->db->get()->result_array();
+     }
+@@ -100,7 +110,8 @@
+           FROM leaves_history
+           WHERE leaves_history.status = 2
+           GROUP BY id
+         ) requested ON leaves.id = requested.id
+-        WHERE leaves.employee = $employeeId")->result_array();
++        WHERE leaves.employee = $employeeId
++        AND (leaves.cause IS NULL OR leaves.cause NOT LIKE '[HAYNE_USAGE_CORRECTION|%')")->result_array();
+     }
+@@ -132,6 +143,7 @@
+         $this->db->where("(startdate <= STR_TO_DATE('" . $endDate . "', '%Y-%m-%d') AND enddate >= STR_TO_DATE('" . $startDate . "', '%Y-%m-%d'))");
+         $this->db->where('leaves.status', LMS_ACCEPTED);
++        $this->excludeHayneUsageCorrections();
+         $this->db->order_by('startdate', 'asc');
+         return $this->db->get()->result_array();
+     }
+@@ -531,6 +543,7 @@
+         $overlapping = FALSE;
+         $this->db->where('employee', $employeeId);
+         $this->db->where('status != 4');
++        $this->excludeHayneUsageCorrections('cause');
+         $this->db->where('(startdate <= DATE(\'' . $enddate . '\') AND enddate >= DATE(\'' . $startdate . '\'))');
+         if (!is_null($leave_id)) {
+             $this->db->where('id != ', $leave_id);
+@@ -913,6 +926,7 @@
+         $this->db->select('leaves.*, types.name as type');
+         $this->db->join('types', 'leaves.type = types.id');
+         $this->db->where('employee', $user_id);
++        $this->excludeHayneUsageCorrections();
+         $this->db->where('(leaves.startdate <= DATE(' . $this->db->escape($end) . ') AND leaves.enddate >= DATE(' . $this->db->escape($start) . '))');
+         $this->db->order_by('startdate', 'desc');
+         $this->db->limit(1024);  //Security limit
+@@ -986,6 +1000,7 @@
+         $this->db->join('users', 'users.id = leaves.employee');
+         $this->db->where('users.manager', $user_id);
+         $this->db->where('leaves.status < ', LMS_REJECTED);       //Exclude rejected requests
++        $this->excludeHayneUsageCorrections();
+         $this->db->where('(leaves.startdate <= DATE(' . $this->db->escape($end) . ') AND leaves.enddate >= DATE(' . $this->db->escape($start) . '))');
+         $this->db->order_by('startdate', 'desc');
+         $this->db->limit(1024);  //Security limit
+@@ -1057,6 +1072,7 @@
+     {
+         $this->db->join('users', 'users.id = leaves.employee');
+         $this->db->where('users.manager', $user_id);
++        $this->excludeHayneUsageCorrections();
+         $this->db->where('(leaves.startdate <= DATE(' . $this->db->escape($end) . ') AND leaves.enddate >= DATE(' . $this->db->escape($start) . '))');
+         $this->db->order_by('startdate', 'desc');
+         $this->db->limit(1024);  //Security limit
+@@ -1136,6 +1152,7 @@
+         $this->db->join('users', 'users.organization = organization.id');
+         $this->db->join('leaves', 'leaves.employee = users.id');
+         $this->db->join('types', 'leaves.type = types.id');
++        $this->excludeHayneUsageCorrections();
+         $this->db->where('(leaves.startdate <= DATE(' . $this->db->escape($end) . ') AND leaves.enddate >= DATE(' . $this->db->escape($start) . '))');
+         if ($children === TRUE) {
+             $this->load->model('organization_model');
+@@ -1222,6 +1239,7 @@
+         $this->db->join('leaves', 'leaves.employee = users.id');
+         $this->db->join('types', 'leaves.type = types.id');
+         $this->db->join('org_lists_employees', 'org_lists_employees.user = users.id');
++        $this->excludeHayneUsageCorrections();
+         $this->db->where('(leaves.startdate <= DATE(' . $this->db->escape($end) . ') AND leaves.enddate >= DATE(' . $this->db->escape($start) . '))');
+         $this->db->where('org_lists_employees.list', $list_id);
+         //$this->db->where('leaves.status != ', 4); //Exclude rejected requests
+@@ -1329,6 +1347,7 @@
+         } else {
+             $this->db->where('organization.id', $entity_id);
+         }
++        $this->excludeHayneUsageCorrections();
+         $this->db->where('leaves.status != ', LMS_REJECTED);       //Exclude rejected requests
+         $this->db->order_by('startdate', 'desc');
+         $events = $this->db->get()->result_array();
+@@ -1352,6 +1371,7 @@
+         $this->db->join('status', 'leaves.status = status.id');
+         $this->db->join('types', 'leaves.type = types.id');
+         $this->db->join('users', 'users.id = leaves.employee');
++        $this->excludeHayneUsageCorrections();
+ 
+         if (count($ids) > 0) {
+             array_push($ids, $manager);
+@@ -1402,6 +1422,7 @@
+         ) requested ON leaves.id = requested.id";
+         //Case of manager having delegations
+         $ids = $this->delegations_model->listManagersGivingDelegation($manager);
++        $usageCorrectionFilter = " AND (leaves.cause IS NULL OR leaves.cause NOT LIKE '[HAYNE_USAGE_CORRECTION|%')";
+         if (count($ids) > 0) {
+             array_push($ids, $manager);
+             $query .= " WHERE users.manager IN (" . implode(",", $ids) . ")";
+@@ -1409,6 +1430,7 @@
+         } else {
+             $query .= " WHERE users.manager = $manager";
+         }
++        $query .= $usageCorrectionFilter;
+         if ($all == FALSE) {
+             $query .= " AND (leaves.status = " . LMS_REQUESTED .
+                 " OR leaves.status = " . LMS_CANCELLATION . ")";
+@@ -1477,6 +1499,7 @@
+         $this->db->select("users.id as user_id, users.firstname, users.lastname, leaves.*", FALSE);
+         $this->db->join('users', 'users.id = leaves.employee');
++        $this->excludeHayneUsageCorrections();
+         $this->db->where('( (leaves.startdate >= ' . $this->db->escape($startDate) . ' AND leaves.enddate <= ' . $this->db->escape($endDate) . ')' .
+             ' OR (leaves.startdate <= ' . $this->db->escape($endDate) . ' AND leaves.enddate >= ' . $this->db->escape($endDate) . '))');
+         $this->db->order_by('startdate', 'desc');
