@@ -1,6 +1,6 @@
 --- a/legacy/application/models/Leaves_model.php
 +++ b/legacy/application/models/Leaves_model.php
-@@ -39,6 +39,17 @@
+@@ -39,3 +39,16 @@
          return $dateTime !== false && $dateTime->format('Y-m-d') === $date;
      }
  
@@ -16,10 +16,7 @@
 +        );
 +    }
 +
-     /**
-      * Get the list of all leave requests or one leave
-      * @param int $leaveRequestId Id of the leave request
-@@ -51,6 +62,7 @@
+@@ -51,6 +64,7 @@
          $this->db->select('leaves.*');
          $this->db->select('status.name as status_name, types.name as type_name');
          $this->db->from('leaves');
@@ -27,7 +24,7 @@
          $this->db->join('status', 'leaves.status = status.id');
          $this->db->join('types', 'leaves.type = types.id');
          if ($leaveRequestId === 0) {
-@@ -79,6 +91,7 @@
+@@ -79,6 +93,7 @@
          $this->db->join('status', 'leaves.status = status.id');
          $this->db->join('types', 'leaves.type = types.id');
          $this->db->where('leaves.employee', $employeeId);
@@ -35,7 +32,7 @@
          $this->db->order_by('leaves.id', 'desc');
          return $this->db->get()->result_array();
      }
-@@ -133,6 +146,7 @@
+@@ -133,6 +148,7 @@
          $this->db->where('employee', $employeeId);
          $this->db->where("(startdate <= STR_TO_DATE('" . $endDate . "', '%Y-%m-%d') AND enddate >= STR_TO_DATE('" . $startDate . "', '%Y-%m-%d'))");
          $this->db->where('leaves.status', LMS_ACCEPTED);
@@ -43,35 +40,21 @@
          $this->db->order_by('startdate', 'asc');
          return $this->db->get()->result_array();
      }
-@@ -531,6 +545,7 @@
- 
+@@ -532,2 +548,3 @@
          $overlapping = FALSE;
          $this->db->where('employee', $employeeId);
 +        $this->excludeHayneUsageCorrections('cause');
-         $this->db->where('status != 4');
-         $this->db->where('(startdate <= DATE(\'' . $enddate . '\') AND enddate >= DATE(\'' . $startdate . '\'))');
-         if (!is_null($leave_id)) {
-@@ -912,6 +927,7 @@
-     {
+@@ -914,3 +931,4 @@
          $this->db->select('leaves.*, types.name as type');
          $this->db->join('types', 'leaves.type = types.id');
 +        $this->excludeHayneUsageCorrections();
          $this->db->where('employee', $user_id);
-         $this->db->where('(leaves.startdate <= DATE(' . $this->db->escape($end) . ') AND leaves.enddate >= DATE(' . $this->db->escape($start) . '))');
-         $this->db->order_by('startdate', 'desc');
-@@ -985,6 +1001,7 @@
+@@ -985,3 +1003,4 @@
          $this->db->join('users', 'users.id = leaves.employee');
          $this->db->where('users.manager', $user_id);
          $this->db->where('leaves.status < ', LMS_REJECTED);       //Exclude rejected requests
 +        $this->excludeHayneUsageCorrections();
-         $this->db->where('(leaves.startdate <= DATE(' . $this->db->escape($end) . ') AND leaves.enddate >= DATE(' . $this->db->escape($start) . '))');
-         $this->db->order_by('startdate', 'desc');
-         $this->db->limit(1024);  //Security limit
-@@ -1057,6 +1074,7 @@
-     {
+@@ -1057,2 +1076,3 @@
          $this->db->join('users', 'users.id = leaves.employee');
          $this->db->where('users.manager', $user_id);
 +        $this->excludeHayneUsageCorrections();
-         $this->db->where('(leaves.startdate <= DATE(' . $this->db->escape($end) . ') AND leaves.enddate >= DATE(' . $this->db->escape($start) . '))');
-         $this->db->order_by('startdate', 'desc');
-         $this->db->limit(1024);  //Security limit
