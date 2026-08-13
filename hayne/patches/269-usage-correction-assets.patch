@@ -1,0 +1,9 @@
+--- a/legacy/application/views/templates/header.php
++++ b/legacy/application/views/templates/header.php
+@@ -74,6 +74,7 @@
+         </script>
+     <?php } ?>
++    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/usage-correction.css">
+ </head>
+ 
+ <body>
