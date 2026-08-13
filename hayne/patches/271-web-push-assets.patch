@@ -1,12 +1,7 @@
 --- a/legacy/application/views/templates/header.php
 +++ b/legacy/application/views/templates/header.php
-@@ -1,8 +1,9 @@
-     <meta name="theme-color" content="#ffffff">
-     <meta name="application-name" content="HAYNE Leave">
-     <meta name="apple-mobile-web-app-capable" content="yes">
-     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-     <meta name="apple-mobile-web-app-title" content="HAYNE Leave">
-     <link rel="manifest" href="<?php echo base_url(); ?>manifest.webmanifest">
-     <link rel="apple-touch-icon" href="<?php echo base_url(); ?>assets/hayne/favicon.svg">
+@@ -18,3 +18,4 @@
+     <link href="<?php echo base_url(); ?>assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+     <link href="<?php echo base_url(); ?>assets/bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet">
+     <link rel="stylesheet" href="<?php echo base_url(); ?>assets/dist/legacy.css">
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/push.css">
-     <script defer type="text/javascript" src="<?php echo base_url(); ?>assets/hayne/pwa.js"></script>
