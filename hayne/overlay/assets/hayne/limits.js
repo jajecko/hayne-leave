@@ -16,7 +16,6 @@
     var overwrite = document.getElementById('bulk_overwrite_existing');
     var typeSelect = document.getElementById('bulk_vacation_type_id');
     var daysInput = document.getElementById('bulk_annual_days');
-    var customDays = document.getElementById('bulk_annual_days_custom');
     var customWrap = document.getElementById('hayneCustomDaysWrap');
     var submit = document.getElementById('hayneBulkSubmit');
     var empty = document.getElementById('hayneEmployeeFilterEmpty');
@@ -111,10 +110,9 @@
       });
 
       if (custom) {
-        if (customDays && daysInput) {
-          daysInput.value = customDays.value || '26';
-          customDays.focus();
-          customDays.select();
+        if (daysInput) {
+          daysInput.focus();
+          daysInput.select();
         }
       } else if (daysInput) {
         daysInput.value = value;
@@ -170,12 +168,6 @@
         setDaysMode(button.getAttribute('data-hayne-days'));
       });
     });
-
-    if (customDays) {
-      customDays.addEventListener('input', function () {
-        if (daysInput) daysInput.value = customDays.value;
-      });
-    }
 
     if (overwrite) overwrite.addEventListener('change', syncSelection);
     if (typeSelect) typeSelect.addEventListener('change', syncSelection);
