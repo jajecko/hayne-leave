@@ -6,6 +6,7 @@ on:
       - 'hayne/overlay/legacy/application/models/Hayne_leave_policy_model.php'
       - 'hayne/overlay/legacy/application/controllers/Haynelimits.php'
       - 'hayne/overlay/legacy/application/views/haynelimits/index.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/bulk.php'
       - 'hayne/patches/180-leave-limits-entry.patch'
       - 'hayne/patches/190-leave-pools-fifo.patch'
       - 'hayne/patches/195-balance-fifo-breakdown.patch'
@@ -20,6 +21,7 @@ on:
       - 'hayne/overlay/legacy/application/models/Hayne_leave_policy_model.php'
       - 'hayne/overlay/legacy/application/controllers/Haynelimits.php'
       - 'hayne/overlay/legacy/application/views/haynelimits/index.php'
+      - 'hayne/overlay/legacy/application/views/haynelimits/bulk.php'
       - 'hayne/patches/180-leave-limits-entry.patch'
       - 'hayne/patches/190-leave-pools-fifo.patch'
       - 'hayne/patches/195-balance-fifo-breakdown.patch'
@@ -55,6 +57,7 @@ jobs:
           docker compose exec -T jorani php -l legacy/application/models/Hayne_leave_policy_model.php
           docker compose exec -T jorani php -l legacy/application/controllers/Haynelimits.php
           docker compose exec -T jorani php -l legacy/application/views/haynelimits/index.php
+          docker compose exec -T jorani php -l legacy/application/views/haynelimits/bulk.php
           docker compose exec -T jorani php -l legacy/application/controllers/Leaves.php
 
       - name: Authenticate as administrator
@@ -78,11 +81,12 @@ jobs:
         run: |
           year="$(date +%Y)"
           curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${year}" -o artifacts/limits-empty.html
-          grep -F 'data-hayne-view="leave-limits-v2"' artifacts/limits-empty.html
+          grep -F 'data-hayne-view="leave-limits-v3"' artifacts/limits-empty.html
+          grep -F 'data-hayne-bulk="v3"' artifacts/limits-empty.html
           grep -F 'Limity urlopowe' artifacts/limits-empty.html
-          grep -F 'data-hayne-bulk="v1"' artifacts/limits-empty.html
-          grep -F 'Inny wymiar' artifacts/limits-empty.html
           grep -F 'Limity pracowników' artifacts/limits-empty.html
+          grep -F 'Własny limit' artifacts/limits-empty.html
+          ! grep -F 'data-hayne-tab-target="employees"' artifacts/limits-empty.html
           if grep -F 'id="hayneLeaveProfileForm"' artifacts/limits-empty.html; then
             echo 'Single-edit form must not render in the normal limits view.'
             exit 1
@@ -101,6 +105,8 @@ jobs:
             http://localhost:8080/haynelimits/save \
             -o artifacts/limits-saved.html
           grep -F 'Limit urlopowy został zapisany.' artifacts/limits-saved.html
+          grep -F 'Edytuj limit' artifacts/limits-saved.html
+          grep -F 'Rozliczenie FIFO' artifacts/limits-saved.html
 
           docker compose exec -T mysql sh -ec '
             test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT annual_days FROM hayne_leave_profiles WHERE employee_id=1")" = "26"
@@ -113,6 +119,8 @@ jobs:
           grep -F 'id="hayneLeaveProfileForm"' artifacts/limits-edit.html
           grep -F 'Edytuj ustawienia pracownika' artifacts/limits-edit.html
           grep -F 'Automatyczne odnowienie' artifacts/limits-edit.html
+          grep -F 'data-hayne-tab-target="allocation"' artifacts/limits-edit.html
+          ! grep -F 'data-hayne-tab-target="employees"' artifacts/limits-edit.html
 
       - name: Verify FIFO and yearly rollover
         run: |
@@ -137,12 +145,11 @@ jobs:
             mysql -u\"$MYSQL_USER\" -p\"$MYSQL_PASSWORD\" \"$MYSQL_DATABASE\" -e \"INSERT INTO leaves (startdate,enddate,status,employee,cause,startdatetype,enddatetype,duration,type) VALUES ('${next_year}-02-02','${next_year}-02-04',3,1,'CI FIFO carryover','Morning','Afternoon',3,1);\"
           "
           curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${next_year}" -o artifacts/limits-next-used.html
-          grep -A4 -F "data-source-year=\"${year}\"" artifacts/limits-next-used.html | grep -F 'data-used="3"'
-          grep -A4 -F "data-source-year=\"${year}\"" artifacts/limits-next-used.html | grep -F 'data-remaining="18"'
-          grep -A4 -F "data-source-year=\"${next_year}\"" artifacts/limits-next-used.html | grep -F 'data-used="0"'
-          grep -A4 -F "data-source-year=\"${next_year}\"" artifacts/limits-next-used.html | grep -F 'data-remaining="26"'
+          grep -A8 -F "data-source-year=\"${year}\"" artifacts/limits-next-used.html | grep -F 'data-used="3"'
+          grep -A8 -F "data-source-year=\"${year}\"" artifacts/limits-next-used.html | grep -F 'data-remaining="18"'
+          grep -A8 -F "data-source-year=\"${next_year}\"" artifacts/limits-next-used.html | grep -F 'data-used="0"'
+          grep -A8 -F "data-source-year=\"${next_year}\"" artifacts/limits-next-used.html | grep -F 'data-remaining="26"'
 
-          # Re-running synchronization must not duplicate pool rows.
           curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${next_year}" >/dev/null
           docker compose exec -T mysql sh -ec "
             test \"\$(mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT COUNT(*) FROM entitleddays WHERE employee=1 AND type=1 AND startdate='${next_year}-01-01' AND description LIKE '[HAYNE\\_POOL|%'\")\" = \"2\"
