@@ -89,8 +89,6 @@ jobs:
           ! grep -F 'data-hayne-tab-target="employees"' artifacts/limits.html
           grep -F 'name="employee_ids[]"' artifacts/limits.html
           grep -F 'Koryguj wykorzystanie' artifacts/limits.html
-          grep -F 'Edytuj limit' artifacts/limits.html
-          grep -F 'Rozliczenie FIFO' artifacts/limits.html
           ! grep -F '>Nowy limit<' artifacts/limits.html
           grep -F 'assets/hayne/limits.css' artifacts/limits.html
           grep -F 'assets/hayne/limits.js' artifacts/limits.html
@@ -116,6 +114,9 @@ jobs:
             --data-urlencode "year=${year}" \
             http://localhost:8080/haynelimits/save-bulk -o artifacts/bulk-created.html
           grep -F 'Zapisano limit dla 1 pracowników.' artifacts/bulk-created.html
+          grep -F 'Edytuj limit' artifacts/bulk-created.html
+          grep -F 'Koryguj wykorzystanie' artifacts/bulk-created.html
+          grep -F 'Rozliczenie FIFO' artifacts/bulk-created.html
           docker compose exec -T mysql sh -ec '
             test "$(mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -Nse "SELECT annual_days FROM hayne_leave_profiles WHERE employee_id=1")" = "26"
           '
