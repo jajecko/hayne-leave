@@ -1,6 +1,6 @@
 --- a/legacy/application/views/templates/header.php
 +++ b/legacy/application/views/templates/header.php
-@@ -1,3 +1,7 @@
+@@ -1 +1,5 @@
 -</head>
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/approvals-term.css">
 +    <script defer type="text/javascript" src="<?php echo base_url(); ?>assets/hayne/approvals-term.js"></script>
