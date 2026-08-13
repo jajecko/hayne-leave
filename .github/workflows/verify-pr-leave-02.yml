@@ -128,7 +128,7 @@ jobs:
           next_year="$((year + 1))"
 
           docker compose exec -T mysql sh -ec "
-            mysql -u\"$MYSQL_USER\" -p\"$MYSQL_PASSWORD\" \"$MYSQL_DATABASE\" -e \"INSERT INTO leaves (startdate,enddate,status,employee,cause,startdatetype,enddatetype,duration,type) VALUES ('${year}-06-01','${year}-06-05',3,1,'CI FIFO current year','Morning','Afternoon',5,1);\"
+            mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -e \"INSERT INTO leaves (startdate,enddate,status,employee,cause,startdatetype,enddatetype,duration,type) VALUES ('${year}-06-01','${year}-06-05',3,1,'CI FIFO current year','Morning','Afternoon',5,1);\"
           "
 
           curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${year}" -o artifacts/limits-current.html
@@ -142,7 +142,7 @@ jobs:
           "
 
           docker compose exec -T mysql sh -ec "
-            mysql -u\"$MYSQL_USER\" -p\"$MYSQL_PASSWORD\" \"$MYSQL_DATABASE\" -e \"INSERT INTO leaves (startdate,enddate,status,employee,cause,startdatetype,enddatetype,duration,type) VALUES ('${next_year}-02-02','${next_year}-02-04',3,1,'CI FIFO carryover','Morning','Afternoon',3,1);\"
+            mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -e \"INSERT INTO leaves (startdate,enddate,status,employee,cause,startdatetype,enddatetype,duration,type) VALUES ('${next_year}-02-02','${next_year}-02-04',3,1,'CI FIFO carryover','Morning','Afternoon',3,1);\"
           "
           curl -fsS -b artifacts/cookies.txt "http://localhost:8080/haynelimits?year=${next_year}" -o artifacts/limits-next-used.html
           grep -A8 -F "data-source-year=\"${year}\"" artifacts/limits-next-used.html | grep -F 'data-used="3"'
