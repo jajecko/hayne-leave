@@ -25,8 +25,8 @@ jobs:
 
       - name: Guard overlap policy source
         run: |
-          grep -F "+        $this->db->where_not_in('status', [LMS_REJECTED, LMS_CANCELED]);" hayne/patches/260-canceled-leave-overlap.patch
-          grep -F -- "-        $this->db->where('status != 4');" hayne/patches/260-canceled-leave-overlap.patch
+          grep -F '+        $this->db->where_not_in('"'"'status'"'"', [LMS_REJECTED, LMS_CANCELED]);' hayne/patches/260-canceled-leave-overlap.patch
+          grep -F -- '-        $this->db->where('"'"'status != 4'"'"');' hayne/patches/260-canceled-leave-overlap.patch
 
       - name: Validate Compose configuration
         run: docker compose config --quiet
