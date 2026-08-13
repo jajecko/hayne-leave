@@ -2,7 +2,7 @@
   'use strict';
 
   function initLimitsTabs() {
-    var page = document.querySelector('[data-hayne-view="leave-limits-v2"]');
+    var page = document.querySelector('[data-hayne-view="leave-limits-v3"]');
     if (!page) return;
 
     var buttons = Array.prototype.slice.call(page.querySelectorAll('[data-hayne-tab-target]'));
@@ -39,11 +39,12 @@
   }
 
   function initBulkLimits() {
-    var root = document.querySelector('[data-hayne-bulk="v2"]');
+    var root = document.querySelector('[data-hayne-bulk="v3"]');
     if (!root) return;
 
     var form = document.getElementById('hayneBulkLeaveForm');
     var rows = Array.prototype.slice.call(root.querySelectorAll('[data-hayne-employee-row]'));
+    var fifoRows = Array.prototype.slice.call(root.querySelectorAll('[data-hayne-fifo-row]'));
     var search = document.getElementById('hayneEmployeeSearch');
     var filters = Array.prototype.slice.call(root.querySelectorAll('[data-hayne-filter]'));
     var kpiFilters = Array.prototype.slice.call(root.querySelectorAll('[data-hayne-kpi-filter]'));
@@ -88,6 +89,16 @@
       });
     }
 
+    function syncFifoRows() {
+      fifoRows.forEach(function (fifoRow) {
+        var employeeId = fifoRow.getAttribute('data-employee-id');
+        var owner = rows.find(function (row) {
+          return row.getAttribute('data-employee-id') === employeeId;
+        });
+        fifoRow.hidden = !owner || owner.hidden;
+      });
+    }
+
     function applyFilter() {
       var query = normalize(search ? search.value : '');
       var shown = 0;
@@ -100,6 +111,7 @@
         row.hidden = !(matchesSearch && matchesStatus);
         if (!row.hidden) shown += 1;
       });
+      syncFifoRows();
       if (empty) empty.hidden = shown !== 0;
       syncFilterButtons();
       syncMaster();
