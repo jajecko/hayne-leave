@@ -58,10 +58,13 @@ if (!function_exists('hayne_push_send_for_mail')) {
             return;
         }
 
-        $emails = array_values(array_unique(array_merge(
-            hayne_push_extract_emails($to),
-            hayne_push_extract_emails($cc)
-        )));
+        $emails = hayne_push_extract_emails($to);
+        if ($controllerClass === 'leaves') {
+            $emails = array_values(array_unique(array_merge(
+                $emails,
+                hayne_push_extract_emails($cc)
+            )));
+        }
         if ($emails === []) {
             return;
         }
