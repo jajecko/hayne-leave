@@ -42,7 +42,7 @@ jobs:
           for attempt in $(seq 1 60); do
             if curl -fsS \
               -c artifacts/cookies.txt \
-              http://127.0.0.1:8080/session/login \
+              http://localhost:8080/session/login \
               -o artifacts/login.html; then
               login_ready=1
               break
@@ -70,7 +70,7 @@ jobs:
             --data-urlencode 'language=en' \
             -o artifacts/home.html \
             -w '%{http_code} %{url_effective}' \
-            http://127.0.0.1:8080/session/login)" || {
+            http://localhost:8080/session/login)" || {
               echo "::error::Login POST failed"
               exit 1
             }
@@ -94,7 +94,7 @@ jobs:
             -b artifacts/cookies.txt \
             -o artifacts/create.html \
             -w '%{http_code} %{url_effective}' \
-            http://127.0.0.1:8080/leaves/create)" || {
+            http://localhost:8080/leaves/create)" || {
               echo "::error::GET /leaves/create failed"
               exit 1
             }
