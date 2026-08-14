@@ -77,7 +77,6 @@ COPY hayne/tools/push-install.php /opt/hayne/push-install.php
 COPY hayne/tools/push-vapid.php /opt/hayne/push-vapid.php
 COPY hayne/patches/ /tmp/hayne-patches/
 RUN set -eux; \
-    chmod 0555 /opt/hayne/ad-sync-preview.php /opt/hayne/ad-sync-plan.php /opt/hayne/tools/calendar-sync.php 2>/dev/null || true; \
     chmod 0555 /opt/hayne/ad-sync-preview.php /opt/hayne/ad-sync-plan.php /opt/hayne/calendar-sync.php /opt/hayne/push-install.php /opt/hayne/push-vapid.php; \
     for patch_file in /tmp/hayne-patches/*.patch; do \
       patch --batch --forward -p1 < "$patch_file"; \
