@@ -1,0 +1,36 @@
+/* HAYNE mobile navigation hotfix.
+ * Keeps the account card in normal drawer flow and makes submenu touch targets explicit.
+ * Mobile-only; desktop shell is intentionally untouched.
+ */
+
+@media (max-width: 979px) {
+  #wrap .nav-responsive > .nav.pull-right {
+    flex: 0 0 auto;
+  }
+
+  #wrap .nav-responsive > .nav.pull-right > .hayne-user-menu {
+    min-height: 58px;
+  }
+
+  #wrap .nav-responsive > .nav.pull-right > .hayne-user-menu > .hayne-user-toggle {
+    float: none;
+    position: relative;
+  }
+
+  #wrap .nav-responsive > .nav:first-child {
+    flex: 0 0 auto;
+    position: relative;
+  }
+
+  #wrap .nav-responsive > .nav:first-child > li.dropdown > .dropdown-menu {
+    position: static !important;
+    z-index: auto;
+  }
+
+  #wrap .nav-responsive > .nav:first-child > li.dropdown > .dropdown-menu > li > a {
+    position: relative;
+    z-index: 1;
+    pointer-events: auto;
+    touch-action: manipulation;
+  }
+}
