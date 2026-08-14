@@ -40,7 +40,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && docker-php-ext-configure zip \
     && docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/ \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" curl gd ldap mbstring zip pdo pdo_mysql \
+    && docker-php-ext-install -j"$(nproc)" bcmath curl gd ldap mbstring zip pdo pdo_mysql \
     && a2enmod rewrite headers deflate filter \
     && mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
     && rm -rf /var/lib/apt/lists/*
@@ -51,6 +51,7 @@ COPY --from=composer /app/legacy/vendor ./legacy/vendor
 COPY hayne/overlay/ ./
 COPY manifest.webmanifest ./manifest.webmanifest
 COPY service-worker.js ./service-worker.js
+COPY hayne/assets/hayne-leave-icons.tar.gz /tmp/hayne-leave-icons.tar.gz
 COPY hayne/tools/ad-sync-preview.php /opt/hayne/ad-sync-preview.php
 COPY hayne/tools/ad-sync-plan.php /opt/hayne/ad-sync-plan.php
 COPY hayne/tools/calendar-sync.php /opt/hayne/calendar-sync.php
@@ -62,6 +63,9 @@ RUN set -eux; \
     for patch_file in /tmp/hayne-patches/*.patch; do \
       patch --batch --forward -p1 < "$patch_file"; \
     done; \
+    mkdir -p /var/www/html/assets/hayne; \
+    tar -xzf /tmp/hayne-leave-icons.tar.gz -C /var/www/html/assets/hayne; \
+    rm -f /tmp/hayne-leave-icons.tar.gz; \
     rm -rf /tmp/hayne-patches; \
     chown -R www-data:www-data legacy/application/logs; \
     chmod 775 legacy/application/logs

@@ -12,12 +12,24 @@ jobs:
       - name: Prepare environment
         run: cp .env.example .env
 
+      - name: Verify icon bundle source
+        run: |
+          test -s hayne/assets/hayne-leave-icons.tar.gz
+          tar -tzf hayne/assets/hayne-leave-icons.tar.gz | grep -F './favicon.ico'
+          tar -tzf hayne/assets/hayne-leave-icons.tar.gz | grep -F './apple-touch-icon.png'
+          tar -tzf hayne/assets/hayne-leave-icons.tar.gz | grep -F './pwa-icon-192.png'
+          tar -tzf hayne/assets/hayne-leave-icons.tar.gz | grep -F './pwa-icon-512.png'
+          tar -tzf hayne/assets/hayne-leave-icons.tar.gz | grep -F './pwa-icon-maskable-192.png'
+          tar -tzf hayne/assets/hayne-leave-icons.tar.gz | grep -F './pwa-icon-maskable-512.png'
+          tar -tzf hayne/assets/hayne-leave-icons.tar.gz | grep -F './notification-badge-128.png'
+
       - name: Build HAYNE Leave with Web Push dependencies
         run: docker compose build jorani
 
       - name: Verify runtime dependencies and source
         run: |
           docker compose run --rm --no-deps jorani sh -ec '
+            php -m | grep -Fx bcmath
             php -m | grep -Fx curl
             php -m | grep -Fx mbstring
             php -r "require '\''legacy/vendor/autoload.php'\''; exit(class_exists('\''Minishlink\\WebPush\\WebPush'\'') ? 0 : 1);"
@@ -25,8 +37,22 @@ jobs:
             php -l legacy/application/helpers/hayne_push_helper.php
             grep -F "hayne_push_send_for_mail" legacy/application/helpers/tools_helper.php
             grep -F "assets/hayne/push.css" legacy/application/views/templates/header.php
+            grep -F "assets/hayne/favicon.ico" legacy/application/views/templates/header.php
+            grep -F "assets/hayne/apple-touch-icon.png" legacy/application/views/templates/header.php
             test -s manifest.webmanifest
             test -s service-worker.js
+            test -s assets/hayne/favicon.ico
+            test -s assets/hayne/favicon-16x16.png
+            test -s assets/hayne/favicon-32x32.png
+            test -s assets/hayne/apple-touch-icon.png
+            test -s assets/hayne/pwa-icon-192.png
+            test -s assets/hayne/pwa-icon-512.png
+            test -s assets/hayne/pwa-icon-maskable-192.png
+            test -s assets/hayne/pwa-icon-maskable-512.png
+            test -s assets/hayne/notification-badge-128.png
+            grep -F "pwa-icon-192.png" manifest.webmanifest
+            grep -F "pwa-icon-maskable-512.png" manifest.webmanifest
+            grep -F "notification-badge-128.png" service-worker.js
             grep -F "self.addEventListener('\''push'\''" service-worker.js
             grep -F "self.addEventListener('\''notificationclick'\''" service-worker.js
             ! grep -F "self.addEventListener('\''fetch'\''" service-worker.js
@@ -42,6 +68,9 @@ jobs:
             fi
             sleep 2
           done
+          curl -fsS http://127.0.0.1:8080/service-worker.js >/dev/null
+          curl -fsS http://127.0.0.1:8080/manifest.webmanifest >/dev/null
+          curl -fsS http://127.0.0.1:8080/assets/hayne/pwa-icon-192.png >/dev/null
           docker compose exec -T jorani php /opt/hayne/push-install.php
 
       - name: Verify authenticated push settings stay disabled without secrets

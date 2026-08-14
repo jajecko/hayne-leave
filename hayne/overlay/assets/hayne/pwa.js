@@ -142,6 +142,7 @@
 
     var permission = Notification.permission;
     if (permission === 'default') {
+      removePrompt();
       permission = await Notification.requestPermission();
     }
     if (permission !== 'granted') {
