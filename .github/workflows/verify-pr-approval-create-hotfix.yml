@@ -30,6 +30,7 @@ jobs:
             grep -F "bin2hex(random_bytes(24))" legacy/application/controllers/Leaves.php
             grep -F "load->view" legacy/application/controllers/Leaves.php | grep -F "leaves/create" | grep -F "\$data"
             grep -F "hayne_submission_token" legacy/application/views/leaves/create.php
+            grep -F "form=\"frmLeaveForm\"" legacy/application/views/leaves/create.php
             grep -F "a.hayne-approval-review__action--accept:visited" assets/hayne/approval-review.css
             grep -F "grid-template-areas:" assets/hayne/approval-review.css
             grep -F "approval-review-v2" legacy/application/views/requests/review.php
@@ -124,6 +125,11 @@ jobs:
 
           if ! grep -qF 'name="hayne_submission_token"' artifacts/create.html; then
             echo "::error::HAYNE submission token input missing"
+            exit 1
+          fi
+
+          if ! grep -qE 'name="hayne_submission_token"[^>]*form="frmLeaveForm"' artifacts/create.html; then
+            echo "::error::HAYNE submission token is not explicitly owned by frmLeaveForm"
             exit 1
           fi
 
