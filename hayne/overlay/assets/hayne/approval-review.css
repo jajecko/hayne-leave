@@ -87,13 +87,23 @@
 .hayne-approval-review__layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
-  gap: 24px;
+  grid-template-areas:
+    "details decision"
+    "history decision";
+  gap: 20px 24px;
   align-items: start;
 }
 
-.hayne-approval-review__main {
-  display: grid;
-  gap: 20px;
+.hayne-approval-review__details {
+  grid-area: details;
+}
+
+.hayne-approval-review__history {
+  grid-area: history;
+}
+
+.hayne-approval-review__decision {
+  grid-area: decision;
   min-width: 0;
 }
 
@@ -170,10 +180,6 @@
   overflow-wrap: anywhere;
 }
 
-.hayne-approval-review__decision {
-  min-width: 0;
-}
-
 .hayne-approval-review__decision-card {
   position: sticky;
   top: 22px;
@@ -198,6 +204,7 @@
   min-height: 48px;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   margin: 0;
   padding: 0 16px;
   border-radius: 10px;
@@ -208,18 +215,44 @@
   text-align: center;
   text-decoration: none;
   cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
 }
 
-.hayne-approval-review__action--accept {
+.hayne-approval-review__action i,
+.hayne-approval-review__reject > summary i {
+  flex: 0 0 auto;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.hayne-approval-review a.hayne-approval-review__action--accept,
+.hayne-approval-review a.hayne-approval-review__action--accept:link,
+.hayne-approval-review a.hayne-approval-review__action--accept:visited {
   border: 1px solid #111;
   background: #111;
   color: #fff;
 }
 
-.hayne-approval-review__action--accept:hover,
-.hayne-approval-review__action--accept:focus {
+.hayne-approval-review a.hayne-approval-review__action--accept:hover,
+.hayne-approval-review a.hayne-approval-review__action--accept:focus,
+.hayne-approval-review a.hayne-approval-review__action--accept:active {
+  border-color: #000;
   background: #000;
   color: #fff;
+}
+
+.hayne-approval-review a.hayne-approval-review__action--accept:focus-visible,
+.hayne-approval-review__reject > summary:focus-visible,
+.hayne-approval-review__action--reject-confirm:focus-visible,
+.hayne-approval-review__action--secondary:focus-visible {
+  outline: 3px solid rgba(17, 17, 17, .18);
+  outline-offset: 2px;
+}
+
+.hayne-approval-review a.hayne-approval-review__action--accept[aria-disabled="true"] {
+  color: #fff;
+  cursor: wait;
+  opacity: .72;
 }
 
 .hayne-approval-review__reject {
@@ -235,6 +268,13 @@
 
 .hayne-approval-review__reject > summary::-webkit-details-marker {
   display: none;
+}
+
+.hayne-approval-review__reject > summary:hover,
+.hayne-approval-review__reject > summary:focus {
+  border-color: #cf9696;
+  background: #fffafa;
+  color: #8d2525;
 }
 
 .hayne-approval-review__reject[open] > summary {
@@ -270,6 +310,12 @@
   font-size: 13px;
   line-height: 1.5;
   resize: vertical;
+}
+
+.hayne-approval-review__reject-form textarea:focus {
+  border-color: #9d9d96;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, .08);
 }
 
 .hayne-approval-review__action--reject-confirm {
@@ -330,11 +376,12 @@
 
 @media (max-width: 900px) {
   .hayne-approval-review__layout {
-    grid-template-columns: 1fr;
-  }
-
-  .hayne-approval-review__decision {
-    order: -1;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "details"
+      "decision"
+      "history";
+    gap: 16px;
   }
 
   .hayne-approval-review__decision-card {
@@ -345,6 +392,11 @@
 @media (max-width: 620px) {
   .hayne-approval-review {
     padding-top: 2px;
+    padding-bottom: 32px;
+  }
+
+  .hayne-approval-review__back {
+    margin-bottom: 18px;
   }
 
   .hayne-approval-review__header {
@@ -355,6 +407,10 @@
     font-size: 32px;
   }
 
+  .hayne-approval-review__header p {
+    font-size: 14px;
+  }
+
   .hayne-approval-review__card {
     padding: 20px 18px;
     border-radius: 13px;
@@ -362,6 +418,16 @@
 
   .hayne-approval-review__summary {
     grid-template-columns: 1fr;
+  }
+
+  .hayne-approval-review__reason {
+    margin-top: 16px;
+    padding: 16px;
+  }
+
+  .hayne-approval-review__action,
+  .hayne-approval-review__reject > summary {
+    min-height: 52px;
   }
 
   .hayne-approval-review__timeline-meta {
