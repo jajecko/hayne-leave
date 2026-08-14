@@ -9,7 +9,7 @@
 +    try {
 +        $sent = $controller->email->send();
 +        if ($sent) {
-+            log_message('info', 'HAYNE Mail SENT source=' . $mailSource . ' recipient=' . $recipientKey);
++            log_message('debug', 'HAYNE Mail SENT source=' . $mailSource . ' recipient=' . $recipientKey);
 +        } else {
 +            log_message('error', 'HAYNE Mail FAILED source=' . $mailSource . ' recipient=' . $recipientKey);
 +        }
