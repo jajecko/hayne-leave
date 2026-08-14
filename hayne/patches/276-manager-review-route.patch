@@ -1,6 +1,6 @@
 --- a/legacy/application/config/routes.php
 +++ b/legacy/application/config/routes.php
-@@ -222,6 +222,7 @@ $route['requests/counters/(:num)'] = 'requests/counters/$1';
+@@ -214,6 +214,7 @@ $route['requests/counters/(:num)'] = 'requests/counters/$1';
  $route['requests/counters/(:num)/(:num)'] = 'requests/counters/$1/$2';
  $route['requests/export/(:any)'] = 'requests/export/$1';
 +$route['requests/review/(:num)'] = 'requests/review/$1';
@@ -9,7 +9,7 @@
  $route['requests/cancellation/accept/(:num)'] = 'requests/acceptCancellation/$1';
 --- a/legacy/application/controllers/Requests.php
 +++ b/legacy/application/controllers/Requests.php
-@@ -73,6 +73,72 @@ class Requests extends CI_Controller
+@@ -73,6 +73,59 @@ class Requests extends CI_Controller
          $this->load->view('templates/footer');
      }
  
