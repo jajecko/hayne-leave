@@ -20,6 +20,9 @@
 +        $this->session->set_userdata('hayne_leave_submission_tokens', $submissionTokens);
 +        $data['hayneSubmissionToken'] = $submissionToken;
 +
+@@ -276,1 +294,1 @@
+-            $this->load->view('leaves/create');
++            $this->load->view('leaves/create', $data);
 @@ -283,2 +301,18 @@
          } else {
 +            $submissionToken = (string) $this->input->post('hayne_submission_token', TRUE);
