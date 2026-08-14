@@ -51,7 +51,7 @@ COPY --from=composer /app/legacy/vendor ./legacy/vendor
 COPY hayne/overlay/ ./
 COPY manifest.webmanifest ./manifest.webmanifest
 COPY service-worker.js ./service-worker.js
-COPY hayne/assets/hayne-leave-icons.tar.gz /tmp/hayne-leave-icons.tar.gz
+COPY hayne/assets/hayne-leave-icons.tar.gz /tmp/hayne-leave-icons.b64
 COPY hayne/tools/ad-sync-preview.php /opt/hayne/ad-sync-preview.php
 COPY hayne/tools/ad-sync-plan.php /opt/hayne/ad-sync-plan.php
 COPY hayne/tools/calendar-sync.php /opt/hayne/calendar-sync.php
@@ -64,8 +64,9 @@ RUN set -eux; \
       patch --batch --forward -p1 < "$patch_file"; \
     done; \
     mkdir -p /var/www/html/assets/hayne; \
+    base64 -d /tmp/hayne-leave-icons.b64 > /tmp/hayne-leave-icons.tar.gz; \
     tar -xzf /tmp/hayne-leave-icons.tar.gz -C /var/www/html/assets/hayne; \
-    rm -f /tmp/hayne-leave-icons.tar.gz; \
+    rm -f /tmp/hayne-leave-icons.b64 /tmp/hayne-leave-icons.tar.gz; \
     rm -rf /tmp/hayne-patches; \
     chown -R www-data:www-data legacy/application/logs; \
     chmod 775 legacy/application/logs
