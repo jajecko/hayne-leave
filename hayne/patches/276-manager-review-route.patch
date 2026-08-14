@@ -1,0 +1,71 @@
+--- a/legacy/application/config/routes.php
++++ b/legacy/application/config/routes.php
+@@ -222,6 +222,7 @@ $route['requests/counters/(:num)'] = 'requests/counters/$1';
+ $route['requests/counters/(:num)/(:num)'] = 'requests/counters/$1/$2';
+ $route['requests/export/(:any)'] = 'requests/export/$1';
++$route['requests/review/(:num)'] = 'requests/review/$1';
+ $route['requests/accept/(:num)'] = 'requests/accept/$1';
+ $route['requests/reject/(:num)'] = 'requests/reject/$1';
+ $route['requests/cancellation/accept/(:num)'] = 'requests/acceptCancellation/$1';
+--- a/legacy/application/controllers/Requests.php
++++ b/legacy/application/controllers/Requests.php
+@@ -73,6 +73,72 @@ class Requests extends CI_Controller
+         $this->load->view('templates/footer');
+     }
+ 
++    /**
++     * Display a manager-focused decision view for one leave request.
++     * Existing accept/reject endpoints remain the only workflow mutation path.
++     *
++     * @param int $id Leave request identifier
++     */
++    public function review(int $id): void
++    {
++        $this->auth->checkIfOperationIsAllowed('list_requests');
++        $this->load->model('users_model');
++        $this->load->model('delegations_model');
++        $this->load->model('status_model');
++        $this->load->helper('form');
++
++        $data = getUserContext($this);
++        $data['leave'] = $this->leaves_model->getLeaveWithComments($id);
++        if (empty($data['leave'])) {
++            redirect('notfound');
++        }
++
++        $employee = $this->users_model->getUsers($data['leave']['employee']);
++        $isDelegate = $this->delegations_model->isDelegateOfManager($this->user_id, $employee['manager']);
++        if (($this->user_id != $employee['manager']) && !$this->is_hr && !$isDelegate) {
++            log_message('error', 'User #' . $this->user_id . ' illegally tried to review leave #' . $id);
++            $this->session->set_flashdata('msg', lang('requests_accept_flash_msg_error'));
++            redirect('requests');
++        }
++
++        $data['name'] = $employee['firstname'] . ' ' . $employee['lastname'];
++        $data['mandatoryCommentOnReject'] = $this->config->item('mandatory_comment_on_reject') === TRUE;
++        $data['title'] = 'Wniosek do akceptacji';
++
++        if (
++            isset($data['leave']['comments']) &&
++            is_object($data['leave']['comments']) &&
++            isset($data['leave']['comments']->comments) &&
++            is_array($data['leave']['comments']->comments)
++        ) {
++            foreach ($data['leave']['comments']->comments as $commentsItem) {
++                if ($commentsItem->type === 'comment') {
++                    $commentsItem->author_name = $this->users_model->getName($commentsItem->author);
++                } elseif ($commentsItem->type === 'change') {
++                    $commentsItem->status_label = lang($this->status_model->getName($commentsItem->status_number));
++                }
++            }
++        }
++
++        $this->load->view('templates/header', $data);
++        $this->load->view('menu/index', $data);
++        $this->load->view('requests/review', $data);
++        $this->load->view('templates/footer');
++    }
++
+     /**
+      * Accept a leave request
+      * @param int $id leave request identifier

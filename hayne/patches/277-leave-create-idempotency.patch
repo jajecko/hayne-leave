@@ -1,0 +1,97 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -269,6 +269,26 @@ class Leaves extends CI_Controller
+         $this->form_validation->set_rules('status', lang('leaves_create_field_status'), 'required|strip_tags');
+ 
+         if ($this->form_validation->run() === FALSE) {
++            $submissionTokens = $this->session->userdata('hayne_leave_submission_tokens');
++            if (!is_array($submissionTokens)) {
++                $submissionTokens = [];
++            }
++            $now = time();
++            foreach ($submissionTokens as $token => $issuedAt) {
++                if (!is_int($issuedAt) || ($now - $issuedAt) > 7200) {
++                    unset($submissionTokens[$token]);
++                }
++            }
++            while (count($submissionTokens) >= 8) {
++                array_shift($submissionTokens);
++            }
++            $submissionToken = bin2hex(random_bytes(24));
++            $submissionTokens[$submissionToken] = $now;
++            $this->session->set_userdata('hayne_leave_submission_tokens', $submissionTokens);
++            $data['hayneSubmissionToken'] = $submissionToken;
++
+             $this->load->model('contracts_model');
+             $leaveTypesDetails = $this->contracts_model->getLeaveTypesDetailsOTypesForUser($this->session->userdata('id'));
+             $data['defaultType'] = $leaveTypesDetails->defaultType;
+@@ -280,6 +300,24 @@ class Leaves extends CI_Controller
+             $this->load->view('leaves/create');
+             $this->load->view('templates/footer');
+         } else {
++            $submissionToken = (string) $this->input->post('hayne_submission_token', TRUE);
++            $submissionTokens = $this->session->userdata('hayne_leave_submission_tokens');
++            if (!is_array($submissionTokens)) {
++                $submissionTokens = [];
++            }
++
++            if ($submissionToken === '' || !array_key_exists($submissionToken, $submissionTokens)) {
++                log_message('error', 'Duplicate or expired HAYNE leave submission blocked for user #' . $this->session->userdata('id'));
++                $this->session->set_flashdata('msg', 'Ten formularz został już wysłany lub wygasł. Sprawdź listę wniosków przed ponowną próbą.');
++                redirect('leaves');
++            }
++
++            // Consume before any write. A second POST with the same form instance cannot create another leave.
++            unset($submissionTokens[$submissionToken]);
++            $this->session->set_userdata('hayne_leave_submission_tokens', $submissionTokens);
++
+             //Prevent employees to auto validate their leave requests
+             if (!$this->is_hr && !$this->is_admin) {
+                 if ($this->input->post('status') > LMS_REQUESTED) {
+--- a/legacy/application/views/leaves/create.php
++++ b/legacy/application/views/leaves/create.php
+@@ -19,6 +19,7 @@
+         <?php
+         $attributes = array('id' => 'frmLeaveForm');
+         echo form_open('leaves/create', $attributes) ?>
++        <input type="hidden" name="hayne_submission_token" value="<?php echo html_escape($hayneSubmissionToken); ?>" />
+ 
+         <label for="type">
+             <?php echo lang('leaves_create_field_type'); ?>
+@@ -122,6 +123,35 @@ if ($language_code != 'en') { ?>
+ <?php } ?>
+ <script src="<?php echo base_url(); ?>assets/js/bootbox.min.js"></script>
+ 
++<script>
++    (function () {
++        var form = document.getElementById('frmLeaveForm');
++        if (!form) return;
++
++        form.addEventListener('submit', function (event) {
++            if (form.dataset.hayneSubmissionLocked === '1') {
++                event.preventDefault();
++                return;
++            }
++
++            form.dataset.hayneSubmissionLocked = '1';
++            var submitters = form.querySelectorAll('button[type="submit"]');
++            Array.prototype.forEach.call(submitters, function (button) {
++                button.setAttribute('aria-disabled', 'true');
++                button.style.pointerEvents = 'none';
++            });
++
++            window.setTimeout(function () {
++                if (!event.defaultPrevented) return;
++                form.dataset.hayneSubmissionLocked = '0';
++                Array.prototype.forEach.call(submitters, function (button) {
++                    button.removeAttribute('aria-disabled');
++                    button.style.pointerEvents = '';
++                });
++            }, 0);
++        });
++    })();
++</script>
++
+ <?php require_once dirname(BASEPATH) . "/local/triggers/leave_view.php"; ?>
+ <script>
+     $(document).on("click", "#showNoneWorkedDay", function (e) {
