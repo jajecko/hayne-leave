@@ -6,11 +6,7 @@
  $route['requests/accept/(:num)'] = 'requests/accept/$1';
 --- a/legacy/application/controllers/Requests.php
 +++ b/legacy/application/controllers/Requests.php
-@@ -78,3 +78,56 @@
-         $this->load->view('requests/index', $data);
-         $this->load->view('templates/footer');
-     }
-+
+@@ -82,5 +82,58 @@
 +    /**
 +     * Display a manager-focused decision view for one leave request.
 +     * Existing accept/reject endpoints remain the only workflow mutation path.
@@ -63,3 +59,9 @@
 +        $this->load->view('requests/review', $data);
 +        $this->load->view('templates/footer');
 +    }
++
+     /**
+      * Accept a leave request
+      * @param int $id leave request identifier
+      */
+     public function accept(int $id): void
