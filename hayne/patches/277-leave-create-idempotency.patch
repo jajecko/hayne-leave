@@ -1,6 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -269,6 +269,26 @@ class Leaves extends CI_Controller
+@@ -269,6 +269,24 @@ class Leaves extends CI_Controller
          $this->form_validation->set_rules('status', lang('leaves_create_field_status'), 'required|strip_tags');
  
          if ($this->form_validation->run() === FALSE) {
@@ -25,7 +25,7 @@
              $this->load->model('contracts_model');
              $leaveTypesDetails = $this->contracts_model->getLeaveTypesDetailsOTypesForUser($this->session->userdata('id'));
              $data['defaultType'] = $leaveTypesDetails->defaultType;
-@@ -280,6 +300,24 @@ class Leaves extends CI_Controller
+@@ -280,6 +298,22 @@ class Leaves extends CI_Controller
              $this->load->view('leaves/create');
              $this->load->view('templates/footer');
          } else {
@@ -58,7 +58,7 @@
  
          <label for="type">
              <?php echo lang('leaves_create_field_type'); ?>
-@@ -122,6 +123,35 @@ if ($language_code != 'en') { ?>
+@@ -122,6 +123,36 @@ if ($language_code != 'en') { ?>
  <?php } ?>
  <script src="<?php echo base_url(); ?>assets/js/bootbox.min.js"></script>
  
