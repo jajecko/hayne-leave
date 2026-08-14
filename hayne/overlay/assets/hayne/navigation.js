@@ -13,7 +13,9 @@
     chevron: '<path d="m8 10 4 4 4-4"/>',
     user: '<circle cx="12" cy="8" r="3"/><path d="M5.5 20c.4-4.2 2.6-6.2 6.5-6.2s6.1 2 6.5 6.2"/>',
     lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
-    logout: '<path d="M10 5H5v14h5M14 8l4 4-4 4M18 12H9"/>'
+    logout: '<path d="M10 5H5v14h5M14 8l4 4-4 4M18 12H9"/>',
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    close: '<path d="m6 6 12 12M18 6 6 18"/>'
   };
 
   const icon = (name, className = '') => {
@@ -107,6 +109,111 @@
     account.replaceWith(menuItem);
   };
 
+  const enhanceMobileShell = (wrap) => {
+    const navbarInner = wrap.querySelector(':scope > .navbar .navbar-inner');
+    const navResponsive = navbarInner ? navbarInner.querySelector('.nav-responsive') : null;
+    if (!navbarInner || !navResponsive || navbarInner.querySelector('.hayne-mobile-menu-toggle')) return;
+
+    navResponsive.id = navResponsive.id || 'hayne-mobile-navigation';
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'hayne-mobile-menu-toggle';
+    toggle.setAttribute('aria-controls', navResponsive.id);
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-label', 'Otwórz menu');
+    toggle.appendChild(icon('menu'));
+
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'hayne-mobile-menu-close';
+    close.setAttribute('aria-label', 'Zamknij menu');
+    close.appendChild(icon('close'));
+
+    const drawerTitle = document.createElement('span');
+    drawerTitle.className = 'hayne-mobile-menu-title';
+    drawerTitle.textContent = 'Menu';
+
+    const drawerHeader = document.createElement('div');
+    drawerHeader.className = 'hayne-mobile-drawer-header';
+    drawerHeader.appendChild(drawerTitle);
+    drawerHeader.appendChild(close);
+    navResponsive.prepend(drawerHeader);
+
+    const overlay = document.createElement('button');
+    overlay.type = 'button';
+    overlay.className = 'hayne-mobile-menu-overlay';
+    overlay.setAttribute('aria-label', 'Zamknij menu');
+    overlay.setAttribute('tabindex', '-1');
+
+    navbarInner.appendChild(toggle);
+    wrap.appendChild(overlay);
+
+    let previouslyFocused = null;
+
+    const focusableInDrawer = () => Array.from(navResponsive.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+      .filter((node) => node.offsetParent !== null);
+
+    const setOpen = (isOpen) => {
+      if (isOpen) {
+        previouslyFocused = document.activeElement;
+        wrap.classList.add('hayne-mobile-menu-open');
+        document.body.classList.add('hayne-mobile-menu-lock');
+        toggle.setAttribute('aria-expanded', 'true');
+        toggle.setAttribute('aria-label', 'Zamknij menu');
+        window.setTimeout(() => close.focus(), 0);
+        return;
+      }
+
+      wrap.classList.remove('hayne-mobile-menu-open');
+      document.body.classList.remove('hayne-mobile-menu-lock');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Otwórz menu');
+      if (previouslyFocused && typeof previouslyFocused.focus === 'function') previouslyFocused.focus();
+      previouslyFocused = null;
+    };
+
+    toggle.addEventListener('click', () => setOpen(!wrap.classList.contains('hayne-mobile-menu-open')));
+    close.addEventListener('click', () => setOpen(false));
+    overlay.addEventListener('click', () => setOpen(false));
+
+    navResponsive.addEventListener('click', (event) => {
+      const link = event.target.closest('a');
+      if (!link || link.classList.contains('dropdown-toggle')) return;
+      setOpen(false);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (!wrap.classList.contains('hayne-mobile-menu-open')) return;
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setOpen(false);
+        return;
+      }
+
+      if (event.key !== 'Tab' || window.matchMedia('(min-width: 980px)').matches) return;
+      const focusable = focusableInDrawer();
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      if (window.matchMedia('(min-width: 980px)').matches && wrap.classList.contains('hayne-mobile-menu-open')) {
+        setOpen(false);
+      }
+    });
+  };
+
   const addSidebarFooter = (wrap) => {
     const navbarInner = wrap.querySelector(':scope > .navbar .navbar-inner');
     if (!navbarInner || navbarInner.querySelector('.hayne-sidebar-footer')) return;
@@ -131,6 +238,7 @@
     if (!wrap) return;
 
     enhanceAccount(wrap);
+    enhanceMobileShell(wrap);
     addSidebarFooter(wrap);
 
     const nav = wrap.querySelector('.nav-responsive > ul.nav:not(.pull-right)');
