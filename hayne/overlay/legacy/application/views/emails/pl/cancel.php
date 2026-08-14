@@ -6,7 +6,7 @@ $this->load->helper('hayne_mail');
 $term = ((string) $StartDate === (string) $EndDate)
     ? (string) $StartDate
     : (string) $StartDate . ' – ' . (string) $EndDate;
-$detailsUrl = rtrim((string) $BaseUrl, '/') . '/leaves/requests/' . rawurlencode((string) $LeaveId);
+$detailsUrl = rtrim((string) $BaseUrl, '/') . '/requests/review/' . rawurlencode((string) $LeaveId);
 
 echo hayne_mail_render(
     'Prośba o anulowanie urlopu',
@@ -16,6 +16,7 @@ echo hayne_mail_render(
         ['label' => 'Typ urlopu', 'value' => $Type],
         ['label' => 'Termin', 'value' => $term],
         ['label' => 'Liczba dni', 'value' => $Duration],
+        ['label' => 'Komentarz do anulowania', 'value' => $Comments],
     ],
     'Do akceptacji',
     'pending',

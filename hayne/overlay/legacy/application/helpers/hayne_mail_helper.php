@@ -10,6 +10,33 @@ if (!function_exists('hayne_mail_escape')) {
     }
 }
 
+if (!function_exists('hayne_mail_asset_url')) {
+    function hayne_mail_asset_url(string $ctaUrl, string $assetPath): string
+    {
+        $parts = parse_url($ctaUrl);
+        if (!is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) {
+            return '';
+        }
+
+        $origin = $parts['scheme'] . '://' . $parts['host'];
+        if (!empty($parts['port'])) {
+            $origin .= ':' . $parts['port'];
+        }
+
+        $path = (string) ($parts['path'] ?? '/');
+        $basePath = '';
+        foreach (['/requests/', '/leaves/'] as $marker) {
+            $position = strpos($path, $marker);
+            if ($position !== false) {
+                $basePath = substr($path, 0, $position);
+                break;
+            }
+        }
+
+        return $origin . rtrim($basePath, '/') . '/' . ltrim($assetPath, '/');
+    }
+}
+
 if (!function_exists('hayne_mail_render')) {
     /**
      * Render a compact, email-client-safe HAYNE Leave notification.
@@ -41,39 +68,43 @@ if (!function_exists('hayne_mail_render')) {
                 continue;
             }
             $rowsHtml .= '<tr>'
-                . '<td style="padding:12px 16px;border-top:1px solid #E6E6E6;color:#666666;font-size:13px;line-height:1.4;width:38%;vertical-align:top;">'
+                . '<td style="padding:13px 16px;border-top:1px solid #E6E6E1;color:#74746F;font-size:13px;line-height:1.45;width:34%;vertical-align:top;">'
                 . hayne_mail_escape($label)
                 . '</td>'
-                . '<td style="padding:12px 16px;border-top:1px solid #E6E6E6;color:#111111;font-size:14px;line-height:1.4;font-weight:600;vertical-align:top;">'
-                . hayne_mail_escape($value)
+                . '<td style="padding:13px 16px;border-top:1px solid #E6E6E1;color:#171715;font-size:14px;line-height:1.5;font-weight:600;vertical-align:top;">'
+                . nl2br(hayne_mail_escape($value), false)
                 . '</td>'
                 . '</tr>';
         }
 
         $safeUrl = hayne_mail_escape($ctaUrl);
+        $logoUrl = hayne_mail_asset_url($ctaUrl, 'assets/hayne/logo.png');
+        $logoHtml = $logoUrl !== ''
+            ? '<img src="' . hayne_mail_escape($logoUrl) . '" width="132" alt="HAYNE Leave" style="display:block;width:132px;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;">'
+            : '<span style="color:#111111;font-size:18px;line-height:1;font-weight:700;letter-spacing:.4px;">HAYNE Leave</span>';
 
         return '<!doctype html>'
             . '<html lang="pl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>'
-            . '<body style="margin:0;padding:0;background:#F3F3F3;font-family:Arial,Helvetica,sans-serif;color:#111111;">'
-            . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#F3F3F3;margin:0;padding:0;">'
-            . '<tr><td align="center" style="padding:28px 12px;">'
-            . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:620px;background:#FFFFFF;border-collapse:collapse;">'
-            . '<tr><td style="padding:20px 24px;background:#111111;color:#FFFFFF;font-size:18px;line-height:1;font-weight:700;letter-spacing:.5px;">HAYNE <span style="font-weight:400;opacity:.86;">Leave</span></td></tr>'
-            . '<tr><td style="padding:30px 24px 12px 24px;">'
+            . '<body style="margin:0;padding:0;background:#F5F5F2;font-family:Arial,Helvetica,sans-serif;color:#111111;">'
+            . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#F5F5F2;margin:0;padding:0;">'
+            . '<tr><td align="center" style="padding:32px 12px;">'
+            . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:620px;background:#FFFFFF;border:1px solid #E2E2DC;border-collapse:separate;border-spacing:0;border-radius:14px;overflow:hidden;">'
+            . '<tr><td style="padding:22px 26px;border-bottom:1px solid #ECECE7;background:#FFFFFF;">' . $logoHtml . '</td></tr>'
+            . '<tr><td style="padding:30px 26px 12px 26px;">'
             . '<div style="display:inline-block;padding:6px 10px;border-radius:999px;background:' . $tone['background'] . ';color:' . $tone['foreground'] . ';font-size:12px;line-height:1.2;font-weight:700;">'
             . hayne_mail_escape($statusLabel)
             . '</div>'
-            . '<h1 style="margin:18px 0 10px 0;font-size:25px;line-height:1.25;font-weight:700;color:#111111;">' . hayne_mail_escape($headline) . '</h1>'
-            . '<p style="margin:0;color:#555555;font-size:15px;line-height:1.6;">' . hayne_mail_escape($intro) . '</p>'
+            . '<h1 style="margin:18px 0 10px 0;font-size:26px;line-height:1.22;font-weight:700;color:#171715;letter-spacing:-.3px;">' . hayne_mail_escape($headline) . '</h1>'
+            . '<p style="margin:0;color:#686863;font-size:15px;line-height:1.6;">' . hayne_mail_escape($intro) . '</p>'
             . '</td></tr>'
-            . '<tr><td style="padding:12px 24px 4px 24px;">'
-            . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border:1px solid #E6E6E6;border-collapse:collapse;">'
+            . '<tr><td style="padding:14px 26px 4px 26px;">'
+            . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border:1px solid #E6E6E1;border-collapse:separate;border-spacing:0;border-radius:10px;overflow:hidden;">'
             . $rowsHtml
             . '</table></td></tr>'
-            . '<tr><td style="padding:24px;">'
-            . '<a href="' . $safeUrl . '" style="display:inline-block;background:#111111;color:#FFFFFF;text-decoration:none;font-size:14px;line-height:1;font-weight:700;padding:14px 20px;border-radius:4px;">' . hayne_mail_escape($ctaLabel) . '</a>'
+            . '<tr><td style="padding:24px 26px 30px 26px;">'
+            . '<a href="' . $safeUrl . '" style="display:inline-block;background:#111111;color:#FFFFFF;text-decoration:none;font-size:14px;line-height:1;font-weight:700;padding:15px 20px;border-radius:8px;">' . hayne_mail_escape($ctaLabel) . '</a>'
             . '</td></tr>'
-            . '<tr><td style="padding:18px 24px 24px 24px;border-top:1px solid #E6E6E6;color:#777777;font-size:11px;line-height:1.6;">'
+            . '<tr><td style="padding:18px 26px 22px 26px;border-top:1px solid #ECECE7;color:#8A8A84;font-size:11px;line-height:1.6;background:#FAFAF8;">'
             . 'Wiadomość została wygenerowana automatycznie przez HAYNE Leave. Nie odpowiadaj na tę wiadomość.'
             . '</td></tr>'
             . '</table></td></tr></table></body></html>';

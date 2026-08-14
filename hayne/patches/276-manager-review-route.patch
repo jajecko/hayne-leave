@@ -1,0 +1,6 @@
+--- a/legacy/application/config/routes.php
++++ b/legacy/application/config/routes.php
+@@ -216,2 +216,3 @@
+ $route['requests/export/(:any)'] = 'requests/export/$1';
++$route['requests/review/(:num)'] = 'hayneapprovals/review/$1';
+ $route['requests/accept/(:num)'] = 'requests/accept/$1';
