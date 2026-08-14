@@ -38,7 +38,10 @@ jobs:
         run: |
           mkdir -p artifacts
           for attempt in $(seq 1 60); do
-            if curl -fsS http://127.0.0.1:8080/session/login -o artifacts/login.html; then
+            if curl -fsS \
+              -c artifacts/cookies.txt \
+              http://127.0.0.1:8080/session/login \
+              -o artifacts/login.html; then
               break
             fi
             sleep 2
@@ -55,6 +58,8 @@ jobs:
             --data-urlencode 'language=en' \
             http://127.0.0.1:8080/session/login \
             -o artifacts/home.html
+          test -s artifacts/home.html
+          grep -F 'data-hayne-home="v1"' artifacts/home.html
           curl -fsS -b artifacts/cookies.txt \
             http://127.0.0.1:8080/leaves/create \
             -o artifacts/create.html
