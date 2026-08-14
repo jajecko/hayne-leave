@@ -27,7 +27,8 @@ jobs:
             php -l legacy/application/views/leaves/create.php
             php -l legacy/application/views/requests/review.php
             grep -F "hayne_leave_submission_tokens" legacy/application/controllers/Leaves.php
-            grep -F "hayneSubmissionToken" legacy/application/controllers/Leaves.php
+            grep -F "load->vars" legacy/application/controllers/Leaves.php | grep -F "hayneSubmissionToken"
+            grep -F "load->view" legacy/application/controllers/Leaves.php | grep -F "leaves/create" | grep -F "\$data"
             grep -F "hayne_submission_token" legacy/application/views/leaves/create.php
             grep -F "a.hayne-approval-review__action--accept:visited" assets/hayne/approval-review.css
             grep -F "grid-template-areas:" assets/hayne/approval-review.css
@@ -115,13 +116,22 @@ jobs:
             exit 1
           fi
 
-          if ! grep -Eq 'name="hayne_submission_token" value="[0-9a-f]{48}"' artifacts/create.html; then
-            echo "::error::48-hex HAYNE submission token missing"
+          if ! grep -qF 'id="frmLeaveForm"' artifacts/create.html; then
+            echo "::error::Leave form marker missing"
+            grep -o '<title>[^<]*</title>' artifacts/create.html | head -n 1 || true
             exit 1
           fi
 
-          if ! grep -qF 'id="frmLeaveForm"' artifacts/create.html; then
-            echo "::error::Leave form marker missing"
+          if ! grep -qF 'name="hayne_submission_token"' artifacts/create.html; then
+            echo "::error::HAYNE submission token input missing"
+            exit 1
+          fi
+
+          token_value="$(sed -n 's/.*name="hayne_submission_token" value="\([^"]*\)".*/\1/p' artifacts/create.html | head -n 1)"
+          token_length="${#token_value}"
+          echo "HAYNE submission token length: ${token_length}"
+          if ! printf '%s' "$token_value" | grep -Eq '^[0-9a-f]{48}$'; then
+            echo "::error::HAYNE submission token invalid (length=${token_length})"
             exit 1
           fi
 
