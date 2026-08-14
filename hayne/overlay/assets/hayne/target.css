@@ -757,3 +757,33 @@
     transition: none;
   }
 }
+
+/* MOBILE-01B: real-device shell polish. Keep the logo optically centered and the backdrop below the navbar stacking context. */
+@media (max-width: 979px) {
+  #wrap > .navbar .navbar-inner {
+    position: relative;
+    justify-content: center;
+    padding-right: 70px;
+    padding-left: 70px;
+  }
+
+  #wrap .hayne-navbar-brand {
+    justify-content: center;
+  }
+
+  #wrap .hayne-mobile-menu-toggle {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+  }
+
+  #wrap .hayne-mobile-menu-overlay {
+    z-index: 1020;
+    pointer-events: none;
+  }
+
+  #wrap.hayne-mobile-menu-open .hayne-mobile-menu-overlay {
+    pointer-events: auto;
+  }
+}
