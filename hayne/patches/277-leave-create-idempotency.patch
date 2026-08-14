@@ -46,7 +46,7 @@
 +++ b/legacy/application/views/leaves/create.php
 @@ -20,1 +20,2 @@
          echo form_open('leaves/create', $attributes) ?>
-+        <input type="hidden" name="hayne_submission_token" value="<?php echo html_escape((string) ($hayneSubmissionToken ?? '')); ?>" />
++        <input type="hidden" name="hayne_submission_token" value="<?php echo html_escape((string) ($hayneSubmissionToken ?? '')); ?>" form="frmLeaveForm" />
 @@ -123,1 +124,31 @@
  <script src="<?php echo base_url(); ?>assets/js/bootbox.min.js"></script>
 +<script>
