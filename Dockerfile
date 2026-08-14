@@ -19,12 +19,31 @@ RUN set -eux; \
     rm -rf /src/.git
 
 FROM composer:2 AS composer
+ENV COMPOSER_MAX_PARALLEL_HTTP=4 \
+    COMPOSER_PROCESS_TIMEOUT=900
 WORKDIR /app/legacy
 COPY --from=upstream /src/legacy/composer.json /src/legacy/composer.lock ./
-RUN composer install --ignore-platform-reqs --no-dev --no-interaction --prefer-dist \
-    && composer config allow-plugins.php-http/discovery true \
-    && composer require --ignore-platform-reqs --update-no-dev --no-interaction --prefer-dist --with-all-dependencies \
-      minishlink/web-push:11.0.0 guzzlehttp/guzzle:^7.9
+RUN set -eux; \
+    installed=0; \
+    for attempt in 1 2 3 4 5; do \
+      if composer install --ignore-platform-reqs --no-dev --no-interaction --prefer-dist; then \
+        installed=1; \
+        break; \
+      fi; \
+      sleep $((attempt * 3)); \
+    done; \
+    test "$installed" = "1"; \
+    composer config allow-plugins.php-http/discovery true; \
+    required=0; \
+    for attempt in 1 2 3 4 5; do \
+      if composer require --ignore-platform-reqs --update-no-dev --no-interaction --prefer-dist --with-all-dependencies \
+        minishlink/web-push:11.0.0 guzzlehttp/guzzle:^7.9; then \
+        required=1; \
+        break; \
+      fi; \
+      sleep $((attempt * 3)); \
+    done; \
+    test "$required" = "1"
 
 FROM php:8.5-apache
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -58,6 +77,7 @@ COPY hayne/tools/push-install.php /opt/hayne/push-install.php
 COPY hayne/tools/push-vapid.php /opt/hayne/push-vapid.php
 COPY hayne/patches/ /tmp/hayne-patches/
 RUN set -eux; \
+    chmod 0555 /opt/hayne/ad-sync-preview.php /opt/hayne/ad-sync-plan.php /opt/hayne/tools/calendar-sync.php 2>/dev/null || true; \
     chmod 0555 /opt/hayne/ad-sync-preview.php /opt/hayne/ad-sync-plan.php /opt/hayne/calendar-sync.php /opt/hayne/push-install.php /opt/hayne/push-vapid.php; \
     for patch_file in /tmp/hayne-patches/*.patch; do \
       patch --batch --forward -p1 < "$patch_file"; \
