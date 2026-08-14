@@ -1,0 +1,72 @@
+name: verify-pr-approval-create-hotfix
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/patches/277-leave-create-idempotency.patch'
+      - 'hayne/overlay/assets/hayne/approval-review.css'
+      - 'hayne/overlay/legacy/application/views/requests/review.php'
+      - '.github/workflows/verify-pr-approval-create-hotfix.yml'
+
+jobs:
+  approval-create-hotfix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build and start HAYNE Leave
+        run: docker compose up --build -d
+
+      - name: Verify built source
+        run: |
+          docker compose exec -T jorani sh -ec '
+            php -l legacy/application/controllers/Leaves.php
+            php -l legacy/application/views/leaves/create.php
+            php -l legacy/application/views/requests/review.php
+            grep -F "hayne_leave_submission_tokens" legacy/application/controllers/Leaves.php
+            grep -F "hayneSubmissionToken" legacy/application/controllers/Leaves.php
+            grep -F "hayne_submission_token" legacy/application/views/leaves/create.php
+            grep -F "a.hayne-approval-review__action--accept:visited" assets/hayne/approval-review.css
+            grep -F "grid-template-areas:" assets/hayne/approval-review.css
+            grep -F "approval-review-v2" legacy/application/views/requests/review.php
+          '
+
+      - name: Smoke leave create token
+        run: |
+          mkdir -p artifacts
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/session/login -o artifacts/login.html; then
+              break
+            fi
+            sleep 2
+          done
+          test -s artifacts/login.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/login.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jorani' \
+            --data-urlencode 'password=jorani' \
+            --data-urlencode 'language=en' \
+            http://127.0.0.1:8080/session/login \
+            -o artifacts/home.html
+          curl -fsS -b artifacts/cookies.txt \
+            http://127.0.0.1:8080/leaves/create \
+            -o artifacts/create.html
+          ! grep -F 'A PHP Error was encountered' artifacts/create.html
+          ! grep -F 'Undefined variable $hayneSubmissionToken' artifacts/create.html
+          grep -E 'name="hayne_submission_token" value="[0-9a-f]{48}"' artifacts/create.html
+          grep -F 'id="frmLeaveForm"' artifacts/create.html
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
