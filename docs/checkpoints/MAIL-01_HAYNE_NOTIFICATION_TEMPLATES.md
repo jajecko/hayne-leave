@@ -47,9 +47,12 @@ Approval and rejection remain actions performed inside authenticated HAYNE Leave
 - manager CTAs use the existing request detail route `leaves/requests/{id}`.
 - employee CTAs use the existing own-request detail route `leaves/leaves/{id}`.
 - `274-mail-template-context.patch` adds only `Duration`, `BaseUrl`, and `LeaveId` to the existing employee decision email parser context.
-- `280-mail-delivery-resilience.patch` records `HAYNE Mail SENT` / `HAYNE Mail FAILED` with controller source and a truncated SHA-256 recipient key instead of a clear-text address.
+- existing `272-web-push-mail-bridge.patch` now also records `HAYNE Mail SENT` / `HAYNE Mail FAILED` with controller source and a truncated SHA-256 recipient key instead of a clear-text address.
 - SMTP send exceptions are caught so a mail transport failure does not block the leave workflow. Existing Web Push remains best-effort and is still invoked after the email attempt.
 - `.env.example` documents the verified Exchange Online relay topology without credentials.
+
+## CI correction
+The first PR run failed because a separate `280-mail-delivery-resilience.patch` expected the output of patch 272. The repository patch checker validates every patch independently against a clean Jorani v1.0.4 tree, so dependent patches are invalid even if Docker would apply them sequentially. The resilience change was therefore folded into patch 272 and patch 280 removed.
 
 ## Guardrails
 No changes to:
