@@ -1,24 +1,24 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -269,1 +269,19 @@
-         if ($this->form_validation->run() === FALSE) {
-+            $submissionTokens = $this->session->userdata('hayne_leave_submission_tokens');
-+            if (!is_array($submissionTokens)) {
-+                $submissionTokens = [];
+@@ -257,1 +257,19 @@
+         $data['help'] = $this->help->create_help_link('global_link_doc_page_request_leave');
++        $submissionTokens = $this->session->userdata('hayne_leave_submission_tokens');
++        if (!is_array($submissionTokens)) {
++            $submissionTokens = [];
++        }
++        $now = time();
++        foreach ($submissionTokens as $token => $issuedAt) {
++            if (!is_int($issuedAt) || ($now - $issuedAt) > 7200) {
++                unset($submissionTokens[$token]);
 +            }
-+            $now = time();
-+            foreach ($submissionTokens as $token => $issuedAt) {
-+                if (!is_int($issuedAt) || ($now - $issuedAt) > 7200) {
-+                    unset($submissionTokens[$token]);
-+                }
-+            }
-+            while (count($submissionTokens) >= 8) {
-+                array_shift($submissionTokens);
-+            }
-+            $submissionToken = bin2hex(random_bytes(24));
-+            $submissionTokens[$submissionToken] = $now;
-+            $this->session->set_userdata('hayne_leave_submission_tokens', $submissionTokens);
-+            $data['hayneSubmissionToken'] = $submissionToken;
++        }
++        while (count($submissionTokens) >= 8) {
++            array_shift($submissionTokens);
++        }
++        $submissionToken = bin2hex(random_bytes(24));
++        $submissionTokens[$submissionToken] = $now;
++        $this->session->set_userdata('hayne_leave_submission_tokens', $submissionTokens);
++        $data['hayneSubmissionToken'] = $submissionToken;
 +
 @@ -283,2 +301,18 @@
          } else {
@@ -43,7 +43,7 @@
 +++ b/legacy/application/views/leaves/create.php
 @@ -20,1 +20,2 @@
          echo form_open('leaves/create', $attributes) ?>
-+        <input type="hidden" name="hayne_submission_token" value="<?php echo html_escape($hayneSubmissionToken); ?>" />
++        <input type="hidden" name="hayne_submission_token" value="<?php echo html_escape((string) ($hayneSubmissionToken ?? '')); ?>" />
 @@ -123,1 +124,31 @@
  <script src="<?php echo base_url(); ?>assets/js/bootbox.min.js"></script>
 +<script>
