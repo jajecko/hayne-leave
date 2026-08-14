@@ -19,31 +19,12 @@ RUN set -eux; \
     rm -rf /src/.git
 
 FROM composer:2 AS composer
-ENV COMPOSER_MAX_PARALLEL_HTTP=4 \
-    COMPOSER_PROCESS_TIMEOUT=900
 WORKDIR /app/legacy
 COPY --from=upstream /src/legacy/composer.json /src/legacy/composer.lock ./
-RUN set -eux; \
-    installed=0; \
-    for attempt in 1 2 3 4 5; do \
-      if composer install --ignore-platform-reqs --no-dev --no-interaction --prefer-dist; then \
-        installed=1; \
-        break; \
-      fi; \
-      sleep $((attempt * 3)); \
-    done; \
-    test "$installed" = "1"; \
-    composer config allow-plugins.php-http/discovery true; \
-    required=0; \
-    for attempt in 1 2 3 4 5; do \
-      if composer require --ignore-platform-reqs --update-no-dev --no-interaction --prefer-dist --with-all-dependencies \
-        minishlink/web-push:11.0.0 guzzlehttp/guzzle:^7.9; then \
-        required=1; \
-        break; \
-      fi; \
-      sleep $((attempt * 3)); \
-    done; \
-    test "$required" = "1"
+RUN composer install --ignore-platform-reqs --no-dev --no-interaction --prefer-dist \
+    && composer config allow-plugins.php-http/discovery true \
+    && composer require --ignore-platform-reqs --update-no-dev --no-interaction --prefer-dist --with-all-dependencies \
+      minishlink/web-push:11.0.0 guzzlehttp/guzzle:^7.9
 
 FROM php:8.5-apache
 RUN apt-get update && apt-get install -y --no-install-recommends \
