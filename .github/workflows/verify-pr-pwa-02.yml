@@ -12,19 +12,51 @@ jobs:
       - name: Prepare environment
         run: cp .env.example .env
 
-      - name: Verify icon bundle source
+      - name: Verify committed icon assets
         run: |
-          test -s hayne/assets/hayne-leave-icons.tar.gz
-          base64 -d hayne/assets/hayne-leave-icons.tar.gz > /tmp/hayne-leave-icons.tar.gz
-          tar -tzf /tmp/hayne-leave-icons.tar.gz | grep -F './favicon.ico'
-          tar -tzf /tmp/hayne-leave-icons.tar.gz | grep -F './favicon-16x16.png'
-          tar -tzf /tmp/hayne-leave-icons.tar.gz | grep -F './favicon-32x32.png'
-          tar -tzf /tmp/hayne-leave-icons.tar.gz | grep -F './apple-touch-icon.png'
-          tar -tzf /tmp/hayne-leave-icons.tar.gz | grep -F './pwa-icon-192.png'
-          tar -tzf /tmp/hayne-leave-icons.tar.gz | grep -F './pwa-icon-512.png'
-          tar -tzf /tmp/hayne-leave-icons.tar.gz | grep -F './pwa-icon-maskable-192.png'
-          tar -tzf /tmp/hayne-leave-icons.tar.gz | grep -F './pwa-icon-maskable-512.png'
-          tar -tzf /tmp/hayne-leave-icons.tar.gz | grep -F './notification-badge-128.png'
+          set -e
+          for icon in \
+            favicon.ico \
+            favicon-16x16.png \
+            favicon-32x32.png \
+            apple-touch-icon.png \
+            pwa-icon-192.png \
+            pwa-icon-512.png \
+            pwa-icon-maskable-192.png \
+            pwa-icon-maskable-512.png \
+            notification-badge-128.png
+          do
+            test -s "hayne/overlay/assets/hayne/$icon"
+          done
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+
+          root = Path('hayne/overlay/assets/hayne')
+          expected = {
+              'favicon-16x16.png': (16, 16),
+              'favicon-32x32.png': (32, 32),
+              'apple-touch-icon.png': (180, 180),
+              'pwa-icon-192.png': (192, 192),
+              'pwa-icon-512.png': (512, 512),
+              'pwa-icon-maskable-192.png': (192, 192),
+              'pwa-icon-maskable-512.png': (512, 512),
+              'notification-badge-128.png': (128, 128),
+          }
+          signature = b'\x89PNG\r\n\x1a\n'
+          for name, dims in expected.items():
+              data = (root / name).read_bytes()
+              assert data[:8] == signature, f'{name}: invalid PNG signature'
+              width, height = struct.unpack('>II', data[16:24])
+              assert (width, height) == dims, f'{name}: {(width, height)} != {dims}'
+
+          ico = (root / 'favicon.ico').read_bytes()
+          reserved, kind, count = struct.unpack('<HHH', ico[:6])
+          assert (reserved, kind) == (0, 1), 'favicon.ico: invalid ICO header'
+          assert count >= 2, 'favicon.ico: expected at least 16x16 and 32x32 entries'
+          print('Icon source validation PASS')
+          PY
 
       - name: Build HAYNE Leave with Web Push dependencies
         run: docker compose build jorani
@@ -41,6 +73,8 @@ jobs:
             grep -F "hayne_push_send_for_mail" legacy/application/helpers/tools_helper.php
             grep -F "assets/hayne/push.css" legacy/application/views/templates/header.php
             grep -F "assets/hayne/favicon.ico" legacy/application/views/templates/header.php
+            grep -F "assets/hayne/favicon-32x32.png" legacy/application/views/templates/header.php
+            grep -F "assets/hayne/favicon-16x16.png" legacy/application/views/templates/header.php
             grep -F "assets/hayne/apple-touch-icon.png" legacy/application/views/templates/header.php
             test -s manifest.webmanifest
             test -s service-worker.js
@@ -55,6 +89,7 @@ jobs:
             test -s assets/hayne/notification-badge-128.png
             grep -F "pwa-icon-192.png" manifest.webmanifest
             grep -F "pwa-icon-maskable-512.png" manifest.webmanifest
+            grep -F "pwa-icon-192.png" service-worker.js
             grep -F "notification-badge-128.png" service-worker.js
             grep -F "self.addEventListener('\''push'\''" service-worker.js
             grep -F "self.addEventListener('\''notificationclick'\''" service-worker.js
@@ -73,7 +108,10 @@ jobs:
           done
           curl -fsS http://127.0.0.1:8080/service-worker.js >/dev/null
           curl -fsS http://127.0.0.1:8080/manifest.webmanifest >/dev/null
+          curl -fsS http://127.0.0.1:8080/assets/hayne/favicon.ico >/dev/null
           curl -fsS http://127.0.0.1:8080/assets/hayne/pwa-icon-192.png >/dev/null
+          curl -fsS http://127.0.0.1:8080/assets/hayne/pwa-icon-maskable-512.png >/dev/null
+          curl -fsS http://127.0.0.1:8080/assets/hayne/notification-badge-128.png >/dev/null
           docker compose exec -T jorani php /opt/hayne/push-install.php
 
       - name: Verify authenticated push settings stay disabled without secrets
