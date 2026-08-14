@@ -16,6 +16,7 @@ echo hayne_mail_render(
         ['label' => 'Typ urlopu', 'value' => $Type],
         ['label' => 'Termin', 'value' => $term],
         ['label' => 'Liczba dni', 'value' => $Duration],
+        ['label' => 'Komentarz do anulowania', 'value' => $Comments],
     ],
     'Do akceptacji',
     'pending',
