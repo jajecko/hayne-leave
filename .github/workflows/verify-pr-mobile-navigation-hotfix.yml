@@ -1,0 +1,68 @@
+name: verify-pr-mobile-navigation-hotfix
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/overlay/assets/hayne/mobile-navigation-hotfix.css'
+      - 'hayne/overlay/assets/hayne/mobile-navigation-hotfix.js'
+      - 'hayne/patches/010-header-branding.patch'
+      - '.github/workflows/verify-pr-mobile-navigation-hotfix.yml'
+
+jobs:
+  mobile-navigation-hotfix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify scoped source
+        run: |
+          node --check hayne/overlay/assets/hayne/mobile-navigation-hotfix.js
+          grep -F '@media (max-width: 979px)' hayne/overlay/assets/hayne/mobile-navigation-hotfix.css
+          grep -F 'float: none;' hayne/overlay/assets/hayne/mobile-navigation-hotfix.css
+          grep -F 'touch-action: manipulation;' hayne/overlay/assets/hayne/mobile-navigation-hotfix.css
+          grep -F "dropdown-menu a[href]" hayne/overlay/assets/hayne/mobile-navigation-hotfix.js
+          grep -F 'event.stopPropagation();' hayne/overlay/assets/hayne/mobile-navigation-hotfix.js
+          grep -F 'mobile-navigation-hotfix.css' hayne/patches/010-header-branding.patch
+          grep -F 'mobile-navigation-hotfix.js' hayne/patches/010-header-branding.patch
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+
+      - name: Build and start HAYNE Leave
+        run: docker compose up --build -d
+
+      - name: Verify built runtime
+        run: |
+          docker compose exec -T jorani sh -ec '
+            test -f assets/hayne/mobile-navigation-hotfix.css
+            test -f assets/hayne/mobile-navigation-hotfix.js
+            grep -F "mobile-navigation-hotfix.css" legacy/application/views/templates/header.php
+            grep -F "mobile-navigation-hotfix.js" legacy/application/views/templates/header.php
+            grep -F "float: none;" assets/hayne/mobile-navigation-hotfix.css
+            grep -F "event.stopPropagation();" assets/hayne/mobile-navigation-hotfix.js
+          '
+
+      - name: Smoke rendered asset references
+        run: |
+          ready=0
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/session/login -o /tmp/login.html; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          test "$ready" -eq 1
+          grep -F 'assets/hayne/mobile-navigation-hotfix.css' /tmp/login.html
+          grep -F 'assets/hayne/mobile-navigation-hotfix.js' /tmp/login.html
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
