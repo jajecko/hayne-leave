@@ -1,7 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -269,1 +269,19 @@
-         if ($this->form_validation->run() === FALSE) {
+@@ -274,3 +274,21 @@
 +            $submissionTokens = $this->session->userdata('hayne_leave_submission_tokens');
 +            if (!is_array($submissionTokens)) {
 +                $submissionTokens = [];
@@ -20,6 +19,10 @@
 +            $this->session->set_userdata('hayne_leave_submission_tokens', $submissionTokens);
 +            $data['hayneSubmissionToken'] = $submissionToken;
 +
+             $this->load->view('templates/header', $data);
+             $this->load->view('menu/index', $data);
+-            $this->load->view('leaves/create');
++            $this->load->view('leaves/create', $data);
 @@ -283,2 +301,18 @@
          } else {
 +            $submissionToken = (string) $this->input->post('hayne_submission_token', TRUE);
@@ -43,7 +46,7 @@
 +++ b/legacy/application/views/leaves/create.php
 @@ -20,1 +20,2 @@
          echo form_open('leaves/create', $attributes) ?>
-+        <input type="hidden" name="hayne_submission_token" value="<?php echo html_escape($hayneSubmissionToken); ?>" />
++        <input type="hidden" name="hayne_submission_token" value="<?php echo html_escape((string) ($hayneSubmissionToken ?? '')); ?>" />
 @@ -123,1 +124,31 @@
  <script src="<?php echo base_url(); ?>assets/js/bootbox.min.js"></script>
 +<script>

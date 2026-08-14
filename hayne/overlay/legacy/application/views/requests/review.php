@@ -29,7 +29,7 @@ if (isset($leave['comments']) && is_object($leave['comments']) && isset($leave['
 ?>
 <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/approval-review.css">
 
-<main class="hayne-approval-review" data-hayne-view="approval-review-v1">
+<main class="hayne-approval-review" data-hayne-view="approval-review-v2">
     <a class="hayne-approval-review__back" href="<?php echo base_url(); ?>requests/requested">← Wróć do listy</a>
 
     <header class="hayne-approval-review__header">
@@ -43,63 +43,31 @@ if (isset($leave['comments']) && is_object($leave['comments']) && isset($leave['
     </header>
 
     <div class="hayne-approval-review__layout">
-        <section class="hayne-approval-review__main">
-            <section class="hayne-approval-review__card">
-                <h2>Szczegóły wniosku</h2>
-                <div class="hayne-approval-review__summary">
-                    <div class="hayne-approval-review__item">
-                        <span>Pracownik</span>
-                        <strong><?php echo html_escape($name); ?></strong>
-                    </div>
-                    <div class="hayne-approval-review__item">
-                        <span>Rodzaj nieobecności</span>
-                        <strong><?php echo html_escape($leave['type_name']); ?></strong>
-                    </div>
-                    <div class="hayne-approval-review__item">
-                        <span>Termin</span>
-                        <strong><?php echo html_escape($term); ?></strong>
-                    </div>
-                    <div class="hayne-approval-review__item">
-                        <span>Liczba dni</span>
-                        <strong><?php echo html_escape($duration); ?> dni</strong>
-                    </div>
+        <section class="hayne-approval-review__card hayne-approval-review__details">
+            <h2>Szczegóły wniosku</h2>
+            <div class="hayne-approval-review__summary">
+                <div class="hayne-approval-review__item">
+                    <span>Pracownik</span>
+                    <strong><?php echo html_escape($name); ?></strong>
                 </div>
-
-                <div class="hayne-approval-review__reason">
-                    <span>Uzasadnienie</span>
-                    <p><?php echo trim((string) $leave['cause']) !== '' ? nl2br(html_escape($leave['cause']), false) : 'Nie podano uzasadnienia.'; ?></p>
+                <div class="hayne-approval-review__item">
+                    <span>Rodzaj nieobecności</span>
+                    <strong><?php echo html_escape($leave['type_name']); ?></strong>
                 </div>
-            </section>
+                <div class="hayne-approval-review__item">
+                    <span>Termin</span>
+                    <strong><?php echo html_escape($term); ?></strong>
+                </div>
+                <div class="hayne-approval-review__item">
+                    <span>Liczba dni</span>
+                    <strong><?php echo html_escape($duration); ?> dni</strong>
+                </div>
+            </div>
 
-            <section class="hayne-approval-review__card hayne-approval-review__history">
-                <h2>Historia i komentarze</h2>
-                <?php if (empty($historyItems)) { ?>
-                    <p class="hayne-approval-review__empty">Brak dodatkowych komentarzy.</p>
-                <?php } else { ?>
-                    <div class="hayne-approval-review__timeline">
-                        <?php foreach ($historyItems as $item) {
-                            $itemDate = !empty($item->date) ? (new DateTime($item->date))->format(lang('global_date_format')) : '';
-                            if ($item->type === 'comment') { ?>
-                                <article class="hayne-approval-review__timeline-item">
-                                    <div class="hayne-approval-review__timeline-meta">
-                                        <strong><?php echo html_escape($item->author_name ?? 'Użytkownik'); ?></strong>
-                                        <?php if ($itemDate !== '') { ?><span><?php echo html_escape($itemDate); ?></span><?php } ?>
-                                    </div>
-                                    <p><?php echo nl2br(html_escape($item->value ?? ''), false); ?></p>
-                                </article>
-                            <?php } elseif ($item->type === 'change') { ?>
-                                <article class="hayne-approval-review__timeline-item hayne-approval-review__timeline-item--change">
-                                    <div class="hayne-approval-review__timeline-meta">
-                                        <strong>Zmiana statusu</strong>
-                                        <?php if ($itemDate !== '') { ?><span><?php echo html_escape($itemDate); ?></span><?php } ?>
-                                    </div>
-                                    <p><?php echo html_escape($item->status_label ?? ''); ?></p>
-                                </article>
-                            <?php }
-                        } ?>
-                    </div>
-                <?php } ?>
-            </section>
+            <div class="hayne-approval-review__reason">
+                <span>Uzasadnienie</span>
+                <p><?php echo trim((string) $leave['cause']) !== '' ? nl2br(html_escape($leave['cause']), false) : 'Nie podano uzasadnienia.'; ?></p>
+            </div>
         </section>
 
         <aside class="hayne-approval-review__decision">
@@ -112,11 +80,15 @@ if (isset($leave['comments']) && is_object($leave['comments']) && isset($leave['
                     <a class="hayne-approval-review__action hayne-approval-review__action--accept"
                        href="<?php echo base_url(); ?>requests/accept/<?php echo (int) $leave['id']; ?>?source=requests/requested"
                        onclick="if (this.dataset.busy === '1') return false; this.dataset.busy = '1'; this.setAttribute('aria-disabled', 'true');">
-                        Akceptuj wniosek
+                        <i class="mdi mdi-check" aria-hidden="true"></i>
+                        <span>Akceptuj wniosek</span>
                     </a>
 
                     <details class="hayne-approval-review__reject">
-                        <summary>Odrzuć wniosek</summary>
+                        <summary>
+                            <i class="mdi mdi-close" aria-hidden="true"></i>
+                            <span>Odrzuć wniosek</span>
+                        </summary>
                         <div class="hayne-approval-review__reject-panel">
                             <?php echo form_open('requests/reject/' . (int) $leave['id'] . '?source=requests/requested', ['class' => 'hayne-approval-review__reject-form']); ?>
                                 <label for="hayneRejectComment">Komentarz do odrzucenia<?php echo $mandatoryCommentOnReject ? ' *' : ''; ?></label>
@@ -133,11 +105,15 @@ if (isset($leave['comments']) && is_object($leave['comments']) && isset($leave['
                     <a class="hayne-approval-review__action hayne-approval-review__action--accept"
                        href="<?php echo base_url(); ?>requests/cancellation/accept/<?php echo (int) $leave['id']; ?>?source=requests/requested"
                        onclick="if (this.dataset.busy === '1') return false; this.dataset.busy = '1'; this.setAttribute('aria-disabled', 'true');">
-                        Zatwierdź anulowanie
+                        <i class="mdi mdi-check" aria-hidden="true"></i>
+                        <span>Zatwierdź anulowanie</span>
                     </a>
 
                     <details class="hayne-approval-review__reject">
-                        <summary>Odrzuć anulowanie</summary>
+                        <summary>
+                            <i class="mdi mdi-close" aria-hidden="true"></i>
+                            <span>Odrzuć anulowanie</span>
+                        </summary>
                         <div class="hayne-approval-review__reject-panel">
                             <?php echo form_open('requests/cancellation/reject/' . (int) $leave['id'] . '?source=requests/requested', ['class' => 'hayne-approval-review__reject-form']); ?>
                                 <label for="hayneCancellationRejectComment">Komentarz<?php echo $mandatoryCommentOnReject ? ' *' : ''; ?></label>
@@ -154,6 +130,36 @@ if (isset($leave['comments']) && is_object($leave['comments']) && isset($leave['
                 <?php } ?>
             </section>
         </aside>
+
+        <section class="hayne-approval-review__card hayne-approval-review__history">
+            <h2>Historia i komentarze</h2>
+            <?php if (empty($historyItems)) { ?>
+                <p class="hayne-approval-review__empty">Brak dodatkowych komentarzy.</p>
+            <?php } else { ?>
+                <div class="hayne-approval-review__timeline">
+                    <?php foreach ($historyItems as $item) {
+                        $itemDate = !empty($item->date) ? (new DateTime($item->date))->format(lang('global_date_format')) : '';
+                        if ($item->type === 'comment') { ?>
+                            <article class="hayne-approval-review__timeline-item">
+                                <div class="hayne-approval-review__timeline-meta">
+                                    <strong><?php echo html_escape($item->author_name ?? 'Użytkownik'); ?></strong>
+                                    <?php if ($itemDate !== '') { ?><span><?php echo html_escape($itemDate); ?></span><?php } ?>
+                                </div>
+                                <p><?php echo nl2br(html_escape($item->value ?? ''), false); ?></p>
+                            </article>
+                        <?php } elseif ($item->type === 'change') { ?>
+                            <article class="hayne-approval-review__timeline-item hayne-approval-review__timeline-item--change">
+                                <div class="hayne-approval-review__timeline-meta">
+                                    <strong>Zmiana statusu</strong>
+                                    <?php if ($itemDate !== '') { ?><span><?php echo html_escape($itemDate); ?></span><?php } ?>
+                                </div>
+                                <p><?php echo html_escape($item->status_label ?? ''); ?></p>
+                            </article>
+                        <?php }
+                    } ?>
+                </div>
+            <?php } ?>
+        </section>
     </div>
 </main>
 

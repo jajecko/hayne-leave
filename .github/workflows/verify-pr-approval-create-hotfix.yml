@@ -1,0 +1,146 @@
+name: verify-pr-approval-create-hotfix
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/patches/277-leave-create-idempotency.patch'
+      - 'hayne/overlay/assets/hayne/approval-review.css'
+      - 'hayne/overlay/legacy/application/views/requests/review.php'
+      - '.github/workflows/verify-pr-approval-create-hotfix.yml'
+
+jobs:
+  approval-create-hotfix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build and start HAYNE Leave
+        run: docker compose up --build -d
+
+      - name: Verify built source
+        run: |
+          docker compose exec -T jorani sh -ec '
+            php -l legacy/application/controllers/Leaves.php
+            php -l legacy/application/views/leaves/create.php
+            php -l legacy/application/views/requests/review.php
+            grep -F "hayne_leave_submission_tokens" legacy/application/controllers/Leaves.php
+            grep -F "bin2hex(random_bytes(24))" legacy/application/controllers/Leaves.php
+            grep -F "load->view" legacy/application/controllers/Leaves.php | grep -F "leaves/create" | grep -F "\$data"
+            grep -F "hayne_submission_token" legacy/application/views/leaves/create.php
+            grep -F "a.hayne-approval-review__action--accept:visited" assets/hayne/approval-review.css
+            grep -F "grid-template-areas:" assets/hayne/approval-review.css
+            grep -F "approval-review-v2" legacy/application/views/requests/review.php
+          '
+
+      - name: Smoke leave create token
+        run: |
+          mkdir -p artifacts
+
+          login_ready=0
+          for attempt in $(seq 1 60); do
+            if curl -fsS \
+              -c artifacts/cookies.txt \
+              http://localhost:8080/session/login \
+              -o artifacts/login.html; then
+              login_ready=1
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$login_ready" -ne 1 ] || [ ! -s artifacts/login.html ]; then
+            echo "::error::Login page was not downloaded"
+            exit 1
+          fi
+
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/login.html | head -n 1)"
+          if [ -z "$csrf_token" ]; then
+            echo "::error::CSRF token missing from login page"
+            exit 1
+          fi
+
+          login_meta="$(curl -sS -L \
+            -c artifacts/cookies.txt \
+            -b artifacts/cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jorani' \
+            --data-urlencode 'password=jorani' \
+            --data-urlencode 'language=en' \
+            -o artifacts/home.html \
+            -w '%{http_code} %{url_effective}' \
+            http://localhost:8080/session/login)" || {
+              echo "::error::Login POST failed"
+              exit 1
+            }
+          echo "Login POST: $login_meta"
+
+          if [ ! -s artifacts/home.html ]; then
+            echo "::error::Authenticated home page is empty"
+            exit 1
+          fi
+
+          if ! grep -qF 'data-hayne-home="v1"' artifacts/home.html; then
+            echo "::error::Authenticated HAYNE home marker missing"
+            grep -o '<title>[^<]*</title>' artifacts/home.html | head -n 1 || true
+            if grep -q 'name="login"' artifacts/home.html; then
+              echo "DIAG: login form is still present after login POST"
+            fi
+            exit 1
+          fi
+
+          create_meta="$(curl -sS \
+            -b artifacts/cookies.txt \
+            -o artifacts/create.html \
+            -w '%{http_code} %{url_effective}' \
+            http://localhost:8080/leaves/create)" || {
+              echo "::error::GET /leaves/create failed"
+              exit 1
+            }
+          echo "Create page: $create_meta"
+
+          if [ ! -s artifacts/create.html ]; then
+            echo "::error::Leave-create page is empty"
+            exit 1
+          fi
+
+          if grep -qF 'A PHP Error was encountered' artifacts/create.html; then
+            echo "::error::PHP error rendered on /leaves/create"
+            exit 1
+          fi
+
+          if grep -qF 'Undefined variable $hayneSubmissionToken' artifacts/create.html; then
+            echo "::error::hayneSubmissionToken is undefined"
+            exit 1
+          fi
+
+          if ! grep -qF 'id="frmLeaveForm"' artifacts/create.html; then
+            echo "::error::Leave form marker missing"
+            grep -o '<title>[^<]*</title>' artifacts/create.html | head -n 1 || true
+            exit 1
+          fi
+
+          if ! grep -qF 'name="hayne_submission_token"' artifacts/create.html; then
+            echo "::error::HAYNE submission token input missing"
+            exit 1
+          fi
+
+          token_value="$(sed -n 's/.*name="hayne_submission_token" value="\([^"]*\)".*/\1/p' artifacts/create.html | head -n 1)"
+          token_length="${#token_value}"
+          echo "HAYNE submission token length: ${token_length}"
+          if ! printf '%s' "$token_value" | grep -Eq '^[0-9a-f]{48}$'; then
+            echo "::error::HAYNE submission token invalid (length=${token_length})"
+            exit 1
+          fi
+
+          echo "MAIL-02 leave-create smoke PASS"
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
