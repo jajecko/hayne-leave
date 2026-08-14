@@ -1,0 +1,12 @@
+--- a/legacy/application/controllers/Requests.php
++++ b/legacy/application/controllers/Requests.php
+@@ -874,6 +874,9 @@ class Requests extends CI_Controller
+             'EndDateType' => $lang_mail->line($leave['enddatetype']),
+             'Cause' => $leave['cause'],
+             'Type' => $leave['type_name'],
++            'Duration' => $leave['duration'],
++            'BaseUrl' => $this->config->base_url(),
++            'LeaveId' => $leave['id'],
+             'Comments' => $comment
+         ];
+         $this->load->library('parser');
