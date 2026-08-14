@@ -330,6 +330,7 @@
   #wrap > .navbar .navbar-inner {
     height: auto;
     min-height: 0;
+    flex-direction: row;
     padding: 14px 16px;
   }
 
