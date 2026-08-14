@@ -27,7 +27,7 @@ jobs:
             php -l legacy/application/views/leaves/create.php
             php -l legacy/application/views/requests/review.php
             grep -F "hayne_leave_submission_tokens" legacy/application/controllers/Leaves.php
-            grep -F "load->vars" legacy/application/controllers/Leaves.php | grep -F "hayneSubmissionToken"
+            grep -F "bin2hex(random_bytes(24))" legacy/application/controllers/Leaves.php
             grep -F "load->view" legacy/application/controllers/Leaves.php | grep -F "leaves/create" | grep -F "\$data"
             grep -F "hayne_submission_token" legacy/application/views/leaves/create.php
             grep -F "a.hayne-approval-review__action--accept:visited" assets/hayne/approval-review.css
