@@ -1,6 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -257,1 +257,19 @@
+@@ -257,1 +257,20 @@
          $data['help'] = $this->help->create_help_link('global_link_doc_page_request_leave');
 +        $submissionTokens = $this->session->userdata('hayne_leave_submission_tokens');
 +        if (!is_array($submissionTokens)) {
@@ -19,11 +19,12 @@
 +        $submissionTokens[$submissionToken] = $now;
 +        $this->session->set_userdata('hayne_leave_submission_tokens', $submissionTokens);
 +        $data['hayneSubmissionToken'] = $submissionToken;
++        $this->load->vars('hayneSubmissionToken', $submissionToken);
 +
-@@ -276,1 +294,1 @@
+@@ -276,1 +295,1 @@
 -            $this->load->view('leaves/create');
 +            $this->load->view('leaves/create', $data);
-@@ -283,2 +301,18 @@
+@@ -283,2 +302,18 @@
          } else {
 +            $submissionToken = (string) $this->input->post('hayne_submission_token', TRUE);
 +            $submissionTokens = $this->session->userdata('hayne_leave_submission_tokens');
