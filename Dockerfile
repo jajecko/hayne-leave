@@ -40,7 +40,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && docker-php-ext-configure zip \
     && docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/ \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" curl gd ldap mbstring zip pdo pdo_mysql \
+    && docker-php-ext-install -j"$(nproc)" bcmath curl gd ldap mbstring zip pdo pdo_mysql \
     && a2enmod rewrite headers deflate filter \
     && mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
     && rm -rf /var/lib/apt/lists/*

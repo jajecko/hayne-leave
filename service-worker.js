@@ -23,8 +23,8 @@ self.addEventListener('push', (event) => {
   const title = payload.title || 'HAYNE Leave';
   const options = {
     body: payload.body || 'Masz nowe powiadomienie.',
-    icon: './assets/hayne/favicon.svg',
-    badge: './assets/hayne/favicon.svg',
+    icon: './assets/hayne/pwa-icon-192.png',
+    badge: './assets/hayne/notification-badge-128.png',
     tag: payload.tag || 'hayne-leave',
     renotify: false,
     data: {
