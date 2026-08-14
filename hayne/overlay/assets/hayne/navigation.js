@@ -138,7 +138,7 @@
     drawerHeader.className = 'hayne-mobile-drawer-header';
     drawerHeader.appendChild(drawerTitle);
     drawerHeader.appendChild(close);
-    navResponsive.prepend(drawerHeader);
+    navResponsive.appendChild(drawerHeader);
 
     const overlay = document.createElement('button');
     overlay.type = 'button';
