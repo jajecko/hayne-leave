@@ -1,18 +1,16 @@
 --- a/legacy/application/config/routes.php
 +++ b/legacy/application/config/routes.php
-@@ -214,6 +214,7 @@ $route['requests/counters/(:num)'] = 'requests/counters/$1';
- $route['requests/counters/(:num)/(:num)'] = 'requests/counters/$1/$2';
+@@ -216,2 +216,3 @@
  $route['requests/export/(:any)'] = 'requests/export/$1';
 +$route['requests/review/(:num)'] = 'requests/review/$1';
  $route['requests/accept/(:num)'] = 'requests/accept/$1';
- $route['requests/reject/(:num)'] = 'requests/reject/$1';
- $route['requests/cancellation/accept/(:num)'] = 'requests/acceptCancellation/$1';
 --- a/legacy/application/controllers/Requests.php
 +++ b/legacy/application/controllers/Requests.php
-@@ -73,6 +73,59 @@ class Requests extends CI_Controller
+@@ -78,3 +78,56 @@
+         $this->load->view('requests/index', $data);
          $this->load->view('templates/footer');
      }
- 
++
 +    /**
 +     * Display a manager-focused decision view for one leave request.
 +     * Existing accept/reject endpoints remain the only workflow mutation path.
@@ -65,7 +63,3 @@
 +        $this->load->view('requests/review', $data);
 +        $this->load->view('templates/footer');
 +    }
-+
-     /**
-      * Accept a leave request
-      * @param int $id leave request identifier
