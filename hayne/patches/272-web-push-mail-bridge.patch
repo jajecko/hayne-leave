@@ -1,9 +1,21 @@
 --- a/legacy/application/helpers/tools_helper.php
 +++ b/legacy/application/helpers/tools_helper.php
-@@ -155,6 +155,13 @@ function sendMailByWrapper(CI_Controller $controller, string $subject, string $message, string $to, ?string $cc = NULL): void
+@@ -155,6 +155,24 @@ function sendMailByWrapper(CI_Controller $controller, string $subject, string $message, string $to, ?string $cc = NULL): void
      }
      $controller->email->message($message);
-     $controller->email->send();
+-    $controller->email->send();
++    $mailSource = strtolower(get_class($controller));
++    $recipientKey = substr(hash('sha256', strtolower(trim($to))), 0, 12);
++    try {
++        $sent = $controller->email->send();
++        if ($sent) {
++            log_message('debug', 'HAYNE Mail SENT source=' . $mailSource . ' recipient=' . $recipientKey);
++        } else {
++            log_message('error', 'HAYNE Mail FAILED source=' . $mailSource . ' recipient=' . $recipientKey);
++        }
++    } catch (Throwable $error) {
++        log_message('error', 'HAYNE Mail FAILED source=' . $mailSource . ' recipient=' . $recipientKey . ' error=' . get_class($error));
++    }
 +    try {
 +        $controller->load->helper('hayne_push');
 +        hayne_push_send_for_mail($controller, $to, $cc);
