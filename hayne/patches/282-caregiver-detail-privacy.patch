@@ -1,7 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -174,1 +174,10 @@
-         } //Current employee
+@@ -175,1 +175,10 @@
 +        $hayneCanViewCaregiverDetails =
 +            ((int) $data['leave']['employee'] === (int) $this->user_id) ||
 +            $this->is_hr ||
