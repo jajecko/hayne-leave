@@ -50,8 +50,9 @@ jobs:
               legacy/application/views/requests/review.php \
               legacy/application/views/emails/pl/request.php \
               legacy/application/views/emails/pl/cancel.php; do
-              if ! php -l "$file"; then
-                echo "::error file=$file::PHP lint failed in final HAYNE runtime: $file"
+              if ! lint_output=$(php -l "$file" 2>&1); then
+                lint_output=$(printf "%s" "$lint_output" | tr "\n" " ")
+                echo "::error file=$file::$lint_output"
                 exit 1
               fi
             done
