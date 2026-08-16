@@ -10,33 +10,6 @@ if (!function_exists('hayne_mail_escape')) {
     }
 }
 
-if (!function_exists('hayne_mail_asset_url')) {
-    function hayne_mail_asset_url(string $ctaUrl, string $assetPath): string
-    {
-        $parts = parse_url($ctaUrl);
-        if (!is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) {
-            return '';
-        }
-
-        $origin = $parts['scheme'] . '://' . $parts['host'];
-        if (!empty($parts['port'])) {
-            $origin .= ':' . $parts['port'];
-        }
-
-        $path = (string) ($parts['path'] ?? '/');
-        $basePath = '';
-        foreach (['/requests/', '/leaves/'] as $marker) {
-            $position = strpos($path, $marker);
-            if ($position !== false) {
-                $basePath = substr($path, 0, $position);
-                break;
-            }
-        }
-
-        return $origin . rtrim($basePath, '/') . '/' . ltrim($assetPath, '/');
-    }
-}
-
 if (!function_exists('hayne_mail_render')) {
     /**
      * Render a compact, email-client-safe HAYNE Leave notification.
@@ -78,10 +51,16 @@ if (!function_exists('hayne_mail_render')) {
         }
 
         $safeUrl = hayne_mail_escape($ctaUrl);
-        $logoUrl = hayne_mail_asset_url($ctaUrl, 'assets/hayne/logo.png');
-        $logoHtml = $logoUrl !== ''
-            ? '<img src="' . hayne_mail_escape($logoUrl) . '" width="132" alt="HAYNE Leave" style="display:block;width:132px;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;">'
-            : '<span style="color:#111111;font-size:18px;line-height:1;font-weight:700;letter-spacing:.4px;">HAYNE Leave</span>';
+        $logoHtml = '<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;">'
+            . '<tr><td style="padding:0;color:#111111;font-family:Arial,Helvetica,sans-serif;font-size:24px;line-height:24px;font-weight:800;letter-spacing:4px;">HAYNE</td></tr>'
+            . '<tr><td style="padding:7px 0 0 0;">'
+            . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;">'
+            . '<tr>'
+            . '<td style="width:34%;border-top:1px solid #111111;font-size:1px;line-height:1px;">&nbsp;</td>'
+            . '<td style="padding:0 7px;color:#111111;font-family:Arial,Helvetica,sans-serif;font-size:8px;line-height:9px;font-weight:700;letter-spacing:2px;text-align:center;white-space:nowrap;">LEAVE</td>'
+            . '<td style="width:34%;border-top:1px solid #111111;font-size:1px;line-height:1px;">&nbsp;</td>'
+            . '</tr></table>'
+            . '</td></tr></table>';
 
         return '<!doctype html>'
             . '<html lang="pl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>'
