@@ -18,9 +18,11 @@ jobs:
           grep -F "runtime code never" hayne/overlay/legacy/application/models/Hayne_credit_exemption_model.php
           grep -F "isCreditExemptType" hayne/patches/279-official-summons-credit-exemption.patch
           grep -F "creditExempt" hayne/patches/279-official-summons-credit-exemption.patch
-          grep -F "saveOfficialSummonsPolicy" hayne/patches/280-official-summons-admin.patch
+          grep -F "saveOfficialSummonsPolicy" hayne/overlay/legacy/application/controllers/Haynelimits.php
+          grep -F "official_summons_policy" hayne/overlay/legacy/application/views/haynelimits/index.php
           grep -F "HAYNE nie rozpoznaje go po nazwie ani nie zgaduje jego ID" hayne/overlay/legacy/application/views/haynelimits/official_summons.php
           grep -F "official-summons.js?v=1" hayne/patches/281-official-summons-assets.patch
+          test ! -e hayne/patches/280-official-summons-admin.patch
 
       - name: Prepare environment
         run: cp .env.example .env
