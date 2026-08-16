@@ -17,7 +17,8 @@ jobs:
           grep -F "approval-review-privacy.css?v=1" hayne/overlay/legacy/application/views/requests/review.php
           grep -F "background: #176b42" hayne/overlay/assets/hayne/approval-review-privacy.css
           grep -F "hayneCaregiverDetails'] = NULL" hayne/patches/282-caregiver-detail-privacy.patch
-          grep -F "HayneSensitiveCaregiver" hayne/patches/283-caregiver-manager-mail-privacy.patch
+          grep -F "hayne_caregiver_leave_model" hayne/patches/283-caregiver-manager-mail-privacy.patch
+          grep -F "HayneSensitiveCaregiver" hayne/patches/274-mail-template-context.patch
           grep -F "HayneSensitiveCaregiver" hayne/overlay/legacy/application/views/emails/pl/request.php
           grep -F "HayneSensitiveCaregiver" hayne/overlay/legacy/application/views/emails/pl/cancel.php
 
