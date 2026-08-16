@@ -44,9 +44,34 @@ if (!function_exists('hayne_push_extract_emails')) {
     }
 }
 
-if (!function_exists('hayne_push_send_for_mail')) {
-    function hayne_push_send_for_mail(CI_Controller $controller, string $to, ?string $cc = null): void
+if (!function_exists('hayne_push_employee_body_for_mail')) {
+    function hayne_push_employee_body_for_mail(string $message): string
     {
+        $plain = html_entity_decode(strip_tags($message), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if (strpos($plain, 'Twój wniosek urlopowy został zaakceptowany.') !== false) {
+            return 'Twój wniosek urlopowy został zaakceptowany.';
+        }
+        if (strpos($plain, 'Twój wniosek urlopowy został odrzucony.') !== false) {
+            return 'Twój wniosek urlopowy został odrzucony.';
+        }
+        if (strpos($plain, 'Twój wniosek urlopowy został anulowany.') !== false) {
+            return 'Anulowanie Twojego wniosku zostało zaakceptowane.';
+        }
+        if (strpos($plain, 'Prośba o anulowanie została odrzucona.') !== false) {
+            return 'Prośba o anulowanie Twojego wniosku została odrzucona.';
+        }
+        return 'Status Twojego wniosku został zaktualizowany.';
+    }
+}
+
+if (!function_exists('hayne_push_send_for_mail')) {
+    function hayne_push_send_for_mail(
+        CI_Controller $controller,
+        string $to,
+        ?string $cc = null,
+        string $subject = '',
+        string $message = ''
+    ): void {
         $controllerClass = strtolower((new ReflectionClass($controller))->getShortName());
         if (!in_array($controllerClass, ['leaves', 'requests'], true) || !hayne_push_is_enabled()) {
             return;
@@ -119,7 +144,7 @@ if (!function_exists('hayne_push_send_for_mail')) {
             $body = 'Masz nowy wniosek wymagający uwagi.';
             $targetPath = 'requests';
         } else {
-            $body = 'Status Twojego wniosku został zaktualizowany.';
+            $body = hayne_push_employee_body_for_mail($message);
             $targetPath = 'leaves';
         }
         $payload = json_encode([
