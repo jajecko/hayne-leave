@@ -1,0 +1,90 @@
+--- a/legacy/application/controllers/Haynelimits.php
++++ b/legacy/application/controllers/Haynelimits.php
+@@ -23,1 +23,2 @@
+         $this->load->model('hayne_holiday_compensation_model');
++        $this->load->model('hayne_credit_exemption_model');
+@@ -54,1 +55,2 @@
+         $data['occasion_policy'] = $this->hayne_occasion_leave_model->getPolicy();
++        $data['official_summons_policy'] = $this->hayne_credit_exemption_model->getOfficialSummonsPolicy();
+@@ -363,1 +365,55 @@
++    public function saveOfficialSummonsPolicy(): void
++    {
++        $leaveTypeId = filter_var($this->input->post('official_summons_type_id', TRUE), FILTER_VALIDATE_INT);
++        $enabled = $this->input->post('official_summons_enabled', TRUE) === '1';
++
++        if ($leaveTypeId === FALSE || $leaveTypeId <= 0) {
++            $this->session->set_flashdata('msg', 'Wybierz prawidłowy rodzaj zwolnienia na wezwanie organu.');
++            redirect('haynelimits');
++            return;
++        }
++
++        $this->load->model('types_model');
++        if (empty($this->types_model->getTypes((int) $leaveTypeId))) {
++            $this->session->set_flashdata('msg', 'Nie znaleziono wybranego rodzaju zwolnienia na wezwanie organu.');
++            redirect('haynelimits');
++            return;
++        }
++
++        if ($enabled) {
++            if ($this->isVacationTypeInUse((int) $leaveTypeId)) {
++                $this->session->set_flashdata('msg', 'Ten rodzaj nieobecności jest już używany jako urlop wypoczynkowy.');
++                redirect('haynelimits');
++                return;
++            }
++            $collision = $this->activeStatutoryPolicyForType((int) $leaveTypeId, 'official_summons');
++            if ($collision !== NULL) {
++                $this->session->set_flashdata('msg', 'Ten rodzaj nieobecności jest już używany dla polityki: ' . $collision . '.');
++                redirect('haynelimits');
++                return;
++            }
++        }
++
++        try {
++            $this->hayne_credit_exemption_model->saveOfficialSummonsPolicy((int) $leaveTypeId, $enabled);
++            $this->session->set_flashdata(
++                'msg',
++                $enabled
++                    ? 'Wezwanie organu: kontrola salda została wyłączona dla wskazanego rodzaju nieobecności.'
++                    : 'Wyjątek salda dla wezwania organu został wyłączony.'
++            );
++        } catch (Throwable $exception) {
++            log_message('error', 'HAYNE official-summons policy save failed: ' . $exception->getMessage());
++            $this->session->set_flashdata(
++                'msg',
++                'Nie udało się zapisać ustawień wezwania organu: ' . $exception->getMessage()
++            );
++        }
++
++        redirect('haynelimits');
++    }
++
+     public function saveChildcareAllocation(): void
+@@ -424,1 +480,5 @@
+             'holiday_compensation' => [
+                 'policy' => $this->hayne_holiday_compensation_model->getPolicy(),
+                 'label' => 'dzień wolny za święto',
+             ],
++            'official_summons' => [
++                'policy' => $this->hayne_credit_exemption_model->getOfficialSummonsPolicy(),
++                'label' => 'wezwanie sądu / urzędu / innego organu',
++            ],
+         ];
+--- a/legacy/application/views/haynelimits/index.php
++++ b/legacy/application/views/haynelimits/index.php
+@@ -15,1 +15,2 @@
+ $occasionEnabled = !empty($occasion_policy) && (int) $occasion_policy['enabled'] === 1;
++$officialSummonsEnabled = !empty($official_summons_policy) && (int) $official_summons_policy['enabled'] === 1;
+@@ -184,1 +185,12 @@
+                     </details>
++
++                    <details class="hayne-policy-disclosure">
++                        <summary>
++                            <span class="hayne-policy-summary__copy"><strong>Wezwanie sądu / urzędu / innego organu</strong><small>Bez rocznej puli dni</small></span>
++                            <span class="hayne-policy-summary__state <?php echo $officialSummonsEnabled ? 'is-enabled' : 'is-disabled'; ?>"><?php echo $officialSummonsEnabled ? 'Włączone' : 'Wyłączone'; ?></span>
++                        </summary>
++                        <div class="hayne-policy-disclosure__body">
++                            <?php $this->load->view('haynelimits/official_summons', ['official_summons_policy' => $official_summons_policy, 'types' => $types]); ?>
++                        </div>
++                    </details>
+ 
+                     <details class="hayne-policy-disclosure">
