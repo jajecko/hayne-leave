@@ -1,6 +1,6 @@
 --- a/legacy/application/controllers/Leaves.php
 +++ b/legacy/application/controllers/Leaves.php
-@@ -245,6 +245,24 @@ class Leaves extends CI_Controller
+@@ -276,4 +276,25 @@ class Leaves extends CI_Controller
              $this->load->view('leaves/create');
              $this->load->view('templates/footer');
          } else {
@@ -26,11 +26,10 @@
 +            }
 +
              //Prevent employees to auto validate their leave requests
-             if (!$this->is_hr && !$this->is_admin) {
-                 if ($this->input->post('status') > LMS_REQUESTED) {
 --- a/assets/js/lms/leave.edit-1.0.4.js
 +++ b/assets/js/lms/leave.edit-1.0.4.js
-@@ -292,6 +292,21 @@ $(function () {
+@@ -270,7 +270,26 @@ $(function () {
+         onClose: function (selectedDate) {
              $("#viz_startdate").datepicker("option", "maxDate", selectedDate);
          }
      }, $.datepicker.regional[languageCode]);
