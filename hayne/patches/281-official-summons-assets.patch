@@ -1,0 +1,5 @@
+--- a/legacy/application/views/templates/header.php
++++ b/legacy/application/views/templates/header.php
+@@ -114,1 +114,2 @@
+     <script defer type="text/javascript" src="<?php echo base_url(); ?>assets/hayne/request-form-hotfix.js?v=1"></script>
++    <script defer type="text/javascript" src="<?php echo base_url(); ?>assets/hayne/official-summons.js?v=1"></script>
