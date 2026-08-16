@@ -37,8 +37,9 @@ jobs:
           for patch_file in "$GITHUB_WORKSPACE"/hayne/patches/*.patch; do
             rel="${patch_file#${GITHUB_WORKSPACE}/}"
             echo "Applying ${rel}"
-            if ! patch --batch --forward -p1 < "$patch_file"; then
-              echo "::error file=${rel}::Cumulative HAYNE patch stack failed at ${rel}"
+            if ! patch_output=$(patch --batch --forward -p1 < "$patch_file" 2>&1); then
+              patch_output=$(printf "%s" "$patch_output" | tr "\n" " ")
+              echo "::error file=${rel}::${patch_output}"
               exit 1
             fi
           done
