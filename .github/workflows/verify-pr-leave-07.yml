@@ -71,7 +71,7 @@ jobs:
             grep -F "occasion_fields" legacy/application/views/leaves/create.php
             grep -F "occasion_fields" legacy/application/views/leaves/edit.php
             grep -F "occasion_details" legacy/application/views/leaves/view.php
-            test "$(grep -Fc "if (\$disallowRequestsWithoutCredit === true && !\$hayneOccasion)" legacy/application/controllers/Leaves.php)" = "2"
+            test "$(grep -Fc "if (\$disallowRequestsWithoutCredit === true && !\$hayneOccasion && !\$this->hayne_credit_exemption_model->isCreditExemptType((int) \$leaveTypeId))" legacy/application/controllers/Leaves.php)" = "2"
           '
 
       - name: Authenticate as administrator
