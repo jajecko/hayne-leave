@@ -1,0 +1,46 @@
+name: verify-pr-request-form-hotfix
+
+on:
+  pull_request:
+
+jobs:
+  verify-request-form-hotfix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check JavaScript syntax
+        run: node --check hayne/overlay/assets/hayne/request-form-hotfix.js
+
+      - name: Verify hotfix guardrails
+        run: |
+          grep -F "hayne_caregiver_person_name" hayne/overlay/assets/hayne/request-form-hotfix.js
+          grep -F "hayne.leave.create.draft.v1" hayne/overlay/assets/hayne/request-form-hotfix.js
+          grep -F "start.datepicker('option', 'minDate', null)" hayne/overlay/assets/hayne/request-form-hotfix.js
+          grep -F "if (!isOnDemandActive()) end.datepicker('option', 'maxDate', null)" hayne/overlay/assets/hayne/request-form-hotfix.js
+          grep -F "request-form-hotfix.js?v=1" hayne/patches/278-request-form-validation-ux.patch
+          test ! -e hayne/patches/278-create-current-year-range.patch
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build final HAYNE Leave image
+        run: docker compose build jorani
+
+      - name: Verify final runtime assets
+        run: |
+          docker compose run --rm --no-deps jorani sh -ec '
+            test -f assets/hayne/request-form-hotfix.js
+            test -f assets/hayne/request-form-hotfix.css
+            grep -F "assets/hayne/request-form-hotfix.css?v=1" legacy/application/views/templates/header.php
+            grep -F "assets/hayne/request-form-hotfix.js?v=1" legacy/application/views/templates/header.php
+            grep -F "hayne_caregiver_person_name" assets/hayne/request-form-hotfix.js
+            grep -F "hayne-request-inline-error" assets/hayne/request-form-hotfix.css
+            php -l legacy/application/views/templates/header.php
+            php -l legacy/application/views/leaves/create.php
+            php -l legacy/application/views/leaves/caregiver_fields.php
+          '
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
