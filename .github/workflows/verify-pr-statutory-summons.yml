@@ -24,6 +24,25 @@ jobs:
           grep -F "official-summons.js?v=1" hayne/patches/281-official-summons-assets.patch
           test ! -e hayne/patches/280-official-summons-admin.patch
 
+      - name: Verify cumulative overlay and patch stack
+        env:
+          JORANI_VERSION: v1.0.4
+        run: |
+          rm -rf /tmp/hayne-final-source
+          mkdir -p /tmp/hayne-final-source
+          curl -fsSL "https://github.com/jorani/jorani/archive/refs/tags/${JORANI_VERSION}.tar.gz" \
+            | tar -xz --strip-components=1 -C /tmp/hayne-final-source
+          cp -a hayne/overlay/. /tmp/hayne-final-source/
+          cd /tmp/hayne-final-source
+          for patch_file in "$GITHUB_WORKSPACE"/hayne/patches/*.patch; do
+            rel="${patch_file#${GITHUB_WORKSPACE}/}"
+            echo "Applying ${rel}"
+            if ! patch --batch --forward -p1 < "$patch_file"; then
+              echo "::error file=${rel}::Cumulative HAYNE patch stack failed at ${rel}"
+              exit 1
+            fi
+          done
+
       - name: Prepare environment
         run: cp .env.example .env
 
