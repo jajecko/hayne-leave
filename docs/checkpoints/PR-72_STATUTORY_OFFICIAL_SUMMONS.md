@@ -33,13 +33,16 @@ HR/admin explicitly selects the existing Jorani leave type and enables `Nie wyma
 
 Collision guards prevent the same type from simultaneously being used as the HAYNE vacation type or another active statutory policy.
 
+The HAYNE-only administration controller/view are changed directly in the overlay. They are not patched against pristine Jorani, which keeps the global patch dry-run valid.
+
 ## Files
 
 - `hayne/overlay/legacy/application/models/Hayne_credit_exemption_model.php`
+- `hayne/overlay/legacy/application/controllers/Haynelimits.php`
+- `hayne/overlay/legacy/application/views/haynelimits/index.php`
 - `hayne/overlay/legacy/application/views/haynelimits/official_summons.php`
 - `hayne/overlay/assets/hayne/official-summons.js`
 - `hayne/patches/279-official-summons-credit-exemption.patch`
-- `hayne/patches/280-official-summons-admin.patch`
 - `hayne/patches/281-official-summons-assets.patch`
 - `.github/workflows/verify-pr-statutory-summons.yml`
 
