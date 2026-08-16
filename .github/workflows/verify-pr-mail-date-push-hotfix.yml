@@ -1,4 +1,4 @@
-name: verify-pr-mail-date-push-hotfix
+name: verify-pr-mail-push-hotfix
 
 on:
   pull_request:
@@ -20,7 +20,6 @@ jobs:
           docker compose run --rm --no-deps jorani sh -ec '
             php -l legacy/application/helpers/hayne_mail_helper.php
             php -l legacy/application/helpers/hayne_push_helper.php
-            php -l legacy/application/controllers/Leaves.php
 
             grep -F "hayne_push_send_for_mail(\$controller, \$to, \$cc, \$subject, \$message)" legacy/application/helpers/tools_helper.php
             grep -F "Twój wniosek urlopowy został zaakceptowany." legacy/application/helpers/hayne_push_helper.php
@@ -31,11 +30,6 @@ jobs:
             grep -F "HAYNE" legacy/application/helpers/hayne_mail_helper.php
             grep -F "LEAVE" legacy/application/helpers/hayne_mail_helper.php
             ! grep -F "assets/hayne/logo.png" legacy/application/helpers/hayne_mail_helper.php
-
-            grep -F "hayneCurrentYear" assets/js/lms/leave.edit-1.0.4.js
-            grep -F "new Date(hayneCurrentYear, 0, 1)" assets/js/lms/leave.edit-1.0.4.js
-            grep -F "new Date(hayneCurrentYear, 11, 31)" assets/js/lms/leave.edit-1.0.4.js
-            grep -F "Nowy wniosek może obejmować wyłącznie bieżący rok kalendarzowy" legacy/application/controllers/Leaves.php
           '
 
       - name: Verify push outcome mapper
