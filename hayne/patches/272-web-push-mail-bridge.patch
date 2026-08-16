@@ -18,7 +18,7 @@
 +    }
 +    try {
 +        $controller->load->helper('hayne_push');
-+        hayne_push_send_for_mail($controller, $to, $cc);
++        hayne_push_send_for_mail($controller, $to, $cc, $subject, $message);
 +    } catch (Throwable $error) {
 +        // Push is best-effort and must never break the leave workflow or e-mail delivery.
 +        log_message('error', 'HAYNE Push bridge failed: ' . $error->getMessage());
