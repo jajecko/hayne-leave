@@ -1,0 +1,28 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -45,1 +45,2 @@
+         $this->load->model('leaves_model');
++        $this->load->model('hayne_credit_exemption_model');
+@@ -352,2 +353,2 @@
+             $disallowRequestsWithoutCredit = filter_var($this->config->item('disallow_requests_without_credit'), FILTER_VALIDATE_BOOLEAN, ['' => FILTER_NULL_ON_FAILURE]);
+-            if ($disallowRequestsWithoutCredit === true) {
++            if ($disallowRequestsWithoutCredit === true && !$this->hayne_credit_exemption_model->isCreditExemptType((int) $leaveTypeId)) {
+@@ -545,2 +546,2 @@
+             $disallowRequestsWithoutCredit = filter_var($this->config->item('disallow_requests_without_credit'), FILTER_VALIDATE_BOOLEAN, ['' => FILTER_NULL_ON_FAILURE]);
+-            if ($disallowRequestsWithoutCredit === true) {
++            if ($disallowRequestsWithoutCredit === true && !$this->hayne_credit_exemption_model->isCreditExemptType((int) $leaveTypeId)) {
+@@ -1092,8 +1093,13 @@
+         if (($employeeId > 0) && ($type !== "")) {
+             $typeObject = $this->types_model->getTypeByName($type);
+             $deductDayOff = $typeObject['deduct_days_off'];
+-            if (isset($startdate) && $startdate !== "") {
++            $leaveTypeId = isset($typeObject['id']) ? (int) $typeObject['id'] : 0;
++            $leaveValidator->creditExempt = $this->hayne_credit_exemption_model->isCreditExemptType($leaveTypeId);
++            if ($leaveValidator->creditExempt) {
++                $leaveValidator->credit = NULL;
++            } elseif (isset($startdate) && $startdate !== "") {
+                 $leaveValidator->credit = $this->leaves_model->getLeavesTypeBalanceForEmployee($employeeId, $type, $startdate);
+             } else {
+                 $leaveValidator->credit = $this->leaves_model->getLeavesTypeBalanceForEmployee($employeeId, $type);
+             }
+         }
