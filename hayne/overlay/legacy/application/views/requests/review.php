@@ -27,9 +27,9 @@ if (isset($leave['comments']) && is_object($leave['comments']) && isset($leave['
     $historyItems = $leave['comments']->comments;
 }
 ?>
-<link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/approval-review.css">
+<link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/approval-review.css?v=2">
 
-<main class="hayne-approval-review" data-hayne-view="approval-review-v2">
+<main class="hayne-approval-review" data-hayne-view="approval-review-v3">
     <a class="hayne-approval-review__back" href="<?php echo base_url(); ?>requests/requested">← Wróć do listy</a>
 
     <header class="hayne-approval-review__header">
@@ -64,10 +64,21 @@ if (isset($leave['comments']) && is_object($leave['comments']) && isset($leave['
                 </div>
             </div>
 
-            <div class="hayne-approval-review__reason">
-                <span>Uzasadnienie</span>
-                <p><?php echo trim((string) $leave['cause']) !== '' ? nl2br(html_escape($leave['cause']), false) : 'Nie podano uzasadnienia.'; ?></p>
-            </div>
+            <?php if (!empty($hayneCaregiverDetails)) { ?>
+                <?php $this->load->view('leaves/caregiver_details', [
+                    'hayneCaregiverDetails' => $hayneCaregiverDetails,
+                ]); ?>
+            <?php } elseif (!empty($hayneSensitiveCaregiverReview)) { ?>
+                <div class="hayne-approval-review__reason hayne-approval-review__reason--privacy">
+                    <span>Dane formalne</span>
+                    <p>Dane osoby wymagającej opieki lub wsparcia są dostępne wyłącznie dla kadr.</p>
+                </div>
+            <?php } else { ?>
+                <div class="hayne-approval-review__reason">
+                    <span>Uzasadnienie</span>
+                    <p><?php echo trim((string) $leave['cause']) !== '' ? nl2br(html_escape($leave['cause']), false) : 'Nie podano uzasadnienia.'; ?></p>
+                </div>
+            <?php } ?>
         </section>
 
         <aside class="hayne-approval-review__decision">
