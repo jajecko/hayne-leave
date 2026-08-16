@@ -28,6 +28,7 @@ if (isset($leave['comments']) && is_object($leave['comments']) && isset($leave['
 }
 ?>
 <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/approval-review.css?v=2">
+<link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/approval-review-privacy.css?v=1">
 
 <main class="hayne-approval-review" data-hayne-view="approval-review-v3">
     <a class="hayne-approval-review__back" href="<?php echo base_url(); ?>requests/requested">← Wróć do listy</a>
