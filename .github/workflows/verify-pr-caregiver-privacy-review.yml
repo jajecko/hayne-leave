@@ -27,7 +27,7 @@ jobs:
       - name: Build final HAYNE Leave image
         run: docker compose build jorani
 
-      - name: Verify final runtime
+      - name: Verify final runtime guardrails
         run: |
           docker compose run --rm --no-deps jorani sh -ec '
             test -s assets/hayne/approval-review-privacy.css
@@ -38,12 +38,23 @@ jobs:
             grep -F "HayneSensitiveCaregiver" legacy/application/controllers/Requests.php
             grep -F "Dane formalne" legacy/application/views/emails/pl/request.php
             grep -F "Dane formalne" legacy/application/views/emails/pl/cancel.php
-            php -l legacy/application/controllers/Hayneapprovals.php
-            php -l legacy/application/controllers/Leaves.php
-            php -l legacy/application/controllers/Requests.php
-            php -l legacy/application/views/requests/review.php
-            php -l legacy/application/views/emails/pl/request.php
-            php -l legacy/application/views/emails/pl/cancel.php
+          '
+
+      - name: Verify final runtime PHP syntax
+        run: |
+          docker compose run --rm --no-deps jorani sh -ec '
+            for file in \
+              legacy/application/controllers/Hayneapprovals.php \
+              legacy/application/controllers/Leaves.php \
+              legacy/application/controllers/Requests.php \
+              legacy/application/views/requests/review.php \
+              legacy/application/views/emails/pl/request.php \
+              legacy/application/views/emails/pl/cancel.php; do
+              if ! php -l "$file"; then
+                echo "::error file=$file::PHP lint failed in final HAYNE runtime: $file"
+                exit 1
+              fi
+            done
           '
 
       - name: Show logs on failure
