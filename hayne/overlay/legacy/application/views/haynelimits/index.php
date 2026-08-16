@@ -12,6 +12,7 @@ $caregiverEnabled = !empty($caregiver_policy) && (int) $caregiver_policy['enable
 $forceMajeureEnabled = !empty($force_majeure_policy) && (int) $force_majeure_policy['enabled'] === 1;
 $childcareEnabled = !empty($childcare_policy) && (int) $childcare_policy['enabled'] === 1;
 $occasionEnabled = !empty($occasion_policy) && (int) $occasion_policy['enabled'] === 1;
+$officialSummonsEnabled = !empty($official_summons_policy) && (int) $official_summons_policy['enabled'] === 1;
 ?>
 
 <main class="hayne-limits-page" data-hayne-view="leave-limits-v3" data-hayne-default-tab="<?php echo $defaultTab; ?>">
@@ -163,6 +164,16 @@ $occasionEnabled = !empty($occasion_policy) && (int) $occasion_policy['enabled']
                         </summary>
                         <div class="hayne-policy-disclosure__body">
                             <?php $this->load->view('haynelimits/occasion', ['occasion_policy' => $occasion_policy, 'types' => $types]); ?>
+                        </div>
+                    </details>
+
+                    <details class="hayne-policy-disclosure">
+                        <summary>
+                            <span class="hayne-policy-summary__copy"><strong>Wezwanie sądu / urzędu / innego organu</strong><small>Bez rocznej puli dni</small></span>
+                            <span class="hayne-policy-summary__state <?php echo $officialSummonsEnabled ? 'is-enabled' : 'is-disabled'; ?>"><?php echo $officialSummonsEnabled ? 'Włączone' : 'Wyłączone'; ?></span>
+                        </summary>
+                        <div class="hayne-policy-disclosure__body">
+                            <?php $this->load->view('haynelimits/official_summons', ['official_summons_policy' => $official_summons_policy, 'types' => $types]); ?>
                         </div>
                     </details>
 

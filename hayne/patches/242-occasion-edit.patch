@@ -74,7 +74,7 @@
              // Check if the leave request is valid regarding the leave balance
              $disallowRequestsWithoutCredit = filter_var($this->config->item('disallow_requests_without_credit'), FILTER_VALIDATE_BOOLEAN, ['' => FILTER_NULL_ON_FAILURE]);
 -            if ($disallowRequestsWithoutCredit === true) {
-+            if ($disallowRequestsWithoutCredit === true && !$hayneOccasion) {
++            if ($disallowRequestsWithoutCredit === true && !$hayneOccasion && !$this->hayne_credit_exemption_model->isCreditExemptType((int) $leaveTypeId)) {
                  $typeName = $this->types_model->getName($leaveTypeId);
 @@ -590,1 +657,36 @@
 +            $hayneOccasionTransaction = $hayneOccasion || $wasHayneOccasion;

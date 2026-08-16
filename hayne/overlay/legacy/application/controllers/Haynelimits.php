@@ -20,6 +20,7 @@ class Haynelimits extends CI_Controller
         $this->load->model('hayne_childcare_model');
         $this->load->model('hayne_occasion_leave_model');
         $this->load->model('hayne_holiday_compensation_model');
+        $this->load->model('hayne_credit_exemption_model');
     }
 
     public function index(): void
@@ -49,6 +50,7 @@ class Haynelimits extends CI_Controller
         $data['childcare_policy'] = $this->hayne_childcare_model->getPolicy();
         $data['childcare_allocations'] = $this->hayne_childcare_model->getAllocationMap((int) $year);
         $data['occasion_policy'] = $this->hayne_occasion_leave_model->getPolicy();
+        $data['official_summons_policy'] = $this->hayne_credit_exemption_model->getOfficialSummonsPolicy();
 
         foreach ($data['employees'] as $employee) {
             if ((int) $employee['active'] !== 1) {
@@ -362,6 +364,57 @@ class Haynelimits extends CI_Controller
         redirect('haynelimits');
     }
 
+    public function saveOfficialSummonsPolicy(): void
+    {
+        $leaveTypeId = filter_var($this->input->post('official_summons_type_id', TRUE), FILTER_VALIDATE_INT);
+        $enabled = $this->input->post('official_summons_enabled', TRUE) === '1';
+
+        if ($leaveTypeId === FALSE || $leaveTypeId <= 0) {
+            $this->session->set_flashdata('msg', 'Wybierz prawidłowy rodzaj zwolnienia na wezwanie organu.');
+            redirect('haynelimits');
+            return;
+        }
+
+        $this->load->model('types_model');
+        if (empty($this->types_model->getTypes((int) $leaveTypeId))) {
+            $this->session->set_flashdata('msg', 'Nie znaleziono wybranego rodzaju zwolnienia na wezwanie organu.');
+            redirect('haynelimits');
+            return;
+        }
+
+        if ($enabled) {
+            if ($this->isVacationTypeInUse((int) $leaveTypeId)) {
+                $this->session->set_flashdata('msg', 'Ten rodzaj nieobecności jest już używany jako urlop wypoczynkowy.');
+                redirect('haynelimits');
+                return;
+            }
+            $collision = $this->activeStatutoryPolicyForType((int) $leaveTypeId, 'official_summons');
+            if ($collision !== NULL) {
+                $this->session->set_flashdata('msg', 'Ten rodzaj nieobecności jest już używany dla polityki: ' . $collision . '.');
+                redirect('haynelimits');
+                return;
+            }
+        }
+
+        try {
+            $this->hayne_credit_exemption_model->saveOfficialSummonsPolicy((int) $leaveTypeId, $enabled);
+            $this->session->set_flashdata(
+                'msg',
+                $enabled
+                    ? 'Wezwanie organu: kontrola salda została wyłączona dla wskazanego rodzaju nieobecności.'
+                    : 'Wyjątek salda dla wezwania organu został wyłączony.'
+            );
+        } catch (Throwable $exception) {
+            log_message('error', 'HAYNE official-summons policy save failed: ' . $exception->getMessage());
+            $this->session->set_flashdata(
+                'msg',
+                'Nie udało się zapisać ustawień wezwania organu: ' . $exception->getMessage()
+            );
+        }
+
+        redirect('haynelimits');
+    }
+
     public function saveChildcareAllocation(): void
     {
         $employeeId = filter_var($this->input->post('employee_id', TRUE), FILTER_VALIDATE_INT);
@@ -423,6 +476,10 @@ class Haynelimits extends CI_Controller
             'holiday_compensation' => [
                 'policy' => $this->hayne_holiday_compensation_model->getPolicy(),
                 'label' => 'dzień wolny za święto',
+            ],
+            'official_summons' => [
+                'policy' => $this->hayne_credit_exemption_model->getOfficialSummonsPolicy(),
+                'label' => 'wezwanie sądu / urzędu / innego organu',
             ],
         ];
 

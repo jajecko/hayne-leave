@@ -162,11 +162,14 @@ jobs:
 
           curl -fsS -b artifacts/cookies.txt http://localhost:8080/leaves/create -o artifacts/form.html
           csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/form.html | head -n 1)"
+          submission_token="$(sed -n 's/.*name="hayne_submission_token" value="\([^"]*\)".*/\1/p' artifacts/form.html | head -n 1)"
           test -n "$csrf_token"
+          test -n "$submission_token"
           curl -fsS -L \
             -c artifacts/cookies.txt \
             -b artifacts/cookies.txt \
             --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode "hayne_submission_token=${submission_token}" \
             --data-urlencode "startdate=${start}" \
             --data-urlencode 'startdatetype=Morning' \
             --data-urlencode "enddate=${end}" \
