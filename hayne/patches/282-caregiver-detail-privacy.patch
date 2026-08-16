@@ -1,0 +1,13 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -175,1 +175,10 @@
++        $hayneCanViewCaregiverDetails =
++            ((int) $data['leave']['employee'] === (int) $this->user_id) ||
++            $this->is_hr ||
++            $this->is_admin;
++        if (!$hayneCanViewCaregiverDetails && $this->hayne_caregiver_leave_model->isCaregiverType((int) $data['leave']['type'])) {
++            // Managers and delegates need absence logistics, not statutory family/health metadata.
++            $data['hayneCaregiverDetails'] = NULL;
++            $data['leave']['cause'] = 'Dane formalne urlopu opiekuńczego są dostępne wyłącznie dla kadr.';
++        }
+         $data['source'] = $source;

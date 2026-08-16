@@ -26,6 +26,7 @@ class Hayneapprovals extends CI_Controller
         $this->load->model('users_model');
         $this->load->model('delegations_model');
         $this->load->model('status_model');
+        $this->load->model('hayne_caregiver_leave_model');
         $this->load->helper('form');
 
         $data = getUserContext($this);
@@ -41,6 +42,13 @@ class Hayneapprovals extends CI_Controller
             $this->session->set_flashdata('msg', lang('requests_accept_flash_msg_error'));
             redirect('requests');
         }
+
+        $isCaregiver = $this->hayne_caregiver_leave_model->isCaregiverType((int) $data['leave']['type']);
+        $canViewCaregiverDetails = $this->is_hr || $this->is_admin;
+        $data['hayneSensitiveCaregiverReview'] = $isCaregiver && !$canViewCaregiverDetails;
+        $data['hayneCaregiverDetails'] = ($isCaregiver && $canViewCaregiverDetails)
+            ? $this->hayne_caregiver_leave_model->getMetadata((int) $id)
+            : NULL;
 
         $data['name'] = $employee['firstname'] . ' ' . $employee['lastname'];
         $data['mandatoryCommentOnReject'] = $this->config->item('mandatory_comment_on_reject') === TRUE;

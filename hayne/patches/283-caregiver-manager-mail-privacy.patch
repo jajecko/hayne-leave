@@ -1,0 +1,5 @@
+--- a/legacy/application/controllers/Requests.php
++++ b/legacy/application/controllers/Requests.php
+@@ -45,1 +45,2 @@
+         $this->load->model('leaves_model');
++        $this->load->model('hayne_caregiver_leave_model');

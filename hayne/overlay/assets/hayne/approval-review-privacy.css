@@ -1,0 +1,62 @@
+/* HAYNE Leave — caregiver privacy + approval CTA follow-up */
+.hayne-approval-review a.hayne-approval-review__action--accept,
+.hayne-approval-review a.hayne-approval-review__action--accept:link,
+.hayne-approval-review a.hayne-approval-review__action--accept:visited {
+  border-color: #176b42;
+  background: #176b42;
+  color: #fff;
+}
+
+.hayne-approval-review a.hayne-approval-review__action--accept:hover,
+.hayne-approval-review a.hayne-approval-review__action--accept:focus,
+.hayne-approval-review a.hayne-approval-review__action--accept:active {
+  border-color: #125536;
+  background: #125536;
+  color: #fff;
+}
+
+.hayne-approval-review a.hayne-approval-review__action--accept:focus-visible {
+  outline: 3px solid rgba(23, 107, 66, .22);
+  outline-offset: 2px;
+}
+
+.hayne-approval-review a.hayne-approval-review__action--accept[aria-disabled="true"] {
+  border-color: #176b42;
+  background: #176b42;
+  color: #fff;
+  opacity: .68;
+}
+
+.hayne-approval-review__reason--privacy {
+  border-left-color: #777772;
+  background: #f5f5f2;
+}
+
+.hayne-approval-review .hayne-caregiver-details {
+  margin: 22px 0 0;
+  padding: 20px;
+  border: 1px solid #e2e2dc;
+  border-left: 3px solid #176b42;
+  border-radius: 0 10px 10px 0;
+  background: #f8faf8;
+  box-shadow: none;
+}
+
+.hayne-approval-review .hayne-caregiver-details h4 {
+  margin: 0 0 14px !important;
+  color: #22221f;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.hayne-approval-review .hayne-caregiver-details p {
+  margin: 0 0 10px;
+  color: #41413d;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.hayne-approval-review .hayne-caregiver-details p:last-child {
+  margin-bottom: 0 !important;
+}

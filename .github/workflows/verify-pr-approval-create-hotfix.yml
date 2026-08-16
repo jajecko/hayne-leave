@@ -33,7 +33,7 @@ jobs:
             grep -F "form=\"frmLeaveForm\"" legacy/application/views/leaves/create.php
             grep -F "a.hayne-approval-review__action--accept:visited" assets/hayne/approval-review.css
             grep -F "grid-template-areas:" assets/hayne/approval-review.css
-            grep -F "approval-review-v2" legacy/application/views/requests/review.php
+            grep -F "data-hayne-view=\"approval-review-v" legacy/application/views/requests/review.php
           '
 
       - name: Smoke leave create token
