@@ -16,13 +16,16 @@
              $typeObject = $this->types_model->getTypeByName($type);
              $deductDayOff = $typeObject['deduct_days_off'];
 -            if (isset($startdate) && $startdate !== "") {
+-                $leaveValidator->credit = $this->leaves_model->getLeavesTypeBalanceForEmployee($employeeId, $type, $startdate);
+-            } else {
+-                $leaveValidator->credit = $this->leaves_model->getLeavesTypeBalanceForEmployee($employeeId, $type);
 +            $leaveTypeId = isset($typeObject['id']) ? (int) $typeObject['id'] : 0;
 +            $leaveValidator->creditExempt = $this->hayne_credit_exemption_model->isCreditExemptType($leaveTypeId);
-+            if ($leaveValidator->creditExempt) {
-+                $leaveValidator->credit = NULL;
-+            } elseif (isset($startdate) && $startdate !== "") {
-                 $leaveValidator->credit = $this->leaves_model->getLeavesTypeBalanceForEmployee($employeeId, $type, $startdate);
-             } else {
-                 $leaveValidator->credit = $this->leaves_model->getLeavesTypeBalanceForEmployee($employeeId, $type);
++            if (!$leaveValidator->creditExempt) {
++                if (isset($startdate) && $startdate !== "") {
++                    $leaveValidator->credit = $this->leaves_model->getLeavesTypeBalanceForEmployee($employeeId, $type, $startdate);
++                } else {
++                    $leaveValidator->credit = $this->leaves_model->getLeavesTypeBalanceForEmployee($employeeId, $type);
++                }
              }
          }
