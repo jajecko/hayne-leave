@@ -1,0 +1,36 @@
+/* HAYNE Leave — create-form validation hotfix.
+ * Keeps errors attached to the exact control without changing the form layout.
+ */
+
+#wrap .hayne-request-form--target input.hayne-request-invalid,
+#wrap .hayne-request-form--target select.hayne-request-invalid,
+#wrap .hayne-request-form--target textarea.hayne-request-invalid,
+#wrap .hayne-request-form--target .select2-container.hayne-request-invalid .select2-choice,
+#wrap .hayne-request-form--target .select2-container.hayne-request-invalid .select2-selection,
+#wrap .hayne-request-form--target .select2-container.hayne-request-invalid .select2-selection--single {
+  border-color: #b42318 !important;
+  box-shadow: 0 0 0 3px rgba(180, 35, 24, .10) !important;
+}
+
+#wrap .hayne-request-form--target input[type="checkbox"].hayne-request-invalid,
+#wrap .hayne-request-form--target input[type="radio"].hayne-request-invalid {
+  outline: 2px solid #b42318;
+  outline-offset: 2px;
+}
+
+#wrap .hayne-request-inline-error {
+  display: block;
+  margin: 7px 0 0;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+#wrap .hayne-request-policy-field .hayne-request-inline-error {
+  margin-bottom: 10px;
+}
+
+#wrap .hayne-request-policy-field[aria-hidden="false"] {
+  display: block;
+}
