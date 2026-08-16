@@ -3,17 +3,7 @@
 @@ -45,1 +45,2 @@
          $this->load->model('leaves_model');
 +        $this->load->model('hayne_credit_exemption_model');
-@@ -352,1 +353,4 @@
-             $disallowRequestsWithoutCredit = filter_var($this->config->item('disallow_requests_without_credit'), FILTER_VALIDATE_BOOLEAN, ['' => FILTER_NULL_ON_FAILURE]);
-+            if ($this->hayne_credit_exemption_model->isCreditExemptType((int) $leaveTypeId)) {
-+                $disallowRequestsWithoutCredit = false;
-+            }
-@@ -545,1 +549,4 @@
-             $disallowRequestsWithoutCredit = filter_var($this->config->item('disallow_requests_without_credit'), FILTER_VALIDATE_BOOLEAN, ['' => FILTER_NULL_ON_FAILURE]);
-+            if ($this->hayne_credit_exemption_model->isCreditExemptType((int) $leaveTypeId)) {
-+                $disallowRequestsWithoutCredit = false;
-+            }
-@@ -1092,9 +1099,13 @@
+@@ -1092,9 +1093,13 @@
          if (($employeeId > 0) && ($type !== "")) {
              $typeObject = $this->types_model->getTypeByName($type);
              $deductDayOff = $typeObject['deduct_days_off'];
