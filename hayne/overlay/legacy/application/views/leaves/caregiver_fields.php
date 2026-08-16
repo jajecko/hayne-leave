@@ -20,7 +20,7 @@ $careReason = (string) ($current['care_reason'] ?? '');
         Wniosek złóż co najmniej 1 dzień przed rozpoczęciem urlopu.
     </p>
 
-    <label for="hayne_caregiver_person_name">Osoba wymagająca opieki lub wsparcia</label>
+    <label for="hayne_caregiver_person_name">Imię i nazwisko osoby wymagającej opieki lub wsparcia</label>
     <input type="text" class="input-xlarge" maxlength="190"
         name="hayne_caregiver_person_name" id="hayne_caregiver_person_name"
         value="<?php echo html_escape($personName); ?>" />
