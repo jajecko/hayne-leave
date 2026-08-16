@@ -50,7 +50,7 @@ jobs:
       - name: Build final HAYNE Leave image
         run: docker compose build jorani
 
-      - name: Verify final runtime
+      - name: Verify final runtime guardrails
         run: |
           docker compose run --rm --no-deps jorani sh -ec '
             test -s assets/hayne/official-summons.js
@@ -61,11 +61,23 @@ jobs:
             grep -F "creditExempt" legacy/application/controllers/Leaves.php
             grep -F "saveOfficialSummonsPolicy" legacy/application/controllers/Haynelimits.php
             grep -F "official_summons_policy" legacy/application/views/haynelimits/index.php
-            php -l legacy/application/models/Hayne_credit_exemption_model.php
-            php -l legacy/application/controllers/Leaves.php
-            php -l legacy/application/controllers/Haynelimits.php
-            php -l legacy/application/views/haynelimits/official_summons.php
-            php -l legacy/application/views/haynelimits/index.php
+          '
+
+      - name: Verify final runtime PHP syntax
+        run: |
+          docker compose run --rm --no-deps jorani sh -ec '
+            for file in \
+              legacy/application/models/Hayne_credit_exemption_model.php \
+              legacy/application/controllers/Leaves.php \
+              legacy/application/controllers/Haynelimits.php \
+              legacy/application/views/haynelimits/official_summons.php \
+              legacy/application/views/haynelimits/index.php; do
+              if ! lint_output=$(php -l "$file" 2>&1); then
+                lint_output=$(printf "%s" "$lint_output" | tr "\n" " ")
+                echo "::error file=$file::$lint_output"
+                exit 1
+              fi
+            done
           '
 
       - name: Show logs on failure
