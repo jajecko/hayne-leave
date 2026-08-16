@@ -1,0 +1,58 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -245,6 +245,24 @@ class Leaves extends CI_Controller
+             $this->load->view('leaves/create');
+             $this->load->view('templates/footer');
+         } else {
++            // HAYNE Leave: new requests may only target the current calendar year.
++            // Historical requests remain readable/editable through their existing routes.
++            $currentYear = (int) date('Y');
++            $startDateInput = (string) $this->input->post('startdate');
++            $endDateInput = (string) $this->input->post('enddate');
++            $startDateObject = DateTime::createFromFormat('!Y-m-d', $startDateInput);
++            $endDateObject = DateTime::createFromFormat('!Y-m-d', $endDateInput);
++            $startDateValid = $startDateObject !== false && $startDateObject->format('Y-m-d') === $startDateInput;
++            $endDateValid = $endDateObject !== false && $endDateObject->format('Y-m-d') === $endDateInput;
++
++            if (!$startDateValid || !$endDateValid
++                || (int) $startDateObject->format('Y') !== $currentYear
++                || (int) $endDateObject->format('Y') !== $currentYear) {
++                $this->session->set_flashdata(
++                    'msg',
++                    'Nowy wniosek może obejmować wyłącznie bieżący rok kalendarzowy (' . $currentYear . ').'
++                );
++                redirect('leaves/create');
++                return;
++            }
++
+             //Prevent employees to auto validate their leave requests
+             if (!$this->is_hr && !$this->is_admin) {
+                 if ($this->input->post('status') > LMS_REQUESTED) {
+--- a/assets/js/lms/leave.edit-1.0.4.js
++++ b/assets/js/lms/leave.edit-1.0.4.js
+@@ -292,6 +292,21 @@ $(function () {
+             $("#viz_startdate").datepicker("option", "maxDate", selectedDate);
+         }
+     }, $.datepicker.regional[languageCode]);
++
++    // HAYNE Leave: creation is limited to the complete current calendar year.
++    // This keeps January through December available while hiding prior/future years.
++    if (document.querySelector('[data-hayne-view="leave-create-v2"]')) {
++        var hayneCurrentYear = new Date().getFullYear();
++        var hayneYearStart = new Date(hayneCurrentYear, 0, 1);
++        var hayneYearEnd = new Date(hayneCurrentYear, 11, 31);
++        var hayneYearRange = hayneCurrentYear + ':' + hayneCurrentYear;
++        $("#viz_startdate").datepicker("option", {
++            minDate: hayneYearStart,
++            maxDate: hayneYearEnd,
++            yearRange: hayneYearRange
++        });
++        $("#viz_enddate").datepicker("option", {
++            minDate: hayneYearStart,
++            maxDate: hayneYearEnd,
++            yearRange: hayneYearRange
++        });
++    }
+ 
+     //Force decimal separator whatever the locale is
+     $("#days").keyup(function () {
