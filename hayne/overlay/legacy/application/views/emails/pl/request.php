@@ -7,6 +7,11 @@ $term = ((string) $StartDate === (string) $EndDate)
     ? (string) $StartDate
     : (string) $StartDate . ' – ' . (string) $EndDate;
 $detailsUrl = rtrim((string) $BaseUrl, '/') . '/requests/review/' . rawurlencode((string) $LeaveId);
+$isSensitiveCaregiver = filter_var($HayneSensitiveCaregiver ?? FALSE, FILTER_VALIDATE_BOOLEAN);
+$reasonLabel = $isSensitiveCaregiver ? 'Dane formalne' : 'Uzasadnienie';
+$reasonValue = $isSensitiveCaregiver
+    ? 'Dane osoby wymagającej opieki lub wsparcia są dostępne wyłącznie dla kadr.'
+    : $Reason;
 
 echo hayne_mail_render(
     'Nowy wniosek urlopowy',
@@ -16,7 +21,7 @@ echo hayne_mail_render(
         ['label' => 'Typ urlopu', 'value' => $Type],
         ['label' => 'Termin', 'value' => $term],
         ['label' => 'Liczba dni', 'value' => $Duration],
-        ['label' => 'Uzasadnienie', 'value' => $Reason],
+        ['label' => $reasonLabel, 'value' => $reasonValue],
     ],
     'Do akceptacji',
     'pending',
