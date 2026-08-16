@@ -1,0 +1,51 @@
+name: verify-pr-statutory-summons
+
+on:
+  pull_request:
+
+jobs:
+  verify-statutory-summons:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check JavaScript syntax
+        run: node --check hayne/overlay/assets/hayne/official-summons.js
+
+      - name: Verify source guardrails
+        run: |
+          grep -F "POLICY_CODE_OFFICIAL_SUMMONS = 'official_summons'" hayne/overlay/legacy/application/models/Hayne_credit_exemption_model.php
+          grep -F "runtime code never" hayne/overlay/legacy/application/models/Hayne_credit_exemption_model.php
+          grep -F "isCreditExemptType" hayne/patches/279-official-summons-credit-exemption.patch
+          grep -F "creditExempt" hayne/patches/279-official-summons-credit-exemption.patch
+          grep -F "saveOfficialSummonsPolicy" hayne/patches/280-official-summons-admin.patch
+          grep -F "HAYNE nie rozpoznaje go po nazwie ani nie zgaduje jego ID" hayne/overlay/legacy/application/views/haynelimits/official_summons.php
+          grep -F "official-summons.js?v=1" hayne/patches/281-official-summons-assets.patch
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build final HAYNE Leave image
+        run: docker compose build jorani
+
+      - name: Verify final runtime
+        run: |
+          docker compose run --rm --no-deps jorani sh -ec '
+            test -s assets/hayne/official-summons.js
+            test -s legacy/application/models/Hayne_credit_exemption_model.php
+            test -s legacy/application/views/haynelimits/official_summons.php
+            grep -F "assets/hayne/official-summons.js?v=1" legacy/application/views/templates/header.php
+            test "$(grep -c "isCreditExemptType((int) \$leaveTypeId)" legacy/application/controllers/Leaves.php)" -eq 2
+            grep -F "creditExempt" legacy/application/controllers/Leaves.php
+            grep -F "saveOfficialSummonsPolicy" legacy/application/controllers/Haynelimits.php
+            grep -F "official_summons_policy" legacy/application/views/haynelimits/index.php
+            php -l legacy/application/models/Hayne_credit_exemption_model.php
+            php -l legacy/application/controllers/Leaves.php
+            php -l legacy/application/controllers/Haynelimits.php
+            php -l legacy/application/views/haynelimits/official_summons.php
+            php -l legacy/application/views/haynelimits/index.php
+          '
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
