@@ -1,0 +1,63 @@
+name: verify-pr-mail-date-push-hotfix
+
+on:
+  pull_request:
+
+jobs:
+  verify-hotfix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build final HAYNE Leave image
+        run: docker compose build jorani
+
+      - name: Verify runtime files
+        run: |
+          docker compose run --rm --no-deps jorani sh -ec '
+            php -l legacy/application/helpers/hayne_mail_helper.php
+            php -l legacy/application/helpers/hayne_push_helper.php
+            php -l legacy/application/controllers/Leaves.php
+
+            grep -F "hayne_push_send_for_mail(\$controller, \$to, \$cc, \$subject, \$message)" legacy/application/helpers/tools_helper.php
+            grep -F "Twój wniosek urlopowy został zaakceptowany." legacy/application/helpers/hayne_push_helper.php
+            grep -F "Twój wniosek urlopowy został odrzucony." legacy/application/helpers/hayne_push_helper.php
+            grep -F "Anulowanie Twojego wniosku zostało zaakceptowane." legacy/application/helpers/hayne_push_helper.php
+            grep -F "Prośba o anulowanie Twojego wniosku została odrzucona." legacy/application/helpers/hayne_push_helper.php
+
+            grep -F "HAYNE" legacy/application/helpers/hayne_mail_helper.php
+            grep -F "LEAVE" legacy/application/helpers/hayne_mail_helper.php
+            ! grep -F "assets/hayne/logo.png" legacy/application/helpers/hayne_mail_helper.php
+
+            grep -F "hayneCurrentYear" assets/js/lms/leave.edit-1.0.4.js
+            grep -F "new Date(hayneCurrentYear, 0, 1)" assets/js/lms/leave.edit-1.0.4.js
+            grep -F "new Date(hayneCurrentYear, 11, 31)" assets/js/lms/leave.edit-1.0.4.js
+            grep -F "Nowy wniosek może obejmować wyłącznie bieżący rok kalendarzowy" legacy/application/controllers/Leaves.php
+          '
+
+      - name: Verify push outcome mapper
+        run: |
+          docker compose run --rm --no-deps jorani php -r '
+            define("BASEPATH", __DIR__);
+            require "legacy/application/helpers/hayne_push_helper.php";
+            $cases = [
+              "<p>Twój wniosek urlopowy został zaakceptowany.</p>" => "Twój wniosek urlopowy został zaakceptowany.",
+              "<p>Twój wniosek urlopowy został odrzucony. Szczegóły znajdziesz w HAYNE Leave.</p>" => "Twój wniosek urlopowy został odrzucony.",
+              "<p>Twój wniosek urlopowy został anulowany.</p>" => "Anulowanie Twojego wniosku zostało zaakceptowane.",
+              "<p>Prośba o anulowanie została odrzucona. Wniosek pozostaje zaakceptowany.</p>" => "Prośba o anulowanie Twojego wniosku została odrzucona.",
+            ];
+            foreach ($cases as $html => $expected) {
+              if (hayne_push_employee_body_for_mail($html) !== $expected) {
+                fwrite(STDERR, "Push mapping mismatch\n");
+                exit(1);
+              }
+            }
+            echo "Push mapping PASS\n";
+          '
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
