@@ -1,0 +1,51 @@
+name: verify-pr-caregiver-privacy-review
+
+on:
+  pull_request:
+
+jobs:
+  verify-caregiver-privacy-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify source privacy guardrails
+        run: |
+          grep -F "hayneSensitiveCaregiverReview" hayne/overlay/legacy/application/controllers/Hayneapprovals.php
+          grep -F "getMetadata((int) \$id)" hayne/overlay/legacy/application/controllers/Hayneapprovals.php
+          grep -F "Dane osoby wymagającej opieki lub wsparcia są dostępne wyłącznie dla kadr." hayne/overlay/legacy/application/views/requests/review.php
+          grep -F "approval-review-privacy.css?v=1" hayne/overlay/legacy/application/views/requests/review.php
+          grep -F "background: #176b42" hayne/overlay/assets/hayne/approval-review-privacy.css
+          grep -F "hayneCaregiverDetails'] = NULL" hayne/patches/282-caregiver-detail-privacy.patch
+          grep -F "HayneSensitiveCaregiver" hayne/patches/283-caregiver-manager-mail-privacy.patch
+          grep -F "HayneSensitiveCaregiver" hayne/overlay/legacy/application/views/emails/pl/request.php
+          grep -F "HayneSensitiveCaregiver" hayne/overlay/legacy/application/views/emails/pl/cancel.php
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build final HAYNE Leave image
+        run: docker compose build jorani
+
+      - name: Verify final runtime
+        run: |
+          docker compose run --rm --no-deps jorani sh -ec '
+            test -s assets/hayne/approval-review-privacy.css
+            grep -F "approval-review-privacy.css?v=1" legacy/application/views/requests/review.php
+            grep -F "background: #176b42" assets/hayne/approval-review-privacy.css
+            grep -F "hayneSensitiveCaregiverReview" legacy/application/controllers/Hayneapprovals.php
+            grep -F "hayneCanViewCaregiverDetails" legacy/application/controllers/Leaves.php
+            grep -F "HayneSensitiveCaregiver" legacy/application/controllers/Requests.php
+            grep -F "Dane formalne" legacy/application/views/emails/pl/request.php
+            grep -F "Dane formalne" legacy/application/views/emails/pl/cancel.php
+            php -l legacy/application/controllers/Hayneapprovals.php
+            php -l legacy/application/controllers/Leaves.php
+            php -l legacy/application/controllers/Requests.php
+            php -l legacy/application/views/requests/review.php
+            php -l legacy/application/views/emails/pl/request.php
+            php -l legacy/application/views/emails/pl/cancel.php
+          '
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
