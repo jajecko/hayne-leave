@@ -6,7 +6,7 @@
 @@ -54,1 +55,2 @@
          $data['occasion_policy'] = $this->hayne_occasion_leave_model->getPolicy();
 +        $data['official_summons_policy'] = $this->hayne_credit_exemption_model->getOfficialSummonsPolicy();
-@@ -363,1 +365,55 @@
+@@ -363,1 +365,52 @@
 +    public function saveOfficialSummonsPolicy(): void
 +    {
 +        $leaveTypeId = filter_var($this->input->post('official_summons_type_id', TRUE), FILTER_VALIDATE_INT);
@@ -59,7 +59,7 @@
 +    }
 +
      public function saveChildcareAllocation(): void
-@@ -424,1 +480,5 @@
+@@ -424,5 +480,9 @@
              'holiday_compensation' => [
                  'policy' => $this->hayne_holiday_compensation_model->getPolicy(),
                  'label' => 'dzień wolny za święto',
@@ -74,7 +74,7 @@
 @@ -15,1 +15,2 @@
  $occasionEnabled = !empty($occasion_policy) && (int) $occasion_policy['enabled'] === 1;
 +$officialSummonsEnabled = !empty($official_summons_policy) && (int) $official_summons_policy['enabled'] === 1;
-@@ -184,1 +185,12 @@
+@@ -184,2 +185,12 @@
                      </details>
 +
 +                    <details class="hayne-policy-disclosure">
