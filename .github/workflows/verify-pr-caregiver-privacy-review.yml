@@ -21,6 +21,9 @@ jobs:
           grep -F "HayneSensitiveCaregiver" hayne/overlay/legacy/application/views/emails/pl/request.php
           grep -F "HayneSensitiveCaregiver" hayne/overlay/legacy/application/views/emails/pl/cancel.php
 
+      - name: Prepare environment
+        run: cp .env.example .env
+
       - name: Verify cumulative overlay and patch stack
         env:
           JORANI_VERSION: v1.0.4
@@ -35,13 +38,10 @@ jobs:
             rel="${patch_file#${GITHUB_WORKSPACE}/}"
             if ! patch_output=$(patch --batch --forward -p1 < "$patch_file" 2>&1); then
               patch_output=$(printf "%s" "$patch_output" | tr "\n" " ")
-              echo "::error file=${rel}::${patch_output}"
+              echo "::error title=Patch stack failure::${rel} | ${patch_output}"
               exit 1
             fi
           done
-
-      - name: Prepare environment
-        run: cp .env.example .env
 
       - name: Build final HAYNE Leave image
         run: docker compose build jorani
