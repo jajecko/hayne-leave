@@ -1,0 +1,10 @@
+/* Hide only the legacy approvals payload while the HAYNE presentation enhancer is pending. */
+.hayne-approvals-host.hayne-approvals-pending > h2,
+.hayne-approvals-host.hayne-approvals-pending > p,
+.hayne-approvals-host.hayne-approvals-pending > .alert,
+.hayne-approvals-host.hayne-approvals-pending > .row,
+.hayne-approvals-host.hayne-approvals-pending > #leaves,
+.hayne-approvals-host.hayne-approvals-pending > #leaves_wrapper,
+.hayne-approvals-host.hayne-approvals-pending > .row-fluid {
+  visibility: hidden;
+}
