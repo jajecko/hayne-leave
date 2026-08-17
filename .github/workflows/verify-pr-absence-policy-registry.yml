@@ -25,15 +25,17 @@ jobs:
           grep -Fq 'return $this->isOfficialSummonsType($leaveTypeId);' hayne/overlay/legacy/application/models/Hayne_credit_exemption_model.php
           grep -Fq "003-leave-type-registry.sql" docker/mysql/Dockerfile
 
-      - name: Verify legacy types are inactive only in registry metadata
+      - name: Verify legacy flags and controlled new-request consumer
         run: |
           set -eux
           grep -Fq "2 => self::policy(2, 'on_demand_legacy', 'NONE', 'NONE', 'STANDARD', FALSE, 'LEAVE')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
           grep -Fq "17 => self::policy(17, 'holiday_legacy', 'NONE', 'NONE', 'STANDARD', FALSE, 'LEAVE')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
           grep -Fq "18 => self::policy(18, 'delegation_legacy', 'NONE', 'NONE', 'STANDARD', FALSE, 'LEAVE')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
           grep -Fq "19 => self::policy(19, 'home_office', 'NONE', 'NONE', 'STANDARD', FALSE, 'WORK')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          test -s hayne/patches/284-registry-new-request-types.patch
           runtime_consumers="$(git grep -l "getActiveLeaveTypeIdsForNewRequests" -- hayne/ ':!hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php' || true)"
-          test -z "$runtime_consumers"
+          test "$runtime_consumers" = "hayne/patches/284-registry-new-request-types.patch"
+          test "$(grep -Fc "getActiveLeaveTypeIdsForNewRequests" hayne/patches/284-registry-new-request-types.patch)" -eq 2
 
       - name: Verify cumulative overlay and patch stack
         env:
@@ -66,8 +68,10 @@ jobs:
           docker compose run --rm --no-deps jorani sh -ec '
             php -l legacy/application/models/Hayne_leave_type_registry_model.php
             php -l legacy/application/models/Hayne_credit_exemption_model.php
+            php -l legacy/application/controllers/Leaves.php
             grep -Fq "Hayne_leave_type_registry_model" legacy/application/models/Hayne_credit_exemption_model.php
             grep -Fq '\''return $this->isOfficialSummonsType($leaveTypeId);'\'' legacy/application/models/Hayne_credit_exemption_model.php
+            test "$(grep -Fc "getActiveLeaveTypeIdsForNewRequests" legacy/application/controllers/Leaves.php)" -eq 2
           '
 
       - name: Verify fresh-install registry schema
