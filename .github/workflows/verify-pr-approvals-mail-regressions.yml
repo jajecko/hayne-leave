@@ -1,0 +1,195 @@
+name: verify-pr-approvals-mail-regressions
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/patches/150-approvals-assets.patch'
+      - 'hayne/patches/286-ui-mail-branding-hotfix.patch'
+      - 'hayne/patches/288-approvals-first-paint-guard.patch'
+      - 'hayne/overlay/assets/hayne/approvals.js'
+      - 'hayne/overlay/assets/hayne/approvals-first-paint.css'
+      - '.github/workflows/verify-pr-approvals-mail-regressions.yml'
+
+jobs:
+  verify-regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify tracked source contract
+        run: |
+          set -eux
+          P150=hayne/patches/150-approvals-assets.patch
+          P286=hayne/patches/286-ui-mail-branding-hotfix.patch
+          P288=hayne/patches/288-approvals-first-paint-guard.patch
+          JS=hayne/overlay/assets/hayne/approvals.js
+          CSS=hayne/overlay/assets/hayne/approvals-first-paint.css
+
+          grep -F 'approvals-first-paint.css' "$P150"
+          grep -F "hayne-approvals-host', 'hayne-approvals-pending" "$P288"
+          grep -F 'aria-busy' "$P288"
+          grep -F '1500' "$P288"
+          grep -F "document.addEventListener('DOMContentLoaded'" "$JS"
+          ! grep -F "window.addEventListener('load'" "$JS"
+          grep -F "classList.remove('hayne-approvals-pending')" "$JS"
+          grep -F '> #leaves_wrapper' "$CSS"
+
+          grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', '', true)" "$P286"
+          grep -F "method_exists(\$controller->email, 'get_attachment_cid')" "$P286"
+          grep -F 'get_attachment_cid($mailLogoPath)' "$P286"
+
+      - name: Download pinned Jorani source
+        run: |
+          set -eux
+          rm -rf /tmp/jorani-pristine
+          mkdir -p /tmp/jorani-pristine
+          curl -fsSL https://github.com/jorani/jorani/archive/refs/tags/v1.0.4.tar.gz \
+            | tar -xz --strip-components=1 -C /tmp/jorani-pristine
+
+      - name: Verify patch 288 independently
+        run: |
+          set -eux
+          cd /tmp/jorani-pristine
+          patch --dry-run --batch --forward -p1 \
+            < "$GITHUB_WORKSPACE/hayne/patches/288-approvals-first-paint-guard.patch"
+
+      - name: Verify patches 150 and 286 independently
+        run: |
+          set -eux
+          for patch_file in \
+            hayne/patches/150-approvals-assets.patch \
+            hayne/patches/286-ui-mail-branding-hotfix.patch
+          do
+            rm -rf /tmp/jorani-independent
+            cp -a /tmp/jorani-pristine /tmp/jorani-independent
+            cd /tmp/jorani-independent
+            patch --dry-run --batch --forward -p1 < "$GITHUB_WORKSPACE/$patch_file"
+            cd "$GITHUB_WORKSPACE"
+          done
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build final HAYNE Leave image
+        run: docker compose build jorani
+
+      - name: Verify approvals first-paint runtime contract
+        run: |
+          set -eux
+          docker compose run --rm --no-deps --entrypoint sh jorani -ec '
+            VIEW=/var/www/html/legacy/application/views/requests/index.php
+            HEADER=/var/www/html/legacy/application/views/templates/header.php
+            JS=/var/www/html/assets/hayne/approvals.js
+            CSS=/var/www/html/assets/hayne/approvals-first-paint.css
+
+            php -l "$VIEW"
+            grep -Fq "approvals-first-paint.css" "$HEADER"
+            test -s "$CSS"
+            grep -Fq "hayne-approvals-host" "$VIEW"
+            grep -Fq "hayne-approvals-pending" "$VIEW"
+            grep -Fq "aria-busy" "$VIEW"
+            grep -Fq "> #leaves_wrapper" "$CSS"
+            grep -Fq "document.addEventListener('\''DOMContentLoaded'\''" "$JS"
+            ! grep -Fq "window.addEventListener('\''load'\''" "$JS"
+            grep -Fq "classList.remove('\''hayne-approvals-pending'\'')" "$JS"
+
+            hook_line="$(grep -nF "hayne-approvals-host'\'', '\''hayne-approvals-pending" "$VIEW" | head -1 | cut -d: -f1)"
+            title_line="$(grep -nF "<h2><?php echo lang('\''requests_index_title'\''); ?>" "$VIEW" | head -1 | cut -d: -f1)"
+            echo "APPROVALS_HOOK_LINE=$hook_line LEGACY_TITLE_LINE=$title_line"
+            test -n "$hook_line"
+            test -n "$title_line"
+            test "$hook_line" -lt "$title_line"
+          '
+          echo "APPROVALS_FIRST_PAINT_GATE=PASS"
+
+      - name: Verify final mail wrapper uses PHPMailer embedded-image path
+        run: |
+          set -eux
+          docker compose run --rm --no-deps --entrypoint sh jorani -ec '
+            TOOLS=/var/www/html/legacy/application/helpers/tools_helper.php
+            EMAIL=/var/www/html/legacy/application/config/email.php
+            MYEMAIL=/var/www/html/legacy/application/libraries/MY_Email.php
+
+            php -l "$TOOLS"
+            grep -Fq "useragent'\''\] = '\''PHPMailer" "$EMAIL"
+            grep -Fq "attach(\$mailLogoPath, '\''inline'\'', '\''hayne-logo.png'\'', '\'''\'', true)" "$TOOLS"
+            grep -Fq "get_attachment_cid(\$mailLogoPath)" "$TOOLS"
+            grep -Fq "addStringEmbeddedImage" "$MYEMAIL"
+          '
+
+      - name: Verify actual Jorani MY_Email builds related inline PNG MIME
+        run: |
+          set -eux
+          docker compose run --rm --no-deps -T --entrypoint php jorani -n <<'PHP'
+          <?php
+          define('BASEPATH', '/var/www/html/legacy/system/');
+          defined('FOPEN_READ') || define('FOPEN_READ', 'rb');
+
+          function &get_mimes()
+          {
+              static $mimes = ['png' => 'image/png'];
+              return $mimes;
+          }
+
+          require '/var/www/html/legacy/vendor/autoload.php';
+          require BASEPATH . 'libraries/Email.php';
+          require '/var/www/html/legacy/application/libraries/MY_Email.php';
+
+          $reflection = new ReflectionClass('MY_Email');
+          $email = $reflection->newInstanceWithoutConstructor();
+          $engine = $reflection->getProperty('mailer_engine');
+          $engine->setValue($email, 'phpmailer');
+          $email->phpmailer = new PHPMailer\PHPMailer\PHPMailer(true);
+
+          $path = '/var/www/html/assets/hayne/logo.png';
+          $email->attach($path, 'inline', 'hayne-logo.png', '', true);
+          $cid = $email->get_attachment_cid($path);
+          if (!is_string($cid) || $cid === '') {
+              fwrite(STDERR, "existing embedded CID missing\n");
+              exit(20);
+          }
+
+          $mail = $email->phpmailer;
+          $mail->setFrom('urlopy@hayne.pl', 'HAYNE Leave');
+          $mail->addAddress('smoke@example.invalid');
+          $mail->Subject = 'HAYNE Leave MIME smoke';
+          $mail->isHTML(true);
+          $mail->Body = '<html><body><img src="cid:' . htmlspecialchars($cid, ENT_QUOTES, 'UTF-8') . '" alt="HAYNE Leave"></body></html>';
+          $mail->AltBody = 'HAYNE Leave';
+
+          if (!$mail->preSend()) {
+              fwrite(STDERR, "PHPMailer preSend failed\n");
+              exit(21);
+          }
+
+          $mime = $mail->getSentMIMEMessage();
+          $expectedBase64 = base64_encode(file_get_contents($path));
+          $normalizedMime = preg_replace('/\s+/', '', $mime);
+
+          $checks = [
+              'multipart/related' => stripos($mime, 'multipart/related') !== false,
+              'inline disposition' => stripos($mime, 'Content-Disposition: inline') !== false,
+              'matching Content-ID' => strpos($mime, 'Content-ID: <' . $cid . '>') !== false,
+              'matching HTML CID' => strpos($mime, 'cid:' . $cid) !== false,
+              'real PNG bytes' => strpos($normalizedMime, $expectedBase64) !== false,
+          ];
+
+          foreach ($checks as $name => $ok) {
+              echo $name . '=' . ($ok ? 'PASS' : 'FAIL') . "\n";
+              if (!$ok) exit(22);
+          }
+
+          echo 'SOURCE_LOGO_SHA=' . hash_file('sha256', $path) . "\n";
+          echo "PHPMAILER_RELATED_MIME_GATE=PASS\n";
+          PHP
+
+      - name: Verify no workflow or registry scope drift
+        run: |
+          set -eux
+          ! grep -F 'workflow_mode' hayne/patches/288-approvals-first-paint-guard.patch
+          ! grep -F 'hayne_leave_type_registry' hayne/patches/288-approvals-first-paint-guard.patch
+          ! grep -F 'hayne_leave_type_registry' hayne/patches/286-ui-mail-branding-hotfix.patch
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color || true
