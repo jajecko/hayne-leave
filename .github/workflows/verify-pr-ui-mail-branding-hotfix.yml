@@ -119,14 +119,17 @@ jobs:
           set -eux
           docker compose run --rm --no-deps --entrypoint test jorani -s /var/www/html/assets/hayne/logo.png
 
-      - name: Verify exact logo bytes survive build
+      - name: Verify exact approved logo bytes survive build
         run: |
           set -eux
+          APPROVED_LOGO_SHA="1652e1a58362d74db227f15581bb9fed340e44a35e526c9bf1eb6d2a757b36c8"
           SOURCE_LOGO_SHA="$(sha256sum hayne/overlay/assets/hayne/logo.png | awk '{print $1}')"
           IMAGE_LOGO_SHA="$(docker compose run --rm --no-deps --entrypoint sha256sum jorani /var/www/html/assets/hayne/logo.png | awk '{print $1}')"
+          echo "APPROVED_LOGO_SHA=$APPROVED_LOGO_SHA"
           echo "SOURCE_LOGO_SHA=$SOURCE_LOGO_SHA"
           echo "IMAGE_LOGO_SHA=$IMAGE_LOGO_SHA"
-          test "$SOURCE_LOGO_SHA" = "$IMAGE_LOGO_SHA"
+          test "$SOURCE_LOGO_SHA" = "$APPROVED_LOGO_SHA"
+          test "$IMAGE_LOGO_SHA" = "$APPROVED_LOGO_SHA"
 
       - name: Verify no absence-policy scope drift
         run: |
