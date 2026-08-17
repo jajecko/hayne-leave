@@ -4,11 +4,10 @@
          $this->load->model('hayne_leave_type_registry_model');
 +        $this->load->model('hayne_leave_workflow_model');
          $this->load->model('types_model');
-@@ -60,5 +61,19 @@
+@@ -58,3 +59,17 @@
          $this->load->model('hayne_force_majeure_model');
          $this->hayne_force_majeure_model->ensureCurrentYear((int) $this->user_id);
      }
- 
 +    private function ensurePendingWorkflowRecipient(int $leaveTypeId): bool
 +    {
 +        if ($this->hayne_leave_workflow_model->hasRequiredNotificationRecipient($leaveTypeId)) {
@@ -23,7 +22,6 @@
 +        return FALSE;
 +    }
 +
-     /**
 @@ -337,2 +350,9 @@
              $duration = (float) $this->input->post('duration');
 +
@@ -45,7 +43,7 @@
 +                redirect('leaves');
 +            }
  
-@@ -621,2 +649,6 @@
+@@ -621,2 +649,5 @@
              if ($leave['status'] == LMS_PLANNED) {
 +                if (!$this->ensurePendingWorkflowRecipient((int) $leave['type'])) {
 +                    redirect('leaves');
@@ -84,7 +82,7 @@
 +            }
          }
          sendMailByWrapper($this, $subject, $message, $to, $cc);
-@@ -938,2 +977,6 @@
+@@ -938,2 +977,5 @@
              if ($leave['status'] == LMS_ACCEPTED) {
 +                if (!$this->ensurePendingWorkflowRecipient((int) $leave['type'])) {
 +                    redirect('leaves');
