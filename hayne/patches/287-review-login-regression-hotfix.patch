@@ -10,6 +10,8 @@
          } else {
 --- a/legacy/application/views/templates/header.php
 +++ b/legacy/application/views/templates/header.php
-@@ -65 +65 @@
+@@ -70,3 +70,3 @@
+ </head>
+ 
 -<body>
 +<body<?php echo ($this->router->fetch_class() === 'session' && $this->router->fetch_method() === 'login') ? ' class="hayne-login-target"' : ''; ?>>
