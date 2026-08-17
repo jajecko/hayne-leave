@@ -4,10 +4,11 @@ if (!defined('BASEPATH')) {
 }
 
 /**
- * HAYNE manager-facing review surface.
+ * HAYNE manager/HR-facing review surface.
  *
  * This controller is intentionally read-only. Workflow mutations continue to
- * use Jorani's native Requests accept/reject endpoints and authorization.
+ * use Jorani's native Requests accept/reject endpoints; HAYNE workflow policy
+ * controls who may reach those actions for a given leave type.
  */
 class Hayneapprovals extends CI_Controller
 {
@@ -16,6 +17,7 @@ class Hayneapprovals extends CI_Controller
         parent::__construct();
         setUserContext($this);
         $this->load->model('leaves_model');
+        $this->load->model('hayne_leave_workflow_model');
         $this->lang->load('requests', $this->language);
         $this->lang->load('global', $this->language);
     }
@@ -36,8 +38,16 @@ class Hayneapprovals extends CI_Controller
         }
 
         $employee = $this->users_model->getUsers($data['leave']['employee']);
+        $isLineManager = (int) $this->user_id === (int) $employee['manager'];
         $isDelegate = $this->delegations_model->isDelegateOfManager($this->user_id, $employee['manager']);
-        if (($this->user_id != $employee['manager']) && !$this->is_hr && !$isDelegate) {
+        $canDecide = $this->hayne_leave_workflow_model->canActorDecide(
+            (int) $data['leave']['type'],
+            (bool) $this->is_hr,
+            (bool) $this->is_admin,
+            $isLineManager,
+            $isDelegate
+        );
+        if (!$canDecide) {
             log_message('error', 'User #' . $this->user_id . ' illegally tried to review leave #' . $id);
             $this->session->set_flashdata('msg', lang('requests_accept_flash_msg_error'));
             redirect('requests');
