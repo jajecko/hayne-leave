@@ -4,10 +4,9 @@
          $this->load->model('hayne_leave_type_registry_model');
 +        $this->load->model('hayne_leave_workflow_model');
          $this->load->model('types_model');
-@@ -58,3 +59,17 @@
-         $this->load->model('hayne_force_majeure_model');
-         $this->hayne_force_majeure_model->ensureCurrentYear((int) $this->user_id);
+@@ -50,4 +51,18 @@
      }
+ 
 +    private function ensurePendingWorkflowRecipient(int $leaveTypeId): bool
 +    {
 +        if ($this->hayne_leave_workflow_model->hasRequiredNotificationRecipient($leaveTypeId)) {
@@ -22,6 +21,8 @@
 +        return FALSE;
 +    }
 +
+     /**
+      * Display the list of the leave requests of the connected user
 @@ -337,2 +350,9 @@
              $duration = (float) $this->input->post('duration');
 +
