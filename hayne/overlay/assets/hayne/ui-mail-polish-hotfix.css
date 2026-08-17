@@ -1,0 +1,100 @@
+/* HOTFIX-78: review CTA contrast and global alert readability. */
+
+/*
+ * app.css owns a global #wrap a color rule. Match that ID specificity so the
+ * positive review action stays white on its green background in every state.
+ */
+#wrap .hayne-approval-review a.hayne-approval-review__action--accept,
+#wrap .hayne-approval-review a.hayne-approval-review__action--accept:link,
+#wrap .hayne-approval-review a.hayne-approval-review__action--accept:visited,
+#wrap .hayne-approval-review a.hayne-approval-review__action--accept:hover,
+#wrap .hayne-approval-review a.hayne-approval-review__action--accept:focus,
+#wrap .hayne-approval-review a.hayne-approval-review__action--accept:active,
+#wrap .hayne-approval-review a.hayne-approval-review__action--accept > span,
+#wrap .hayne-approval-review a.hayne-approval-review__action--accept > i {
+  color: #fff;
+}
+
+/*
+ * Bootstrap 2 alerts use a saturated yellow fill and a floated close control.
+ * HAYNE messages use quiet status surfaces, a clear leading accent and keep
+ * the dismiss control inside the alert boundary.
+ */
+#wrap .alert {
+  position: relative;
+  box-sizing: border-box;
+  margin-bottom: 18px;
+  padding: 13px 44px 13px 15px;
+  border: 1px solid #d9d9d3;
+  border-left-width: 3px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: none;
+  color: #2f2f2b;
+  text-shadow: none;
+}
+
+#wrap .alert .close {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  float: none;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #555550;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 24px;
+  opacity: 0.8;
+  text-align: center;
+  text-shadow: none;
+}
+
+#wrap .alert .close:hover,
+#wrap .alert .close:focus {
+  color: #111;
+  opacity: 1;
+  outline: 0;
+}
+
+#wrap .alert-success {
+  border-color: #cfe3d7;
+  border-left-color: #176b42;
+  background: #f5faf7;
+  color: #24543a;
+}
+
+#wrap .alert-error,
+#wrap .alert-danger {
+  border-color: #ecd1d1;
+  border-left-color: #a83c3c;
+  background: #fff7f7;
+  color: #733131;
+}
+
+#wrap .alert-warning,
+#wrap .alert-block {
+  border-color: #e8dcc3;
+  border-left-color: #9a6c1b;
+  background: #fffaf1;
+  color: #614b22;
+}
+
+#wrap .alert-info {
+  border-color: #d5e0e7;
+  border-left-color: #5a7487;
+  background: #f6f9fb;
+  color: #354c5b;
+}
+
+#wrap .alert a:not(.close) {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+}
