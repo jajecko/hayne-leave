@@ -1,8 +1,9 @@
 --- a/legacy/application/views/templates/header.php
 +++ b/legacy/application/views/templates/header.php
-@@ -33 +33,4 @@
+@@ -33 +33,5 @@
 -</head>
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/approvals.css">
++    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/approvals-first-paint.css">
 +    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/approvals-state.css">
 +    <script defer type="text/javascript" src="<?php echo base_url(); ?>assets/hayne/approvals.js"></script>
 +</head>
