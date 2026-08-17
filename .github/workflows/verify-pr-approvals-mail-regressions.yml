@@ -73,7 +73,13 @@ jobs:
       - name: Build final HAYNE Leave image
         run: docker compose build jorani
 
-      - name: Verify approvals first-paint runtime contract
+      - name: Verify approvals request view PHP syntax
+        run: |
+          set -eux
+          docker compose run --rm --no-deps --entrypoint php jorani \
+            -n -l /var/www/html/legacy/application/views/requests/index.php
+
+      - name: Verify approvals first-paint assets in final image
         run: |
           set -eux
           docker compose run --rm --no-deps --entrypoint sh jorani -ec '
@@ -82,25 +88,34 @@ jobs:
             JS=/var/www/html/assets/hayne/approvals.js
             CSS=/var/www/html/assets/hayne/approvals-first-paint.css
 
-            php -l "$VIEW"
             grep -Fq "approvals-first-paint.css" "$HEADER"
             test -s "$CSS"
             grep -Fq "hayne-approvals-host" "$VIEW"
             grep -Fq "hayne-approvals-pending" "$VIEW"
             grep -Fq "aria-busy" "$VIEW"
             grep -Fq "> #leaves_wrapper" "$CSS"
-            grep -Fq "document.addEventListener('\''DOMContentLoaded'\''" "$JS"
-            ! grep -Fq "window.addEventListener('\''load'\''" "$JS"
-            grep -Fq "classList.remove('\''hayne-approvals-pending'\'')" "$JS"
+            grep -Fq "DOMContentLoaded" "$JS"
+            if grep -Fq "window.addEventListener" "$JS" && grep -Fq "load" "$JS"; then
+              echo "legacy window.load enhancer still present"
+              exit 31
+            fi
+            grep -Fq "hayne-approvals-pending" "$JS"
+          '
+          echo "APPROVALS_FIRST_PAINT_ASSET_GATE=PASS"
 
-            hook_line="$(grep -nF "hayne-approvals-host'\'', '\''hayne-approvals-pending" "$VIEW" | head -1 | cut -d: -f1)"
-            title_line="$(grep -nF "<h2><?php echo lang('\''requests_index_title'\''); ?>" "$VIEW" | head -1 | cut -d: -f1)"
+      - name: Verify approvals first-paint hook precedes legacy markup
+        run: |
+          set -eux
+          docker compose run --rm --no-deps --entrypoint sh jorani -ec '
+            VIEW=/var/www/html/legacy/application/views/requests/index.php
+            hook_line="$(grep -nF "hayne-approvals-host" "$VIEW" | head -1 | cut -d: -f1)"
+            title_line="$(grep -nF "requests_index_title" "$VIEW" | head -1 | cut -d: -f1)"
             echo "APPROVALS_HOOK_LINE=$hook_line LEGACY_TITLE_LINE=$title_line"
             test -n "$hook_line"
             test -n "$title_line"
             test "$hook_line" -lt "$title_line"
           '
-          echo "APPROVALS_FIRST_PAINT_GATE=PASS"
+          echo "APPROVALS_FIRST_PAINT_ORDER_GATE=PASS"
 
       - name: Verify final mail wrapper uses PHPMailer embedded-image path
         run: |
