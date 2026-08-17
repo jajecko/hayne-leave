@@ -42,6 +42,8 @@ class Hayneapprovals extends CI_Controller
         $isDelegate = $this->delegations_model->isDelegateOfManager($this->user_id, $employee['manager']);
         $canDecide = $this->hayne_leave_workflow_model->canActorDecide(
             (int) $data['leave']['type'],
+            (int) $this->user_id,
+            (int) $data['leave']['employee'],
             (bool) $this->is_hr,
             (bool) $this->is_admin,
             $isLineManager,
