@@ -3,7 +3,7 @@
 @@ -46,1 +46,2 @@
          $this->load->model('hayne_credit_exemption_model');
 +        $this->load->model('hayne_leave_type_registry_model');
-@@ -274,2 +275,10 @@
+@@ -274,2 +275,12 @@
              $leaveTypesDetails = $this->contracts_model->getLeaveTypesDetailsOTypesForUser($this->session->userdata('id'));
 +            $hayneActiveTypeIds = $this->hayne_leave_type_registry_model->getActiveLeaveTypeIdsForNewRequests();
 +            if ($this->hayne_leave_type_registry_model->catalogMatchesMvpSignature() && !empty($hayneActiveTypeIds)) {
@@ -16,7 +16,7 @@
 +                }
 +            }
              $data['defaultType'] = $leaveTypesDetails->defaultType;
-@@ -307,2 +316,10 @@
+@@ -307,2 +318,12 @@
              $leaveTypesDetails = $this->contracts_model->getLeaveTypesDetailsOTypesForUser($this->session->userdata('id'));
 +            $hayneActiveTypeIds = $this->hayne_leave_type_registry_model->getActiveLeaveTypeIdsForNewRequests();
 +            if ($this->hayne_leave_type_registry_model->catalogMatchesMvpSignature() && !empty($hayneActiveTypeIds)) {
