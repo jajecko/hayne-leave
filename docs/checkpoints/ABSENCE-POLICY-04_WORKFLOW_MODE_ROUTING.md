@@ -40,6 +40,25 @@ For `workflow_mode=HR`:
 
 No recipient is inferred from a display name or a hard-coded employee ID.
 
+### Missing HR recipient safety
+
+A pending HR-routed request must not be created without a real notification recipient.
+
+`Hayne_leave_workflow_model::hasRequiredNotificationRecipient()` therefore requires at least one active Jorani user with role bit `8` and a non-empty e-mail for `workflow_mode=HR`. Standard workflows keep upstream behavior.
+
+The guard is enforced before transitions into an HR pending state in:
+
+- new request creation with `LMS_REQUESTED`;
+- editing a request into `LMS_REQUESTED` or `LMS_CANCELLATION`;
+- promoting a planned request to `LMS_REQUESTED`;
+- requesting cancellation of an accepted request (`LMS_CANCELLATION`).
+
+If no active HR recipient with e-mail exists, the pending transition is not persisted and the user receives:
+
+`Nie można przekazać wniosku do HR: brak aktywnego konta HR z adresem e-mail. Skontaktuj się z administratorem.`
+
+There is no fallback to the employee's line manager for an HR-routed request.
+
 ### Pending queue
 
 Native Jorani `Requests::index()` only queries requests through `users.manager`. ABSENCE-POLICY-04 therefore applies a post-query policy adapter:
@@ -86,7 +105,8 @@ The adapter intentionally keeps upstream behavior when a registry row is missing
 3. HR/admin can decide an `HR` request.
 4. Normal `APPROVAL` authorization remains compatible with Jorani.
 5. HR-mode notifications do not use the employee's manager or manager delegates.
-6. Normal manager request lists exclude HR-mode requests.
-7. HR/admin request list includes the global HR-mode queue.
-8. HAYNE review route and all four mutation endpoints enforce the same workflow adapter.
-9. Full patch stack applies to Jorani v1.0.4, final PHP lints, and the Docker image builds.
+6. An HR pending transition is blocked when no active HR recipient with e-mail exists; there is no manager fallback.
+7. Normal manager request lists exclude HR-mode requests.
+8. HR/admin request list includes the global HR-mode queue.
+9. HAYNE review route and all four mutation endpoints enforce the same workflow adapter.
+10. Full patch stack applies to Jorani v1.0.4, final PHP lints, and the Docker image builds.
