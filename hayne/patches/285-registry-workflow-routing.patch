@@ -36,7 +36,6 @@
 +                $cc = join(',', $delegates);
 +            }
          }
-+        }
          sendMailByWrapper($this, $subject, $message, $to, $cc);
 --- a/legacy/application/controllers/Requests.php
 +++ b/legacy/application/controllers/Requests.php
