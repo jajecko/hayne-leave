@@ -25,9 +25,9 @@ jobs:
           grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png')" "$P286"
           ! grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', 'image/png')" "$P286"
           grep -F "\$data['requests'] = [];" "$P287"
-          grep -F "fetch_class() === 'session'" "$P287"
-          grep -F "fetch_method() === 'login'" "$P287"
-          grep -F 'class="hayne-login-target"' "$P287"
+          grep -F "document.body.classList.add('hayne-login-target');" "$P287"
+          grep -F 'legacy/application/views/session/login.php' "$P287"
+          ! grep -F 'legacy/application/views/templates/header.php' "$P287"
 
       - name: Download pinned Jorani source
         env:
@@ -75,13 +75,13 @@ jobs:
         run: |
           set -eux
           ROOT=/tmp/hayne-final-source
-          php -l "$ROOT/legacy/application/controllers/Requests.php"
-          php -l "$ROOT/legacy/application/views/templates/header.php"
-          php -l "$ROOT/legacy/application/helpers/tools_helper.php"
-
           REQUESTS="$ROOT/legacy/application/controllers/Requests.php"
-          HEADER="$ROOT/legacy/application/views/templates/header.php"
+          LOGIN="$ROOT/legacy/application/views/session/login.php"
           TOOLS="$ROOT/legacy/application/helpers/tools_helper.php"
+
+          php -l "$REQUESTS"
+          php -l "$LOGIN"
+          php -l "$TOOLS"
 
           grep -Fq "\$data['requests'] = [];" "$REQUESTS"
           grep -Fq 'filterAndMergeApproverRequests(' "$REQUESTS"
@@ -89,9 +89,13 @@ jobs:
           merge_line="$(grep -nF 'filterAndMergeApproverRequests(' "$REQUESTS" | head -1 | cut -d: -f1)"
           test "$init_line" -lt "$merge_line"
 
-          grep -Fq "fetch_class() === 'session'" "$HEADER"
-          grep -Fq "fetch_method() === 'login'" "$HEADER"
-          grep -Fq 'class="hayne-login-target"' "$HEADER"
+          grep -Fq "document.body.classList.add('hayne-login-target');" "$LOGIN"
+          hook_line="$(grep -nF "document.body.classList.add('hayne-login-target');" "$LOGIN" | head -1 | cut -d: -f1)"
+          style_line="$(grep -nF '<style>' "$LOGIN" | head -1 | cut -d: -f1)"
+          markup_line="$(grep -nF '<div class=\"row vertical-center\">' "$LOGIN" | head -1 | cut -d: -f1)"
+          echo "LOGIN_HOOK_LINE=$hook_line STYLE_LINE=$style_line MARKUP_LINE=$markup_line"
+          test "$hook_line" -lt "$style_line"
+          test "$hook_line" -lt "$markup_line"
 
           grep -Fq "attach(\$mailLogoPath, 'inline', 'hayne-logo.png')" "$TOOLS"
           ! grep -Fq "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', 'image/png')" "$TOOLS"
@@ -103,7 +107,7 @@ jobs:
       - name: Build and start final HAYNE Leave image
         run: docker compose up --build -d
 
-      - name: Verify raw login HTML is server-targeted
+      - name: Verify raw login response orders hook before visible login markup
         run: |
           set -eux
           mkdir -p artifacts
@@ -114,8 +118,12 @@ jobs:
             sleep 2
           done
           test -s artifacts/login-raw.html
-          grep -F '<body class="hayne-login-target">' artifacts/login-raw.html
+          grep -F "document.body.classList.add('hayne-login-target');" artifacts/login-raw.html
           grep -F 'hayne-login-shell' artifacts/login-raw.html
+          hook_line="$(grep -nF "document.body.classList.add('hayne-login-target');" artifacts/login-raw.html | head -1 | cut -d: -f1)"
+          shell_line="$(grep -nF 'hayne-login-shell' artifacts/login-raw.html | head -1 | cut -d: -f1)"
+          echo "RAW_LOGIN_HOOK_LINE=$hook_line SHELL_LINE=$shell_line"
+          test "$hook_line" -lt "$shell_line"
           echo "LOGIN_FIRST_PAINT_GATE=PASS"
 
       - name: Verify real PNG payload through native CI_Email
@@ -129,14 +137,12 @@ jobs:
               return $mimes;
           }
           require BASEPATH . 'libraries/Email.php';
-
           $r = new ReflectionClass('CI_Email');
           $email = $r->newInstanceWithoutConstructor();
           $path = '/var/www/html/assets/hayne/logo.png';
           if ($email->attach($path, 'inline', 'hayne-logo.png') === false) exit(10);
           $cid = $email->attachment_cid($path);
           if (!is_string($cid) || $cid === '') exit(11);
-
           $p = $r->getProperty('_attachments');
           $p->setAccessible(true);
           $attachments = $p->getValue($email);
@@ -144,7 +150,6 @@ jobs:
           $a = $attachments[0];
           $payload = base64_decode(preg_replace('/\s+/', '', $a['content']), true);
           if (!is_string($payload)) exit(13);
-
           $expected = hash_file('sha256', $path);
           $actual = hash('sha256', $payload);
           echo "SOURCE_LOGO_SHA={$expected}\nMIME_LOGO_SHA={$actual}\n";
@@ -160,8 +165,9 @@ jobs:
           set -eux
           docker compose exec -T jorani sh -ec '
             php -l /var/www/html/legacy/application/controllers/Requests.php
-            php -l /var/www/html/legacy/application/views/templates/header.php
+            php -l /var/www/html/legacy/application/views/session/login.php
             php -l /var/www/html/legacy/application/helpers/tools_helper.php
+            grep -Fq "document.body.classList.add('"'"'hayne-login-target'"'"');" /var/www/html/legacy/application/views/session/login.php
             grep -Fq "HAYNE_MAIL_LOGO" /var/www/html/legacy/application/helpers/hayne_mail_helper.php
             grep -Fq "attachment_cid" /var/www/html/legacy/application/helpers/tools_helper.php
             grep -Fq "WORKFLOW_HR" /var/www/html/legacy/application/models/Hayne_leave_workflow_model.php
