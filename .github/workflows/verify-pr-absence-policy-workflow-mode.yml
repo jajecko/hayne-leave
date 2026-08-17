@@ -107,7 +107,12 @@ jobs:
         run: php -l /tmp/hayne-final-source/legacy/application/models/Hayne_leave_workflow_model.php
 
       - name: Lint final Leaves controller
-        run: php -l /tmp/hayne-final-source/legacy/application/controllers/Leaves.php
+        run: |
+          file=/tmp/hayne-final-source/legacy/application/controllers/Leaves.php
+          if ! php -l "$file"; then
+            nl -ba "$file" | sed -n '35,85p'
+            exit 1
+          fi
 
       - name: Lint final Requests controller
         run: php -l /tmp/hayne-final-source/legacy/application/controllers/Requests.php
