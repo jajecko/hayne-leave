@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'hayne/patches/286-ui-mail-branding-hotfix.patch'
+      - 'hayne/overlay/assets/hayne/ui-mail-hotfix.css'
+      - 'hayne/overlay/legacy/application/helpers/hayne_mail_helper.php'
       - '.github/workflows/verify-pr-ui-mail-branding-hotfix.yml'
       - 'docs/checkpoints/UI-MAIL-HOTFIX_REVIEW_ALERT_INLINE_LOGO.md'
 
@@ -13,19 +15,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify patch contract
+      - name: Verify tracked hotfix contract
         run: |
           set -eux
           PATCH=hayne/patches/286-ui-mail-branding-hotfix.patch
+          CSS=hayne/overlay/assets/hayne/ui-mail-hotfix.css
+          MAIL=hayne/overlay/legacy/application/helpers/hayne_mail_helper.php
+
           test -s "$PATCH"
-          grep -F '#wrap .alert .close {' "$PATCH"
-          grep -F 'right: 12px;' "$PATCH"
-          grep -F 'background: #fff;' "$PATCH"
-          grep -F '#wrap .hayne-approval-review a.hayne-approval-review__action--accept' "$PATCH"
+          test -s "$CSS"
+          test -s "$MAIL"
+
+          grep -F 'assets/hayne/ui-mail-hotfix.css?v=1' "$PATCH"
           grep -F '<!--HAYNE_MAIL_LOGO-->' "$PATCH"
           grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', 'image/png')" "$PATCH"
           grep -F 'attachment_cid($mailLogoPath)' "$PATCH"
           grep -F 'HAYNE mail inline logo failed' "$PATCH"
+
+          grep -F '#wrap .alert .close {' "$CSS"
+          grep -F 'right: 12px;' "$CSS"
+          grep -F 'background: #fff;' "$CSS"
+          grep -F '#wrap .hayne-approval-review a.hayne-approval-review__action--accept' "$CSS"
+          grep -F 'color: #fff;' "$CSS"
+
+          grep -F '<!--HAYNE_MAIL_LOGO-->' "$MAIL"
+
+      - name: Verify patch 286 independently against pinned upstream
+        run: |
+          set -eux
+          mkdir -p /tmp/jorani
+          curl -fsSL https://github.com/jorani/jorani/archive/refs/tags/v1.0.4.tar.gz \
+            | tar -xz --strip-components=1 -C /tmp/jorani
+          cd /tmp/jorani
+          patch --dry-run --batch --forward -p1 < "$GITHUB_WORKSPACE/hayne/patches/286-ui-mail-branding-hotfix.patch"
 
       - name: Prepare environment
         run: cp .env.example .env
@@ -42,11 +64,13 @@ jobs:
             php -l /var/www/html/legacy/application/helpers/hayne_mail_helper.php
             php -l /var/www/html/legacy/application/helpers/tools_helper.php
 
-            grep -F "#wrap .alert .close {" /var/www/html/assets/hayne/app.css
-            grep -F "right: 12px;" /var/www/html/assets/hayne/app.css
-            grep -F "background: #fff;" /var/www/html/assets/hayne/app.css
-            grep -F "#wrap .hayne-approval-review a.hayne-approval-review__action--accept" /var/www/html/assets/hayne/approval-review-privacy.css
-            grep -F "color: #fff;" /var/www/html/assets/hayne/approval-review-privacy.css
+            grep -F "assets/hayne/ui-mail-hotfix.css?v=1" /var/www/html/legacy/application/views/templates/header.php
+            test -s /var/www/html/assets/hayne/ui-mail-hotfix.css
+            grep -F "#wrap .alert .close {" /var/www/html/assets/hayne/ui-mail-hotfix.css
+            grep -F "right: 12px;" /var/www/html/assets/hayne/ui-mail-hotfix.css
+            grep -F "background: #fff;" /var/www/html/assets/hayne/ui-mail-hotfix.css
+            grep -F "#wrap .hayne-approval-review a.hayne-approval-review__action--accept" /var/www/html/assets/hayne/ui-mail-hotfix.css
+            grep -F "color: #fff;" /var/www/html/assets/hayne/ui-mail-hotfix.css
 
             grep -F "<!--HAYNE_MAIL_LOGO-->" /var/www/html/legacy/application/helpers/hayne_mail_helper.php
             grep -F "assets/hayne/logo.png" /var/www/html/legacy/application/helpers/tools_helper.php
