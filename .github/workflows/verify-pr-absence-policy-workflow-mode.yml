@@ -1,0 +1,141 @@
+name: verify-pr-absence-policy-workflow-mode
+
+on:
+  pull_request:
+
+jobs:
+  verify-absence-policy-workflow-mode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify source guardrails
+        run: |
+          set -eux
+          model=hayne/overlay/legacy/application/models/Hayne_leave_workflow_model.php
+          patch=hayne/patches/285-registry-workflow-routing.patch
+          test -s "$model"
+          test -s "$patch"
+          grep -Fq "WORKFLOW_HR = 'HR'" "$model"
+          grep -Fq "HR_ROLE_BIT = 8" "$model"
+          grep -Fq "getPrimaryNotificationRecipient" "$model"
+          grep -Fq "filterAndMergeApproverRequests" "$model"
+          grep -Fq "canActorDecide" "$model"
+          grep -Fq "getAdditionalHrRecipientEmails" "$model"
+          grep -Fq "hayne_leave_workflow_model" "$patch"
+          grep -Fq "Wnioski do weryfikacji" "$patch"
+          ! grep -Fq '$leaveTypeId === 4' "$model"
+          ! grep -Fq '$leaveTypeId === 15' "$model"
+
+      - name: Verify registry workflow map and authorization semantics
+        run: |
+          php <<'PHP'
+          <?php
+          define('BASEPATH', __DIR__);
+          class CI_Model {}
+          function log_message($level, $message): void {}
+
+          require 'hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php';
+          require 'hayne/overlay/legacy/application/models/Hayne_leave_workflow_model.php';
+
+          $policies = Hayne_leave_type_registry_model::mvpPolicies();
+          $approval = $hr = $none = [];
+          foreach ($policies as $id => $policy) {
+              if ($policy['workflow_mode'] === 'APPROVAL') $approval[] = (int) $id;
+              elseif ($policy['workflow_mode'] === 'HR') $hr[] = (int) $id;
+              elseif ($policy['workflow_mode'] === 'NONE') $none[] = (int) $id;
+              else exit(1);
+          }
+          if ($approval !== [1, 3, 8, 12, 13, 20]) exit(1);
+          if ($hr !== [4, 5, 6, 7, 9, 10, 11, 14, 15, 16]) exit(1);
+          if ($none !== [2, 17, 18, 19]) exit(1);
+
+          final class TestWorkflow extends Hayne_leave_workflow_model
+          {
+              public ?string $mode = NULL;
+              public function __construct() {}
+              public function getWorkflowModeForType(int $leaveTypeId): ?string { return $this->mode; }
+          }
+
+          $workflow = new TestWorkflow();
+          $workflow->mode = 'HR';
+          if ($workflow->canActorDecide(4, false, false, true, false) !== false) exit(1);
+          if ($workflow->canActorDecide(4, false, false, false, true) !== false) exit(1);
+          if ($workflow->canActorDecide(4, true, false, false, false) !== true) exit(1);
+          if ($workflow->canActorDecide(4, false, true, false, false) !== true) exit(1);
+
+          $workflow->mode = 'APPROVAL';
+          if ($workflow->canActorDecide(1, false, false, true, false) !== true) exit(1);
+          if ($workflow->canActorDecide(1, false, false, false, true) !== true) exit(1);
+          if ($workflow->canActorDecide(1, true, false, false, false) !== true) exit(1);
+          if ($workflow->canActorDecide(1, false, true, false, false) !== false) exit(1);
+
+          $workflow->mode = 'NONE';
+          if ($workflow->canActorDecide(2, true, true, true, true) !== false) exit(1);
+
+          $workflow->mode = NULL;
+          if ($workflow->canActorDecide(999, false, false, true, false) !== true) exit(1);
+          if ($workflow->canActorDecide(999, false, false, false, false) !== false) exit(1);
+
+          echo "ABSENCE-POLICY-04 workflow semantics PASS\n";
+          PHP
+
+      - name: Verify cumulative overlay and patch stack
+        env:
+          JORANI_VERSION: v1.0.4
+        run: |
+          rm -rf /tmp/hayne-final-source
+          mkdir -p /tmp/hayne-final-source
+          curl -fsSL "https://github.com/jorani/jorani/archive/refs/tags/${JORANI_VERSION}.tar.gz" \
+            | tar -xz --strip-components=1 -C /tmp/hayne-final-source
+          cp -a hayne/overlay/. /tmp/hayne-final-source/
+          cd /tmp/hayne-final-source
+          for patch_file in "$GITHUB_WORKSPACE"/hayne/patches/*.patch; do
+            rel="${patch_file#${GITHUB_WORKSPACE}/}"
+            echo "Applying ${rel}"
+            if ! patch_output=$(patch --batch --forward -p1 < "$patch_file" 2>&1); then
+              patch_output=$(printf "%s" "$patch_output" | tr "\n" " ")
+              echo "::error file=${rel}::${patch_output}"
+              exit 1
+            fi
+          done
+
+      - name: Verify final runtime integration
+        run: |
+          set -eux
+          root=/tmp/hayne-final-source
+          php -l "$root/legacy/application/models/Hayne_leave_workflow_model.php"
+          php -l "$root/legacy/application/controllers/Leaves.php"
+          php -l "$root/legacy/application/controllers/Requests.php"
+          php -l "$root/legacy/application/controllers/Hayneapprovals.php"
+          grep -Fq "getPrimaryNotificationRecipient" "$root/legacy/application/controllers/Leaves.php"
+          test "$(grep -Fc "getPrimaryNotificationRecipient" "$root/legacy/application/controllers/Leaves.php")" -eq 3
+          test "$(grep -Fc "canActorDecide" "$root/legacy/application/controllers/Requests.php")" -eq 4
+          grep -Fq "filterAndMergeApproverRequests" "$root/legacy/application/controllers/Requests.php"
+          grep -Fq "canActorDecide" "$root/legacy/application/controllers/Hayneapprovals.php"
+          grep -Fq "Wnioski do weryfikacji" "$root/legacy/application/views/menu/index.php"
+          grep -Fq "getAdditionalHrRecipientEmails" "$root/legacy/application/controllers/Leaves.php"
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build final HAYNE Leave image
+        run: docker compose build jorani
+
+      - name: Verify built runtime PHP syntax
+        run: |
+          docker compose run --rm --no-deps jorani sh -ec '
+            php -l legacy/application/models/Hayne_leave_workflow_model.php
+            php -l legacy/application/controllers/Leaves.php
+            php -l legacy/application/controllers/Requests.php
+            php -l legacy/application/controllers/Hayneapprovals.php
+            grep -Fq "filterAndMergeApproverRequests" legacy/application/controllers/Requests.php
+            grep -Fq "getPrimaryNotificationRecipient" legacy/application/controllers/Leaves.php
+          '
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          if [ -f .env ]; then
+            docker compose logs --no-color || true
+          fi
