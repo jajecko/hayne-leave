@@ -1,0 +1,68 @@
+/* HAYNE Leave — isolated review CTA and alert hotfix */
+
+#wrap .hayne-approval-review a.hayne-approval-review__action--accept,
+#wrap .hayne-approval-review a.hayne-approval-review__action--accept:link,
+#wrap .hayne-approval-review a.hayne-approval-review__action--accept:visited {
+  border-color: #176b42;
+  background: #176b42;
+  color: #fff;
+}
+
+#wrap .hayne-approval-review a.hayne-approval-review__action--accept:hover,
+#wrap .hayne-approval-review a.hayne-approval-review__action--accept:focus,
+#wrap .hayne-approval-review a.hayne-approval-review__action--accept:active {
+  border-color: #125536;
+  background: #125536;
+  color: #fff;
+}
+
+#wrap .hayne-approval-review a.hayne-approval-review__action--accept[aria-disabled="true"] {
+  color: #fff;
+}
+
+#wrap .alert {
+  position: relative;
+  padding: 12px 42px 12px 14px;
+  border: 1px solid #deded8;
+  border-radius: 8px;
+  background: #fff;
+  color: #2b2b28;
+  text-shadow: none;
+}
+
+#wrap .alert-warning,
+#wrap .alert-block {
+  border-color: #dfc980;
+}
+
+#wrap .alert-success {
+  border-color: #bfd7c7;
+}
+
+#wrap .alert-info {
+  border-color: #c8d7e1;
+}
+
+#wrap .alert-error,
+#wrap .alert-danger {
+  border-color: #e0bcbc;
+}
+
+#wrap .alert .close {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  float: none;
+  margin: 0;
+  transform: translateY(-50%);
+  color: #555;
+  opacity: .65;
+  text-shadow: none;
+  line-height: 1;
+}
+
+#wrap .alert .close:hover,
+#wrap .alert .close:focus {
+  color: #111;
+  opacity: 1;
+}
