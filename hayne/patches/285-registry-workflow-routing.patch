@@ -143,7 +143,7 @@
 +            $is_delegate
 +        );
 +        if ($canDecide) {
-@@ -207,2 +242,11 @@
+@@ -207,2 +240,11 @@
          $is_delegate = $this->delegations_model->isDelegateOfManager($this->user_id, $employee['manager']);
 -        if (($this->user_id == $employee['manager']) || ($this->is_hr) || ($is_delegate)) {
 +        $canDecide = $this->hayne_leave_workflow_model->canActorDecide(
