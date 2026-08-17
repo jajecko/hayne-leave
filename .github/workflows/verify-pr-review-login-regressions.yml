@@ -92,7 +92,7 @@ jobs:
           grep -Fq "document.body.classList.add('hayne-login-target');" "$LOGIN"
           hook_line="$(grep -nF "document.body.classList.add('hayne-login-target');" "$LOGIN" | head -1 | cut -d: -f1)"
           style_line="$(grep -nF '<style>' "$LOGIN" | head -1 | cut -d: -f1)"
-          markup_line="$(grep -nF '<div class=\"row vertical-center\">' "$LOGIN" | head -1 | cut -d: -f1)"
+          markup_line="$(grep -nF '<div class="row vertical-center">' "$LOGIN" | head -1 | cut -d: -f1)"
           echo "LOGIN_HOOK_LINE=$hook_line STYLE_LINE=$style_line MARKUP_LINE=$markup_line"
           test "$hook_line" -lt "$style_line"
           test "$hook_line" -lt "$markup_line"
