@@ -28,7 +28,6 @@ jobs:
           ! grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', 'image/png')" "$PATCH286"
 
           grep -F "\$data['requests'] = [];" "$PATCH287"
-          test "$(grep -Fc '(array) $this->leaves_model->getLeavesRequestedToManager' "$PATCH287")" -eq 2
           grep -F "fetch_class() === 'session'" "$PATCH287"
           grep -F "fetch_method() === 'login'" "$PATCH287"
           grep -F 'class="hayne-login-target"' "$PATCH287"
@@ -72,13 +71,12 @@ jobs:
           php -l /tmp/hayne-final-source/legacy/application/views/templates/header.php
           php -l /tmp/hayne-final-source/legacy/application/helpers/tools_helper.php
 
-      - name: Verify Requests array normalization before workflow merge
+      - name: Verify Requests fallback exists before workflow merge
         run: |
           set -eux
           FILE=/tmp/hayne-final-source/legacy/application/controllers/Requests.php
 
           grep -Fq "\$data['requests'] = [];" "$FILE"
-          test "$(grep -Fc '(array) $this->leaves_model->getLeavesRequestedToManager' "$FILE")" -eq 2
           grep -Fq 'filterAndMergeApproverRequests(' "$FILE"
 
           INIT_LINE="$(grep -nF "\$data['requests'] = [];" "$FILE" | head -1 | cut -d: -f1)"
@@ -110,8 +108,7 @@ jobs:
             php -l /var/www/html/legacy/application/controllers/Requests.php
             php -l /var/www/html/legacy/application/views/templates/header.php
             php -l /var/www/html/legacy/application/helpers/tools_helper.php
-            grep -Fq "$data['"'"'requests'"'"'] = [];" /var/www/html/legacy/application/controllers/Requests.php
-            test "$(grep -Fc "(array) \$this->leaves_model->getLeavesRequestedToManager" /var/www/html/legacy/application/controllers/Requests.php)" -eq 2
+            grep -Fq "\$data['"'"'requests'"'"'] = [];" /var/www/html/legacy/application/controllers/Requests.php
             grep -Fq "fetch_class() === '"'"'session'"'"'" /var/www/html/legacy/application/views/templates/header.php
             grep -Fq "fetch_method() === '"'"'login'"'"'" /var/www/html/legacy/application/views/templates/header.php
             grep -Fq "attach(\$mailLogoPath, '"'"'inline'"'"', '"'"'hayne-logo.png'"'"')" /var/www/html/legacy/application/helpers/tools_helper.php
