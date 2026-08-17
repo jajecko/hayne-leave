@@ -19,7 +19,7 @@
          $user = $this->users_model->getUsers($leave['employee']);
 -        $manager = $this->users_model->getUsers($user['manager']);
 +        $manager = $this->hayne_leave_workflow_model->getPrimaryNotificationRecipient($leave, $user);
-@@ -844,5 +845,11 @@
+@@ -844,7 +845,14 @@
          //Copy to the delegates, if any
          $cc = null;
 -        $delegates = $this->delegations_model->listMailsOfDelegates($manager['id']);
@@ -36,6 +36,8 @@
 +                $cc = join(',', $delegates);
 +            }
          }
++        }
+         sendMailByWrapper($this, $subject, $message, $to, $cc);
 --- a/legacy/application/controllers/Requests.php
 +++ b/legacy/application/controllers/Requests.php
 @@ -45,2 +45,3 @@
