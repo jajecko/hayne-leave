@@ -11,24 +11,29 @@ jobs:
 
       - name: Verify registry source guardrails
         run: |
+          set -eux
           test -s hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
           test -s hayne/sql/003-leave-type-registry.sql
-          grep -F "runtime code never" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
-          grep -F "catalogMatchesMvpSignature" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
-          grep -F "active_for_new_requests" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
-          grep -F "home_office', 'NONE', 'NONE', 'STANDARD', FALSE, 'WORK'" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
-          grep -F "holiday_compensation', 'GRANT', 'APPROVAL', 'STANDARD', TRUE, 'LEAVE'" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
-          test "$(grep -c "=> self::policy(" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php)" -eq 20
-          grep -F "return \$this->isOfficialSummonsType(\$leaveTypeId);" hayne/overlay/legacy/application/models/Hayne_credit_exemption_model.php
-          grep -F "003-leave-type-registry.sql" docker/mysql/Dockerfile
+          grep -Fq "runtime code never" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -Fq "catalogMatchesMvpSignature" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -Fq "active_for_new_requests" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -Fq "home_office', 'NONE', 'NONE', 'STANDARD', FALSE, 'WORK'" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -Fq "holiday_compensation', 'GRANT', 'APPROVAL', 'STANDARD', TRUE, 'LEAVE'" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          policy_count="$(grep -Fc "=> self::policy(" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php)"
+          echo "MVP policy rows: ${policy_count}"
+          test "$policy_count" -eq 20
+          grep -Fq 'return $this->isOfficialSummonsType($leaveTypeId);' hayne/overlay/legacy/application/models/Hayne_credit_exemption_model.php
+          grep -Fq "003-leave-type-registry.sql" docker/mysql/Dockerfile
 
       - name: Verify legacy types are inactive only in registry metadata
         run: |
-          grep -F "2 => self::policy(2, 'on_demand_legacy', 'NONE', 'NONE', 'STANDARD', FALSE, 'LEAVE')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
-          grep -F "17 => self::policy(17, 'holiday_legacy', 'NONE', 'NONE', 'STANDARD', FALSE, 'LEAVE')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
-          grep -F "18 => self::policy(18, 'delegation_legacy', 'NONE', 'NONE', 'STANDARD', FALSE, 'LEAVE')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
-          grep -F "19 => self::policy(19, 'home_office', 'NONE', 'NONE', 'STANDARD', FALSE, 'WORK')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
-          test "$(git grep -l "getActiveLeaveTypeIdsForNewRequests" -- hayne/ ':!hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php' | wc -l)" -eq 0
+          set -eux
+          grep -Fq "2 => self::policy(2, 'on_demand_legacy', 'NONE', 'NONE', 'STANDARD', FALSE, 'LEAVE')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -Fq "17 => self::policy(17, 'holiday_legacy', 'NONE', 'NONE', 'STANDARD', FALSE, 'LEAVE')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -Fq "18 => self::policy(18, 'delegation_legacy', 'NONE', 'NONE', 'STANDARD', FALSE, 'LEAVE')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -Fq "19 => self::policy(19, 'home_office', 'NONE', 'NONE', 'STANDARD', FALSE, 'WORK')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          runtime_consumers="$(git grep -l "getActiveLeaveTypeIdsForNewRequests" -- hayne/ ':!hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php' || true)"
+          test -z "$runtime_consumers"
 
       - name: Verify cumulative overlay and patch stack
         env:
@@ -61,8 +66,8 @@ jobs:
           docker compose run --rm --no-deps jorani sh -ec '
             php -l legacy/application/models/Hayne_leave_type_registry_model.php
             php -l legacy/application/models/Hayne_credit_exemption_model.php
-            grep -F "Hayne_leave_type_registry_model" legacy/application/models/Hayne_credit_exemption_model.php
-            grep -F "return \$this->isOfficialSummonsType(\$leaveTypeId);" legacy/application/models/Hayne_credit_exemption_model.php
+            grep -Fq "Hayne_leave_type_registry_model" legacy/application/models/Hayne_credit_exemption_model.php
+            grep -Fq '\''return $this->isOfficialSummonsType($leaveTypeId);'\'' legacy/application/models/Hayne_credit_exemption_model.php
           '
 
       - name: Verify fresh-install registry schema
@@ -79,4 +84,7 @@ jobs:
 
       - name: Show logs on failure
         if: failure()
-        run: docker compose logs --no-color
+        run: |
+          if [ -f .env ]; then
+            docker compose logs --no-color || true
+          fi
