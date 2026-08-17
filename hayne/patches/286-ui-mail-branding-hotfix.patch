@@ -6,7 +6,7 @@
 +</head>
 --- a/legacy/application/helpers/tools_helper.php
 +++ b/legacy/application/helpers/tools_helper.php
-@@ -158 +158,25 @@
+@@ -158 +158,29 @@
 -    $controller->email->message($message);
 +    $mailMessage = $message;
 +    $mailLogoToken = '<!--HAYNE_MAIL_LOGO-->';
@@ -18,8 +18,12 @@
 +        $mailLogoPath = FCPATH . 'assets/hayne/logo.png';
 +        if (is_file($mailLogoPath)) {
 +            try {
-+                $controller->email->attach($mailLogoPath, 'inline', 'hayne-logo.png');
-+                $mailLogoCid = $controller->email->attachment_cid($mailLogoPath);
++                $controller->email->attach($mailLogoPath, 'inline', 'hayne-logo.png', '', true);
++                if (method_exists($controller->email, 'get_attachment_cid')) {
++                    $mailLogoCid = $controller->email->get_attachment_cid($mailLogoPath);
++                } else {
++                    $mailLogoCid = $controller->email->attachment_cid($mailLogoPath);
++                }
 +                if (is_string($mailLogoCid) && $mailLogoCid !== '') {
 +                    $mailLogoHtml = '<img src="cid:'
 +                        . htmlspecialchars($mailLogoCid, ENT_QUOTES, 'UTF-8')
