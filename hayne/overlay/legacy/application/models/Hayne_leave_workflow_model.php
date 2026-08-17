@@ -47,6 +47,19 @@ class Hayne_leave_workflow_model extends CI_Model
     }
 
     /**
+     * HR-routed pending work must always have at least one active HR account
+     * with an e-mail address. Standard workflows keep upstream Jorani behavior.
+     */
+    public function hasRequiredNotificationRecipient(int $leaveTypeId): bool
+    {
+        if (!$this->isHrWorkflowType($leaveTypeId)) {
+            return TRUE;
+        }
+
+        return !empty($this->getActiveHrRecipients());
+    }
+
+    /**
      * Keep upstream authorization for APPROVAL/missing policies and make HR
      * routing explicit. NONE has no approval path.
      */
