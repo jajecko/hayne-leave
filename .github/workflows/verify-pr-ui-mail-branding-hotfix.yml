@@ -56,15 +56,19 @@ jobs:
       - name: Build final HAYNE Leave image
         run: docker compose build jorani
 
-      - name: Verify final PHP lint
+      - name: Lint final HAYNE mail helper
         run: |
           set -eux
           IMAGE="$(docker compose images -q jorani)"
           test -n "$IMAGE"
-          docker run --rm --entrypoint sh "$IMAGE" -ec '
-            php -l /var/www/html/legacy/application/helpers/hayne_mail_helper.php
-            php -l /var/www/html/legacy/application/helpers/tools_helper.php
-          '
+          docker run --rm --entrypoint php "$IMAGE" -l /var/www/html/legacy/application/helpers/hayne_mail_helper.php
+
+      - name: Lint final Jorani tools helper
+        run: |
+          set -eux
+          IMAGE="$(docker compose images -q jorani)"
+          test -n "$IMAGE"
+          docker run --rm --entrypoint php "$IMAGE" -l /var/www/html/legacy/application/helpers/tools_helper.php
 
       - name: Verify final UI runtime contract
         run: |
