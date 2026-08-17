@@ -56,65 +56,64 @@ jobs:
       - name: Build final HAYNE Leave image
         run: docker compose build jorani
 
-      - name: Verify final runtime contract
+      - name: Verify final PHP lint
         run: |
           set -eux
           IMAGE="$(docker compose images -q jorani)"
           test -n "$IMAGE"
           docker run --rm --entrypoint sh "$IMAGE" -ec '
-            require_grep() {
-              pattern="$1"
-              file="$2"
-              label="$3"
-              if ! grep -F "$pattern" "$file" >/dev/null; then
-                echo "::error title=UI mail runtime contract::$label"
-                echo "Missing pattern: $pattern"
-                echo "Runtime file: $file"
-                exit 1
-              fi
-            }
-
-            require_file() {
-              file="$1"
-              label="$2"
-              if [ ! -s "$file" ]; then
-                echo "::error title=UI mail runtime contract::$label"
-                echo "Missing or empty runtime file: $file"
-                exit 1
-              fi
-            }
-
-            require_php_lint() {
-              file="$1"
-              label="$2"
-              if ! php -l "$file"; then
-                echo "::error title=UI mail runtime contract::$label"
-                exit 1
-              fi
-            }
-
-            require_php_lint /var/www/html/legacy/application/helpers/hayne_mail_helper.php "hayne_mail_helper PHP lint failed"
-            require_php_lint /var/www/html/legacy/application/helpers/tools_helper.php "tools_helper PHP lint failed"
-
-            require_grep "assets/hayne/ui-mail-hotfix.css?v=1" /var/www/html/legacy/application/views/templates/header.php "late UI stylesheet is not loaded"
-            require_file /var/www/html/assets/hayne/ui-mail-hotfix.css "late UI stylesheet is missing"
-            require_grep "#wrap .alert .close {" /var/www/html/assets/hayne/ui-mail-hotfix.css "alert close-button selector is missing"
-            require_grep "right: 12px;" /var/www/html/assets/hayne/ui-mail-hotfix.css "alert close-button right offset is missing"
-            require_grep "background: #fff;" /var/www/html/assets/hayne/ui-mail-hotfix.css "alert white background override is missing"
-            require_grep "#wrap .hayne-approval-review a.hayne-approval-review__action--accept" /var/www/html/assets/hayne/ui-mail-hotfix.css "approval accept selector is missing"
-            require_grep "color: #fff;" /var/www/html/assets/hayne/ui-mail-hotfix.css "approval accept white text override is missing"
-
-            require_grep "<!--HAYNE_MAIL_LOGO-->" /var/www/html/legacy/application/helpers/hayne_mail_helper.php "mail logo placeholder is missing"
-            require_grep "HAYNE LEAVE" /var/www/html/legacy/application/helpers/hayne_mail_helper.php "mail branding compatibility marker is missing"
-            require_grep "assets/hayne/logo.png" /var/www/html/legacy/application/helpers/tools_helper.php "inline logo source path is missing"
-            require_grep "attachment_cid(\$mailLogoPath)" /var/www/html/legacy/application/helpers/tools_helper.php "inline logo CID generation is missing"
-            require_grep "<img src=\"cid:" /var/www/html/legacy/application/helpers/tools_helper.php "CID image markup is missing"
-            require_grep "HAYNE mail inline logo failed" /var/www/html/legacy/application/helpers/tools_helper.php "inline logo fallback logging is missing"
-
-            require_grep "function attach(" /var/www/html/legacy/system/libraries/Email.php "CodeIgniter inline attachment API is missing"
-            require_grep "function attachment_cid(" /var/www/html/legacy/system/libraries/Email.php "CodeIgniter CID API is missing"
-            require_file /var/www/html/assets/hayne/logo.png "approved logo file is missing from runtime image"
+            php -l /var/www/html/legacy/application/helpers/hayne_mail_helper.php
+            php -l /var/www/html/legacy/application/helpers/tools_helper.php
           '
+
+      - name: Verify final UI runtime contract
+        run: |
+          set -eux
+          IMAGE="$(docker compose images -q jorani)"
+          docker run --rm --entrypoint sh "$IMAGE" -ec '
+            grep -F "assets/hayne/ui-mail-hotfix.css?v=1" /var/www/html/legacy/application/views/templates/header.php
+            test -s /var/www/html/assets/hayne/ui-mail-hotfix.css
+            grep -F "#wrap .alert .close {" /var/www/html/assets/hayne/ui-mail-hotfix.css
+            grep -F "right: 12px;" /var/www/html/assets/hayne/ui-mail-hotfix.css
+            grep -F "background: #fff;" /var/www/html/assets/hayne/ui-mail-hotfix.css
+            grep -F "#wrap .hayne-approval-review a.hayne-approval-review__action--accept" /var/www/html/assets/hayne/ui-mail-hotfix.css
+            grep -F "color: #fff;" /var/www/html/assets/hayne/ui-mail-hotfix.css
+          '
+
+      - name: Verify final mail token contract
+        run: |
+          set -eux
+          IMAGE="$(docker compose images -q jorani)"
+          docker run --rm --entrypoint sh "$IMAGE" -ec '
+            grep -F "<!--HAYNE_MAIL_LOGO-->" /var/www/html/legacy/application/helpers/hayne_mail_helper.php
+            grep -F "HAYNE LEAVE" /var/www/html/legacy/application/helpers/hayne_mail_helper.php
+          '
+
+      - name: Verify final CID wrapper contract
+        run: |
+          set -eux
+          IMAGE="$(docker compose images -q jorani)"
+          docker run --rm --entrypoint sh "$IMAGE" -ec '
+            grep -F "assets/hayne/logo.png" /var/www/html/legacy/application/helpers/tools_helper.php
+            grep -F "attachment_cid(\$mailLogoPath)" /var/www/html/legacy/application/helpers/tools_helper.php
+            grep -F "<img src=\"cid:" /var/www/html/legacy/application/helpers/tools_helper.php
+            grep -F "HAYNE mail inline logo failed" /var/www/html/legacy/application/helpers/tools_helper.php
+          '
+
+      - name: Verify CodeIgniter CID API
+        run: |
+          set -eux
+          IMAGE="$(docker compose images -q jorani)"
+          docker run --rm --entrypoint sh "$IMAGE" -ec '
+            grep -F "function attach(" /var/www/html/legacy/system/libraries/Email.php
+            grep -F "function attachment_cid(" /var/www/html/legacy/system/libraries/Email.php
+          '
+
+      - name: Verify approved logo exists in runtime image
+        run: |
+          set -eux
+          IMAGE="$(docker compose images -q jorani)"
+          docker run --rm --entrypoint test "$IMAGE" -s /var/www/html/assets/hayne/logo.png
 
       - name: Verify exact logo bytes survive build
         run: |
