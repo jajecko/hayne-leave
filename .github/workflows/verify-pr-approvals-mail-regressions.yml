@@ -75,9 +75,15 @@ jobs:
 
       - name: Verify approvals request view PHP syntax
         run: |
-          set -eux
-          docker compose run --rm --no-deps --entrypoint php jorani \
-            -n -l /var/www/html/legacy/application/views/requests/index.php
+          set -eu
+          if ! output="$(docker compose run --rm --no-deps --entrypoint php jorani -n -l /var/www/html/legacy/application/views/requests/index.php 2>&1)"; then
+            printf '%s\n' "$output"
+            annotation="$(printf '%s' "$output" | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g')"
+            echo "::error file=hayne/patches/288-approvals-first-paint-guard.patch::${annotation}"
+            exit 1
+          fi
+          printf '%s\n' "$output"
+          echo "APPROVALS_VIEW_PHP_LINT_GATE=PASS"
 
       - name: Verify approvals first-paint assets in final image
         run: |
