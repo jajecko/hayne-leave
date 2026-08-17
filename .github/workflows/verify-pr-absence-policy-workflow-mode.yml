@@ -103,14 +103,22 @@ jobs:
             fi
           done
 
-      - name: Verify final runtime integration
+      - name: Lint final workflow model
+        run: php -l /tmp/hayne-final-source/legacy/application/models/Hayne_leave_workflow_model.php
+
+      - name: Lint final Leaves controller
+        run: php -l /tmp/hayne-final-source/legacy/application/controllers/Leaves.php
+
+      - name: Lint final Requests controller
+        run: php -l /tmp/hayne-final-source/legacy/application/controllers/Requests.php
+
+      - name: Lint final Hayneapprovals controller
+        run: php -l /tmp/hayne-final-source/legacy/application/controllers/Hayneapprovals.php
+
+      - name: Verify final runtime wiring
         run: |
           set -eux
           root=/tmp/hayne-final-source
-          php -l "$root/legacy/application/models/Hayne_leave_workflow_model.php"
-          php -l "$root/legacy/application/controllers/Leaves.php"
-          php -l "$root/legacy/application/controllers/Requests.php"
-          php -l "$root/legacy/application/controllers/Hayneapprovals.php"
           grep -Fq "getPrimaryNotificationRecipient" "$root/legacy/application/controllers/Leaves.php"
           test "$(grep -Fc "getPrimaryNotificationRecipient" "$root/legacy/application/controllers/Leaves.php")" -eq 3
           test "$(grep -Fc "ensurePendingWorkflowRecipient" "$root/legacy/application/controllers/Leaves.php")" -eq 5
