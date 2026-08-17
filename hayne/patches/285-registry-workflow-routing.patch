@@ -4,10 +4,11 @@
          $this->load->model('hayne_leave_type_registry_model');
 +        $this->load->model('hayne_leave_workflow_model');
          $this->load->model('types_model');
-@@ -50,2 +51,14 @@
-         $this->lang->load('global', $this->language);
+@@ -60,5 +61,19 @@
+         $this->load->model('hayne_force_majeure_model');
+         $this->hayne_force_majeure_model->ensureCurrentYear((int) $this->user_id);
      }
-+
+ 
 +    private function ensurePendingWorkflowRecipient(int $leaveTypeId): bool
 +    {
 +        if ($this->hayne_leave_workflow_model->hasRequiredNotificationRecipient($leaveTypeId)) {
@@ -21,6 +22,8 @@
 +        );
 +        return FALSE;
 +    }
++
+     /**
 @@ -337,2 +350,9 @@
              $duration = (float) $this->input->post('duration');
 +
