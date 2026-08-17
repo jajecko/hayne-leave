@@ -1,0 +1,139 @@
+name: verify-pr-ui-mail-branding-hotfix
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/patches/286-ui-mail-branding-hotfix.patch'
+      - 'hayne/overlay/assets/hayne/ui-mail-hotfix.css'
+      - 'hayne/overlay/legacy/application/helpers/hayne_mail_helper.php'
+      - '.github/workflows/verify-pr-ui-mail-branding-hotfix.yml'
+      - 'docs/checkpoints/UI-MAIL-HOTFIX_REVIEW_ALERT_INLINE_LOGO.md'
+
+jobs:
+  verify-hotfix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify tracked hotfix contract
+        run: |
+          set -eux
+          PATCH=hayne/patches/286-ui-mail-branding-hotfix.patch
+          CSS=hayne/overlay/assets/hayne/ui-mail-hotfix.css
+          MAIL=hayne/overlay/legacy/application/helpers/hayne_mail_helper.php
+
+          test -s "$PATCH"
+          test -s "$CSS"
+          test -s "$MAIL"
+
+          grep -F 'assets/hayne/ui-mail-hotfix.css?v=1' "$PATCH"
+          grep -F '<!--HAYNE_MAIL_LOGO-->' "$PATCH"
+          grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', 'image/png')" "$PATCH"
+          grep -F 'attachment_cid($mailLogoPath)' "$PATCH"
+          grep -F 'HAYNE mail inline logo failed' "$PATCH"
+
+          grep -F '#wrap .alert .close {' "$CSS"
+          grep -F 'right: 12px;' "$CSS"
+          grep -F 'background: #fff;' "$CSS"
+          grep -F '#wrap .hayne-approval-review a.hayne-approval-review__action--accept' "$CSS"
+          grep -F 'color: #fff;' "$CSS"
+
+          grep -F '<!--HAYNE_MAIL_LOGO-->' "$MAIL"
+          grep -F 'HAYNE LEAVE' "$MAIL"
+
+      - name: Verify patch 286 independently against pinned upstream
+        run: |
+          set -eux
+          mkdir -p /tmp/jorani
+          curl -fsSL https://github.com/jorani/jorani/archive/refs/tags/v1.0.4.tar.gz \
+            | tar -xz --strip-components=1 -C /tmp/jorani
+          cd /tmp/jorani
+          patch --dry-run --batch --forward -p1 < "$GITHUB_WORKSPACE/hayne/patches/286-ui-mail-branding-hotfix.patch"
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build final HAYNE Leave image
+        run: docker compose build jorani
+
+      - name: Verify exact mail helper bytes survive build
+        run: |
+          set -eux
+          SOURCE_SHA="$(sha256sum hayne/overlay/legacy/application/helpers/hayne_mail_helper.php | awk '{print $1}')"
+          IMAGE_SHA="$(docker compose run --rm --no-deps --entrypoint sha256sum jorani /var/www/html/legacy/application/helpers/hayne_mail_helper.php | awk '{print $1}')"
+          echo "SOURCE_MAIL_HELPER_SHA=$SOURCE_SHA"
+          echo "IMAGE_MAIL_HELPER_SHA=$IMAGE_SHA"
+          test "$SOURCE_SHA" = "$IMAGE_SHA"
+
+      - name: Lint final HAYNE mail helper with PHP core only
+        run: |
+          set -eux
+          docker compose run --rm --no-deps --entrypoint php jorani -n -l /var/www/html/legacy/application/helpers/hayne_mail_helper.php
+
+      - name: Lint final Jorani tools helper with PHP core only
+        run: |
+          set -eux
+          docker compose run --rm --no-deps --entrypoint php jorani -n -l /var/www/html/legacy/application/helpers/tools_helper.php
+
+      - name: Verify final UI runtime contract
+        run: |
+          set -eux
+          docker compose run --rm --no-deps --entrypoint sh jorani -ec '
+            grep -F "assets/hayne/ui-mail-hotfix.css?v=1" /var/www/html/legacy/application/views/templates/header.php
+            test -s /var/www/html/assets/hayne/ui-mail-hotfix.css
+            grep -F "#wrap .alert .close {" /var/www/html/assets/hayne/ui-mail-hotfix.css
+            grep -F "right: 12px;" /var/www/html/assets/hayne/ui-mail-hotfix.css
+            grep -F "background: #fff;" /var/www/html/assets/hayne/ui-mail-hotfix.css
+            grep -F "#wrap .hayne-approval-review a.hayne-approval-review__action--accept" /var/www/html/assets/hayne/ui-mail-hotfix.css
+            grep -F "color: #fff;" /var/www/html/assets/hayne/ui-mail-hotfix.css
+          '
+
+      - name: Verify final mail token contract
+        run: |
+          set -eux
+          docker compose run --rm --no-deps --entrypoint sh jorani -ec '
+            grep -F "<!--HAYNE_MAIL_LOGO-->" /var/www/html/legacy/application/helpers/hayne_mail_helper.php
+            grep -F "HAYNE LEAVE" /var/www/html/legacy/application/helpers/hayne_mail_helper.php
+          '
+
+      - name: Verify final CID wrapper contract
+        run: |
+          set -eux
+          docker compose run --rm --no-deps --entrypoint sh jorani -ec '
+            grep -F "assets/hayne/logo.png" /var/www/html/legacy/application/helpers/tools_helper.php
+            grep -F "attachment_cid(\$mailLogoPath)" /var/www/html/legacy/application/helpers/tools_helper.php
+            grep -F "<img src=\"cid:" /var/www/html/legacy/application/helpers/tools_helper.php
+            grep -F "HAYNE mail inline logo failed" /var/www/html/legacy/application/helpers/tools_helper.php
+          '
+
+      - name: Verify CodeIgniter CID API
+        run: |
+          set -eux
+          docker compose run --rm --no-deps --entrypoint sh jorani -ec '
+            grep -F "function attach(" /var/www/html/legacy/system/libraries/Email.php
+            grep -F "function attachment_cid(" /var/www/html/legacy/system/libraries/Email.php
+          '
+
+      - name: Verify tracked logo exists in runtime image
+        run: |
+          set -eux
+          docker compose run --rm --no-deps --entrypoint test jorani -s /var/www/html/assets/hayne/logo.png
+
+      - name: Verify exact logo bytes survive build
+        run: |
+          set -eux
+          SOURCE_LOGO_SHA="$(sha256sum hayne/overlay/assets/hayne/logo.png | awk '{print $1}')"
+          IMAGE_LOGO_SHA="$(docker compose run --rm --no-deps --entrypoint sha256sum jorani /var/www/html/assets/hayne/logo.png | awk '{print $1}')"
+          echo "SOURCE_LOGO_SHA=$SOURCE_LOGO_SHA"
+          echo "IMAGE_LOGO_SHA=$IMAGE_LOGO_SHA"
+          test "$SOURCE_LOGO_SHA" = "$IMAGE_LOGO_SHA"
+
+      - name: Verify no absence-policy scope drift
+        run: |
+          set -eux
+          ! grep -E '^--- a/(legacy/application/models/Hayne_leave_(type_registry|workflow)_model\.php|hayne/sql/)' hayne/patches/286-ui-mail-branding-hotfix.patch
+          ! grep -F 'hayne_leave_type_registry' hayne/patches/286-ui-mail-branding-hotfix.patch
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color

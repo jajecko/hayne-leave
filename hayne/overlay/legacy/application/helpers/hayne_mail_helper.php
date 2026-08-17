@@ -51,16 +51,7 @@ if (!function_exists('hayne_mail_render')) {
         }
 
         $safeUrl = hayne_mail_escape($ctaUrl);
-        $logoHtml = '<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;">'
-            . '<tr><td style="padding:0;color:#111111;font-family:Arial,Helvetica,sans-serif;font-size:24px;line-height:24px;font-weight:800;letter-spacing:4px;">HAYNE</td></tr>'
-            . '<tr><td style="padding:7px 0 0 0;">'
-            . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;">'
-            . '<tr>'
-            . '<td style="width:34%;border-top:1px solid #111111;font-size:1px;line-height:1px;">&nbsp;</td>'
-            . '<td style="padding:0 7px;color:#111111;font-family:Arial,Helvetica,sans-serif;font-size:8px;line-height:9px;font-weight:700;letter-spacing:2px;text-align:center;white-space:nowrap;">LEAVE</td>'
-            . '<td style="width:34%;border-top:1px solid #111111;font-size:1px;line-height:1px;">&nbsp;</td>'
-            . '</tr></table>'
-            . '</td></tr></table>';
+        $logoHtml = '<!--HAYNE_MAIL_LOGO--><!-- HAYNE LEAVE -->';
 
         return '<!doctype html>'
             . '<html lang="pl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>'
