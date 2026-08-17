@@ -35,6 +35,8 @@ jobs:
           grep -F "classList.remove('hayne-approvals-pending')" "$JS"
           grep -F '> #leaves_wrapper' "$CSS"
 
+          grep -F "dirname(FCPATH) . DIRECTORY_SEPARATOR . 'assets/hayne/logo.png'" "$P286"
+          ! grep -Fq "\$mailLogoPath = FCPATH . 'assets/hayne/logo.png';" "$P286"
           grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', '', true)" "$P286"
           grep -F "method_exists(\$controller->email, 'get_attachment_cid')" "$P286"
           grep -F 'get_attachment_cid($mailLogoPath)' "$P286"
@@ -124,7 +126,7 @@ jobs:
           '
           echo "APPROVALS_FIRST_PAINT_ORDER_GATE=PASS"
 
-      - name: Verify final mail wrapper uses PHPMailer embedded-image path
+      - name: Verify final mail wrapper uses runtime root and PHPMailer embedded-image path
         run: |
           set -eux
           docker compose run --rm --no-deps --entrypoint sh jorani -ec '
@@ -135,17 +137,20 @@ jobs:
             php -l "$TOOLS"
             grep -Fq "useragent" "$EMAIL"
             grep -Fq "PHPMailer" "$EMAIL"
+            grep -Fq "dirname(FCPATH) . DIRECTORY_SEPARATOR . '\''assets/hayne/logo.png'\''" "$TOOLS"
+            ! grep -Fq "\$mailLogoPath = FCPATH . '\''assets/hayne/logo.png'\'';" "$TOOLS"
             grep -Fq "attach(\$mailLogoPath, '\''inline'\'', '\''hayne-logo.png'\'', '\'''\'', true)" "$TOOLS"
             grep -Fq "get_attachment_cid(\$mailLogoPath)" "$TOOLS"
             grep -Fq "addStringEmbeddedImage" "$MYEMAIL"
           '
 
-      - name: Verify actual Jorani MY_Email builds related inline PNG MIME
+      - name: Verify actual Jorani MY_Email builds related inline PNG MIME from runtime FCPATH
         run: |
           set -eux
           docker compose run --rm --no-deps -T --entrypoint php jorani -n <<'PHP'
           <?php
           define('BASEPATH', '/var/www/html/legacy/system/');
+          define('FCPATH', '/var/www/html/legacy/');
           defined('FOPEN_READ') || define('FOPEN_READ', 'rb');
 
           function &get_mimes()
@@ -164,7 +169,13 @@ jobs:
           $engine->setValue($email, 'phpmailer');
           $email->phpmailer = new PHPMailer\PHPMailer\PHPMailer(true);
 
-          $path = '/var/www/html/assets/hayne/logo.png';
+          $path = dirname(FCPATH) . DIRECTORY_SEPARATOR . 'assets/hayne/logo.png';
+          $resolved = realpath($path);
+          if ($resolved !== '/var/www/html/assets/hayne/logo.png' || !is_file($path)) {
+              fwrite(STDERR, "runtime FCPATH logo resolution failed: {$path}\n");
+              exit(19);
+          }
+
           $email->attach($path, 'inline', 'hayne-logo.png', '', true);
           $cid = $email->get_attachment_cid($path);
           if (!is_string($cid) || $cid === '') {
@@ -202,6 +213,7 @@ jobs:
               if (!$ok) exit(22);
           }
 
+          echo 'RUNTIME_LOGO_PATH=' . $resolved . "\n";
           echo 'SOURCE_LOGO_SHA=' . hash_file('sha256', $path) . "\n";
           echo "PHPMAILER_RELATED_MIME_GATE=PASS\n";
           PHP
