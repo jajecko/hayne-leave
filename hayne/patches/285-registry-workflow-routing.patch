@@ -43,7 +43,7 @@
          $this->load->model('leaves_model');
          $this->load->model('hayne_caregiver_leave_model');
 +        $this->load->model('hayne_leave_workflow_model');
-@@ -69,2 +70,7 @@
+@@ -69,3 +70,8 @@
              $data['requests'] = $this->leaves_model->getLeavesRequestedToManager($this->session->userdata('id'), $showAll);
          }
 +        $data['requests'] = $this->hayne_leave_workflow_model->filterAndMergeApproverRequests(
@@ -98,7 +98,7 @@
 +        if ($canDecide) {
 --- a/legacy/application/views/menu/index.php
 +++ b/legacy/application/views/menu/index.php
-@@ -62,2 +62,3 @@
+@@ -62,3 +62,4 @@
                  <li class="nav-header">Urlopy</li>
                  <li><a href="<?php echo base_url(); ?>leavetypes">Rodzaje nieobecności</a></li>
 +                <li><a href="<?php echo base_url(); ?>requests">Wnioski do weryfikacji</a></li>
