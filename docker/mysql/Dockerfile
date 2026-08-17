@@ -22,3 +22,4 @@ FROM mysql:8.0
 COPY --from=upstream /src/legacy/sql/init/ /docker-entrypoint-initdb.d/
 COPY hayne/sql/001-leave-profiles.sql /docker-entrypoint-initdb.d/zz-hayne-leave-profiles.sql
 COPY hayne/sql/002-ad-identity.sql /docker-entrypoint-initdb.d/zzz-hayne-ad-identity.sql
+COPY hayne/sql/003-leave-type-registry.sql /docker-entrypoint-initdb.d/zzzz-hayne-leave-type-registry.sql

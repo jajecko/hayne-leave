@@ -17,6 +17,11 @@ class Hayne_credit_exemption_model extends CI_Model
     public function __construct()
     {
         $this->ensureSchema();
+
+        // ABSENCE-POLICY-01: initialize the central registry alongside the
+        // existing statutory policy storage. This PR does not switch any
+        // runtime decision to the registry yet; existing behavior is preserved.
+        $this->load->model('Hayne_leave_type_registry_model', 'hayne_leave_type_registry_model');
     }
 
     public function ensureSchema(): void
