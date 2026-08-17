@@ -22,8 +22,8 @@ jobs:
           P287=hayne/patches/287-review-login-regression-hotfix.patch
           test -s "$P286"
           test -s "$P287"
-          grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png')" "$P286"
-          ! grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', 'image/png')" "$P286"
+          grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', '', true)" "$P286"
+          grep -F "get_attachment_cid(\$mailLogoPath)" "$P286"
           grep -F "\$data['requests'] = [];" "$P287"
           grep -F "document.body.classList.add('hayne-login-target');" "$P287"
           grep -F 'legacy/application/views/session/login.php' "$P287"
@@ -97,8 +97,8 @@ jobs:
           test "$hook_line" -lt "$style_line"
           test "$hook_line" -lt "$markup_line"
 
-          grep -Fq "attach(\$mailLogoPath, 'inline', 'hayne-logo.png')" "$TOOLS"
-          ! grep -Fq "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', 'image/png')" "$TOOLS"
+          grep -Fq "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', '', true)" "$TOOLS"
+          grep -Fq "get_attachment_cid(\$mailLogoPath)" "$TOOLS"
           echo "FINAL_SOURCE_GATE=PASS"
 
       - name: Prepare environment
@@ -144,7 +144,6 @@ jobs:
           $cid = $email->attachment_cid($path);
           if (!is_string($cid) || $cid === '') exit(11);
           $p = $r->getProperty('_attachments');
-          $p->setAccessible(true);
           $attachments = $p->getValue($email);
           if (!is_array($attachments) || count($attachments) !== 1) exit(12);
           $a = $attachments[0];
@@ -169,7 +168,7 @@ jobs:
             php -l /var/www/html/legacy/application/helpers/tools_helper.php
             grep -Fq "document.body.classList.add('"'"'hayne-login-target'"'"');" /var/www/html/legacy/application/views/session/login.php
             grep -Fq "HAYNE_MAIL_LOGO" /var/www/html/legacy/application/helpers/hayne_mail_helper.php
-            grep -Fq "attachment_cid" /var/www/html/legacy/application/helpers/tools_helper.php
+            grep -Fq "get_attachment_cid" /var/www/html/legacy/application/helpers/tools_helper.php
             grep -Fq "WORKFLOW_HR" /var/www/html/legacy/application/models/Hayne_leave_workflow_model.php
           '
           echo "BUILT_RUNTIME_GATE=PASS"
