@@ -1,0 +1,192 @@
+name: verify-pr-review-login-regressions
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/patches/286-ui-mail-branding-hotfix.patch'
+      - 'hayne/patches/287-review-login-regression-hotfix.patch'
+      - '.github/workflows/verify-pr-review-login-regressions.yml'
+      - '.github/workflows/verify-pr-ui-mail-branding-hotfix.yml'
+      - 'docs/checkpoints/PR-REGRESSION-01_REVIEW_LOGIN_MAIL.md'
+
+jobs:
+  verify-regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify source contract
+        run: |
+          set -eux
+          P286=hayne/patches/286-ui-mail-branding-hotfix.patch
+          P287=hayne/patches/287-review-login-regression-hotfix.patch
+          test -s "$P286"
+          test -s "$P287"
+          grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png')" "$P286"
+          ! grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', 'image/png')" "$P286"
+          grep -F "\$data['requests'] = [];" "$P287"
+          grep -F "document.body.classList.add('hayne-login-target');" "$P287"
+          grep -F 'legacy/application/views/session/login.php' "$P287"
+          ! grep -F 'legacy/application/views/templates/header.php' "$P287"
+
+      - name: Download pinned Jorani source
+        env:
+          JORANI_VERSION: v1.0.4
+        run: |
+          set -eux
+          rm -rf /tmp/jorani-pristine /tmp/hayne-final-source
+          mkdir -p /tmp/jorani-pristine /tmp/hayne-final-source
+          curl -fsSL "https://github.com/jorani/jorani/archive/refs/tags/${JORANI_VERSION}.tar.gz" \
+            | tar -xz --strip-components=1 -C /tmp/jorani-pristine
+          cp -a /tmp/jorani-pristine/. /tmp/hayne-final-source/
+
+      - name: Verify patch 287 independently
+        run: |
+          set -eu
+          cd /tmp/jorani-pristine
+          PATCH="$GITHUB_WORKSPACE/hayne/patches/287-review-login-regression-hotfix.patch"
+          if ! output=$(patch --dry-run --batch --forward -p1 < "$PATCH" 2>&1); then
+            printf '%s\n' "$output"
+            annotation=$(printf '%s' "$output" | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g')
+            echo "::error file=hayne/patches/287-review-login-regression-hotfix.patch::${annotation}"
+            exit 1
+          fi
+          printf '%s\n' "$output"
+          echo "PATCH_287_INDEPENDENT_GATE=PASS"
+
+      - name: Verify cumulative overlay and patch stack
+        run: |
+          set -eu
+          cp -a hayne/overlay/. /tmp/hayne-final-source/
+          cd /tmp/hayne-final-source
+          for patch_file in "$GITHUB_WORKSPACE"/hayne/patches/*.patch; do
+            rel="${patch_file#${GITHUB_WORKSPACE}/}"
+            echo "Applying ${rel}"
+            if ! output=$(patch --batch --forward -p1 < "$patch_file" 2>&1); then
+              printf '%s\n' "$output"
+              annotation=$(printf '%s' "$output" | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g')
+              echo "::error file=${rel}::${annotation}"
+              exit 1
+            fi
+          done
+          echo "CUMULATIVE_PATCH_GATE=PASS"
+
+      - name: Lint and verify final source
+        run: |
+          set -eux
+          ROOT=/tmp/hayne-final-source
+          REQUESTS="$ROOT/legacy/application/controllers/Requests.php"
+          LOGIN="$ROOT/legacy/application/views/session/login.php"
+          TOOLS="$ROOT/legacy/application/helpers/tools_helper.php"
+
+          php -l "$REQUESTS"
+          php -l "$LOGIN"
+          php -l "$TOOLS"
+
+          grep -Fq "\$data['requests'] = [];" "$REQUESTS"
+          grep -Fq 'filterAndMergeApproverRequests(' "$REQUESTS"
+          init_line="$(grep -nF "\$data['requests'] = [];" "$REQUESTS" | head -1 | cut -d: -f1)"
+          merge_line="$(grep -nF 'filterAndMergeApproverRequests(' "$REQUESTS" | head -1 | cut -d: -f1)"
+          test "$init_line" -lt "$merge_line"
+
+          grep -Fq "document.body.classList.add('hayne-login-target');" "$LOGIN"
+          hook_line="$(grep -nF "document.body.classList.add('hayne-login-target');" "$LOGIN" | head -1 | cut -d: -f1)"
+          style_line="$(grep -nF '<style>' "$LOGIN" | head -1 | cut -d: -f1)"
+          markup_line="$(grep -nF '<div class="row vertical-center">' "$LOGIN" | head -1 | cut -d: -f1)"
+          echo "LOGIN_HOOK_LINE=$hook_line STYLE_LINE=$style_line MARKUP_LINE=$markup_line"
+          test "$hook_line" -lt "$style_line"
+          test "$hook_line" -lt "$markup_line"
+
+          grep -Fq "attach(\$mailLogoPath, 'inline', 'hayne-logo.png')" "$TOOLS"
+          ! grep -Fq "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', 'image/png')" "$TOOLS"
+          echo "FINAL_SOURCE_GATE=PASS"
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build and start final HAYNE Leave image
+        run: docker compose up --build -d
+
+      - name: Verify raw login response orders hook before visible login markup
+        run: |
+          set -eux
+          mkdir -p artifacts
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/session/login -o artifacts/login-raw.html; then
+              break
+            fi
+            sleep 2
+          done
+          test -s artifacts/login-raw.html
+          grep -F "document.body.classList.add('hayne-login-target');" artifacts/login-raw.html
+          grep -F 'hayne-login-shell' artifacts/login-raw.html
+          hook_line="$(grep -nF "document.body.classList.add('hayne-login-target');" artifacts/login-raw.html | head -1 | cut -d: -f1)"
+          shell_line="$(grep -nF 'hayne-login-shell' artifacts/login-raw.html | head -1 | cut -d: -f1)"
+          echo "RAW_LOGIN_HOOK_LINE=$hook_line SHELL_LINE=$shell_line"
+          test "$hook_line" -lt "$shell_line"
+          echo "LOGIN_FIRST_PAINT_GATE=PASS"
+
+      - name: Verify real PNG payload through native CI_Email
+        run: |
+          set -eux
+          docker compose exec -T jorani php -n <<'PHP'
+          <?php
+          define('BASEPATH', '/var/www/html/legacy/system/');
+          function &get_mimes() {
+              static $mimes = ['png' => 'image/png'];
+              return $mimes;
+          }
+          require BASEPATH . 'libraries/Email.php';
+          $r = new ReflectionClass('CI_Email');
+          $email = $r->newInstanceWithoutConstructor();
+          $path = '/var/www/html/assets/hayne/logo.png';
+          if ($email->attach($path, 'inline', 'hayne-logo.png') === false) exit(10);
+          $cid = $email->attachment_cid($path);
+          if (!is_string($cid) || $cid === '') exit(11);
+          $p = $r->getProperty('_attachments');
+          $p->setAccessible(true);
+          $attachments = $p->getValue($email);
+          if (!is_array($attachments) || count($attachments) !== 1) exit(12);
+          $a = $attachments[0];
+          $payload = base64_decode(preg_replace('/\s+/', '', $a['content']), true);
+          if (!is_string($payload)) exit(13);
+          $expected = hash_file('sha256', $path);
+          $actual = hash('sha256', $payload);
+          echo "SOURCE_LOGO_SHA={$expected}\nMIME_LOGO_SHA={$actual}\n";
+          if ($expected !== $actual) exit(14);
+          if (($a['type'] ?? '') !== 'image/png') exit(15);
+          if (($a['multipart'] ?? '') !== 'related') exit(16);
+          if (($a['cid'] ?? '') !== $cid) exit(17);
+          echo "MAIL_MIME_PAYLOAD_GATE=PASS\n";
+          PHP
+
+      - name: Verify built runtime contracts
+        run: |
+          set -eux
+          docker compose exec -T jorani sh -ec '
+            php -l /var/www/html/legacy/application/controllers/Requests.php
+            php -l /var/www/html/legacy/application/views/session/login.php
+            php -l /var/www/html/legacy/application/helpers/tools_helper.php
+            grep -Fq "document.body.classList.add('"'"'hayne-login-target'"'"');" /var/www/html/legacy/application/views/session/login.php
+            grep -Fq "HAYNE_MAIL_LOGO" /var/www/html/legacy/application/helpers/hayne_mail_helper.php
+            grep -Fq "attachment_cid" /var/www/html/legacy/application/helpers/tools_helper.php
+            grep -Fq "WORKFLOW_HR" /var/www/html/legacy/application/models/Hayne_leave_workflow_model.php
+          '
+          echo "BUILT_RUNTIME_GATE=PASS"
+
+      - name: Upload regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-login-mail-regression-evidence
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color || true
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v || true

@@ -18,7 +18,7 @@
 +        $mailLogoPath = FCPATH . 'assets/hayne/logo.png';
 +        if (is_file($mailLogoPath)) {
 +            try {
-+                $controller->email->attach($mailLogoPath, 'inline', 'hayne-logo.png', 'image/png');
++                $controller->email->attach($mailLogoPath, 'inline', 'hayne-logo.png');
 +                $mailLogoCid = $controller->email->attachment_cid($mailLogoPath);
 +                if (is_string($mailLogoCid) && $mailLogoCid !== '') {
 +                    $mailLogoHtml = '<img src="cid:'

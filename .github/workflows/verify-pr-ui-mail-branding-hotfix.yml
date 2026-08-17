@@ -28,7 +28,8 @@ jobs:
 
           grep -F 'assets/hayne/ui-mail-hotfix.css?v=1' "$PATCH"
           grep -F '<!--HAYNE_MAIL_LOGO-->' "$PATCH"
-          grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', 'image/png')" "$PATCH"
+          grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png')" "$PATCH"
+          ! grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', 'image/png')" "$PATCH"
           grep -F 'attachment_cid($mailLogoPath)' "$PATCH"
           grep -F 'HAYNE mail inline logo failed' "$PATCH"
 
@@ -101,6 +102,8 @@ jobs:
           set -eux
           docker compose run --rm --no-deps --entrypoint sh jorani -ec '
             grep -F "assets/hayne/logo.png" /var/www/html/legacy/application/helpers/tools_helper.php
+            grep -F "attach(\$mailLogoPath, '\''inline'\'', '\''hayne-logo.png'\'')" /var/www/html/legacy/application/helpers/tools_helper.php
+            ! grep -F "attach(\$mailLogoPath, '\''inline'\'', '\''hayne-logo.png'\'', '\''image/png'\'')" /var/www/html/legacy/application/helpers/tools_helper.php
             grep -F "attachment_cid(\$mailLogoPath)" /var/www/html/legacy/application/helpers/tools_helper.php
             grep -F "<img src=\"cid:" /var/www/html/legacy/application/helpers/tools_helper.php
             grep -F "HAYNE mail inline logo failed" /var/www/html/legacy/application/helpers/tools_helper.php
@@ -113,6 +116,80 @@ jobs:
             grep -F "function attach(" /var/www/html/legacy/system/libraries/Email.php
             grep -F "function attachment_cid(" /var/www/html/legacy/system/libraries/Email.php
           '
+
+      - name: Verify inline attachment contains real PNG bytes
+        run: |
+          set -eux
+          docker compose run --rm --no-deps -T --entrypoint php jorani -n <<'PHP'
+          <?php
+          define('BASEPATH', '/var/www/html/legacy/system/');
+
+          function &get_mimes()
+          {
+              static $mimes = ['png' => 'image/png'];
+              return $mimes;
+          }
+
+          require BASEPATH . 'libraries/Email.php';
+
+          $reflection = new ReflectionClass('CI_Email');
+          $email = $reflection->newInstanceWithoutConstructor();
+          $path = '/var/www/html/assets/hayne/logo.png';
+
+          if ($email->attach($path, 'inline', 'hayne-logo.png') === false) {
+              fwrite(STDERR, "attach failed\n");
+              exit(10);
+          }
+
+          $cid = $email->attachment_cid($path);
+          if (!is_string($cid) || $cid === '') {
+              fwrite(STDERR, "CID missing\n");
+              exit(11);
+          }
+
+          $attachmentsProperty = $reflection->getProperty('_attachments');
+          $attachmentsProperty->setAccessible(true);
+          $attachments = $attachmentsProperty->getValue($email);
+
+          if (!is_array($attachments) || count($attachments) !== 1) {
+              fwrite(STDERR, "unexpected attachment count\n");
+              exit(12);
+          }
+
+          $attachment = $attachments[0];
+          $payload = base64_decode(preg_replace('/\s+/', '', $attachment['content']), true);
+          if (!is_string($payload)) {
+              fwrite(STDERR, "attachment payload is not valid base64\n");
+              exit(13);
+          }
+
+          $expectedSha = hash_file('sha256', $path);
+          $actualSha = hash('sha256', $payload);
+          echo "EXPECTED_PNG_SHA={$expectedSha}\n";
+          echo "ATTACHMENT_PNG_SHA={$actualSha}\n";
+
+          if ($actualSha !== $expectedSha) {
+              fwrite(STDERR, "inline attachment bytes differ from logo.png\n");
+              exit(14);
+          }
+
+          if (($attachment['type'] ?? '') !== 'image/png') {
+              fwrite(STDERR, "unexpected MIME type\n");
+              exit(15);
+          }
+
+          if (($attachment['multipart'] ?? '') !== 'related') {
+              fwrite(STDERR, "attachment is not multipart/related\n");
+              exit(16);
+          }
+
+          if (($attachment['cid'] ?? '') !== $cid) {
+              fwrite(STDERR, "attachment CID mismatch\n");
+              exit(17);
+          }
+
+          echo "REAL_PNG_CID_GATE=PASS\n";
+          PHP
 
       - name: Verify tracked logo exists in runtime image
         run: |
