@@ -56,19 +56,30 @@ jobs:
       - name: Build final HAYNE Leave image
         run: docker compose build jorani
 
-      - name: Lint final HAYNE mail helper
+      - name: Verify exact mail helper bytes survive build
         run: |
           set -eux
           IMAGE="$(docker compose images -q jorani)"
           test -n "$IMAGE"
-          docker run --rm --entrypoint php "$IMAGE" -l /var/www/html/legacy/application/helpers/hayne_mail_helper.php
+          SOURCE_SHA="$(sha256sum hayne/overlay/legacy/application/helpers/hayne_mail_helper.php | awk '{print $1}')"
+          IMAGE_SHA="$(docker run --rm --entrypoint sha256sum "$IMAGE" /var/www/html/legacy/application/helpers/hayne_mail_helper.php | awk '{print $1}')"
+          echo "SOURCE_MAIL_HELPER_SHA=$SOURCE_SHA"
+          echo "IMAGE_MAIL_HELPER_SHA=$IMAGE_SHA"
+          test "$SOURCE_SHA" = "$IMAGE_SHA"
 
-      - name: Lint final Jorani tools helper
+      - name: Lint final HAYNE mail helper with PHP core only
         run: |
           set -eux
           IMAGE="$(docker compose images -q jorani)"
           test -n "$IMAGE"
-          docker run --rm --entrypoint php "$IMAGE" -l /var/www/html/legacy/application/helpers/tools_helper.php
+          docker run --rm --entrypoint php "$IMAGE" -n -l /var/www/html/legacy/application/helpers/hayne_mail_helper.php
+
+      - name: Lint final Jorani tools helper with PHP core only
+        run: |
+          set -eux
+          IMAGE="$(docker compose images -q jorani)"
+          test -n "$IMAGE"
+          docker run --rm --entrypoint php "$IMAGE" -n -l /var/www/html/legacy/application/helpers/tools_helper.php
 
       - name: Verify final UI runtime contract
         run: |
