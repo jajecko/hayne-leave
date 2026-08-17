@@ -4,22 +4,66 @@
          $this->load->model('hayne_leave_type_registry_model');
 +        $this->load->model('hayne_leave_workflow_model');
          $this->load->model('types_model');
-@@ -669,3 +670,3 @@
+@@ -50,2 +51,14 @@
+         $this->lang->load('global', $this->language);
+     }
++
++    private function ensurePendingWorkflowRecipient(int $leaveTypeId): bool
++    {
++        if ($this->hayne_leave_workflow_model->hasRequiredNotificationRecipient($leaveTypeId)) {
++            return TRUE;
++        }
++
++        log_message('error', 'Cannot route HAYNE HR leave request: no active HR recipient with e-mail.');
++        $this->session->set_flashdata(
++            'msg',
++            'Nie można przekazać wniosku do HR: brak aktywnego konta HR z adresem e-mail. Skontaktuj się z administratorem.'
++        );
++        return FALSE;
++    }
+@@ -337,2 +350,9 @@
+             $duration = (float) $this->input->post('duration');
++
++            if (
++                (int) $this->input->post('status') === LMS_REQUESTED &&
++                !$this->ensurePendingWorkflowRecipient((int) $leaveTypeId)
++            ) {
++                redirect('leaves');
++            }
+ 
+@@ -511,2 +531,10 @@
+             $duration = (float) $this->input->post('duration');
++
++            $pendingStatus = (int) $this->input->post('status');
++            if (
++                in_array($pendingStatus, [LMS_REQUESTED, LMS_CANCELLATION], TRUE) &&
++                !$this->ensurePendingWorkflowRecipient((int) $leaveTypeId)
++            ) {
++                redirect('leaves');
++            }
+ 
+@@ -621,2 +649,6 @@
+             if ($leave['status'] == LMS_PLANNED) {
++                if (!$this->ensurePendingWorkflowRecipient((int) $leave['type'])) {
++                    redirect('leaves');
++                }
+                 $this->leaves_model->switchStatus($id, LMS_REQUESTED);
+@@ -669,3 +701,3 @@
          $leave = $this->leaves_model->getLeaves($id);
          $user = $this->users_model->getUsers($leave['employee']);
 -        $manager = $this->users_model->getUsers($user['manager']);
 +        $manager = $this->hayne_leave_workflow_model->getPrimaryNotificationRecipient($leave, $user);
-@@ -719,3 +720,3 @@
+@@ -719,3 +751,3 @@
          $leave = $this->leaves_model->getLeaves($id);
          $user = $this->users_model->getUsers($leave['employee']);
 -        $manager = $this->users_model->getUsers($user['manager']);
 +        $manager = $this->hayne_leave_workflow_model->getPrimaryNotificationRecipient($leave, $user);
-@@ -758,3 +759,3 @@
+@@ -758,3 +790,3 @@
          $leave = $this->leaves_model->getLeaves($id);
          $user = $this->users_model->getUsers($leave['employee']);
 -        $manager = $this->users_model->getUsers($user['manager']);
 +        $manager = $this->hayne_leave_workflow_model->getPrimaryNotificationRecipient($leave, $user);
-@@ -844,7 +845,14 @@
+@@ -844,7 +876,14 @@
          //Copy to the delegates, if any
          $cc = null;
 -        $delegates = $this->delegations_model->listMailsOfDelegates($manager['id']);
@@ -37,6 +81,12 @@
 +            }
          }
          sendMailByWrapper($this, $subject, $message, $to, $cc);
+@@ -938,2 +977,6 @@
+             if ($leave['status'] == LMS_ACCEPTED) {
++                if (!$this->ensurePendingWorkflowRecipient((int) $leave['type'])) {
++                    redirect('leaves');
++                }
+                 $this->leaves_model->switchStatus($id, LMS_CANCELLATION);
 --- a/legacy/application/controllers/Requests.php
 +++ b/legacy/application/controllers/Requests.php
 @@ -45,2 +45,3 @@
