@@ -14,7 +14,7 @@ jobs:
           set -eux
           test -s hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
           test -s hayne/sql/003-leave-type-registry.sql
-          grep -Fq "runtime code never" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -Fq "Display names are never used to infer policy behavior." hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
           grep -Fq "catalogMatchesMvpSignature" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
           grep -Fq "active_for_new_requests" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
           grep -Fq "home_office', 'NONE', 'NONE', 'STANDARD', FALSE, 'WORK'" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
