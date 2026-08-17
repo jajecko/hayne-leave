@@ -328,14 +328,20 @@
     moveSearch(page.querySelector('.hayne-approvals-toolbar-right'));
     enhanceRows();
 
+    const host = page.parentElement;
+    if (host) {
+      host.classList.remove('hayne-approvals-pending');
+      host.removeAttribute('aria-busy');
+    }
+
     if (window.jQuery) {
       window.jQuery('#leaves').on('draw.dt', () => window.setTimeout(enhanceRows, 0));
     }
   };
 
-  if (document.readyState === 'complete') {
-    window.setTimeout(enhance, 0);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => window.setTimeout(enhance, 0), { once: true });
   } else {
-    window.addEventListener('load', () => window.setTimeout(enhance, 0), { once: true });
+    window.setTimeout(enhance, 0);
   }
 })();
