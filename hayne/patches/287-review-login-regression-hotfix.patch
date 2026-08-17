@@ -1,19 +1,13 @@
 --- a/legacy/application/controllers/Requests.php
 +++ b/legacy/application/controllers/Requests.php
-@@ -62,11 +62,12 @@
+@@ -62,6 +62,7 @@
          $data['title'] = lang('requests_index_title');
          $data['help'] = $this->help->create_help_link('global_link_doc_page_leave_validation');
          ($filter == 'all') ? $showAll = TRUE : $showAll = FALSE;
 +        $data['requests'] = [];
          if ($this->config->item('enable_history') == TRUE) {
--            $data['requests'] = $this->leaves_model->getLeavesRequestedToManagerWithHistory($this->session->userdata('id'), $showAll);
-+            $data['requests'] = (array) $this->leaves_model->getLeavesRequestedToManagerWithHistory($this->session->userdata('id'), $showAll);
+             $data['requests'] = $this->leaves_model->getLeavesRequestedToManagerWithHistory($this->session->userdata('id'), $showAll);
          } else {
--            $data['requests'] = $this->leaves_model->getLeavesRequestedToManager($this->session->userdata('id'), $showAll);
-+            $data['requests'] = (array) $this->leaves_model->getLeavesRequestedToManager($this->session->userdata('id'), $showAll);
-         }
-         $data['types'] = $this->types_model->getTypes();
-         $data['showAll'] = $showAll;
 --- a/legacy/application/views/templates/header.php
 +++ b/legacy/application/views/templates/header.php
 @@ -65 +65 @@
