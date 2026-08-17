@@ -1,0 +1,104 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -46,2 +46,3 @@
+         $this->load->model('hayne_leave_type_registry_model');
++        $this->load->model('hayne_leave_workflow_model');
+         $this->load->model('types_model');
+@@ -669,3 +670,3 @@
+         $leave = $this->leaves_model->getLeaves($id);
+         $user = $this->users_model->getUsers($leave['employee']);
+-        $manager = $this->users_model->getUsers($user['manager']);
++        $manager = $this->hayne_leave_workflow_model->getPrimaryNotificationRecipient($leave, $user);
+@@ -719,3 +720,3 @@
+         $leave = $this->leaves_model->getLeaves($id);
+         $user = $this->users_model->getUsers($leave['employee']);
+-        $manager = $this->users_model->getUsers($user['manager']);
++        $manager = $this->hayne_leave_workflow_model->getPrimaryNotificationRecipient($leave, $user);
+@@ -758,3 +759,3 @@
+         $leave = $this->leaves_model->getLeaves($id);
+         $user = $this->users_model->getUsers($leave['employee']);
+-        $manager = $this->users_model->getUsers($user['manager']);
++        $manager = $this->hayne_leave_workflow_model->getPrimaryNotificationRecipient($leave, $user);
+@@ -844,5 +845,11 @@
+         //Copy to the delegates, if any
+         $cc = null;
+-        $delegates = $this->delegations_model->listMailsOfDelegates($manager['id']);
+-        if (!empty($delegates)) {
+-            $cc = join(',', $delegates);
++        if ($this->hayne_leave_workflow_model->isHrWorkflowType((int) $leave['type'])) {
++            $hrCopies = $this->hayne_leave_workflow_model->getAdditionalHrRecipientEmails((int) $manager['id']);
++            if (!empty($hrCopies)) {
++                $cc = join(',', $hrCopies);
++            }
++        } else {
++            $delegates = $this->delegations_model->listMailsOfDelegates($manager['id']);
++            if (!empty($delegates)) {
++                $cc = join(',', $delegates);
++            }
+         }
+--- a/legacy/application/controllers/Requests.php
++++ b/legacy/application/controllers/Requests.php
+@@ -45,2 +45,3 @@
+         $this->load->model('leaves_model');
+         $this->load->model('hayne_caregiver_leave_model');
++        $this->load->model('hayne_leave_workflow_model');
+@@ -69,2 +70,7 @@
+             $data['requests'] = $this->leaves_model->getLeavesRequestedToManager($this->session->userdata('id'), $showAll);
+         }
++        $data['requests'] = $this->hayne_leave_workflow_model->filterAndMergeApproverRequests(
++            $data['requests'],
++            (bool) ($this->is_hr || $this->is_admin),
++            $showAll
++        );
+         $data['types'] = $this->types_model->getTypes();
+@@ -99,2 +105,9 @@
+         $is_delegate = $this->delegations_model->isDelegateOfManager($this->user_id, $employee['manager']);
+-        if (($this->user_id == $employee['manager']) || ($this->is_hr) || ($is_delegate)) {
++        $canDecide = $this->hayne_leave_workflow_model->canActorDecide(
++            (int) $leave['type'],
++            (bool) $this->is_hr,
++            (bool) $this->is_admin,
++            (int) $this->user_id === (int) $employee['manager'],
++            $is_delegate
++        );
++        if ($canDecide) {
+@@ -133,2 +146,9 @@
+         $is_delegate = $this->delegations_model->isDelegateOfManager($this->user_id, $employee['manager']);
+-        if (($this->user_id == $employee['manager']) || ($this->is_hr) || ($is_delegate)) {
++        $canDecide = $this->hayne_leave_workflow_model->canActorDecide(
++            (int) $leave['type'],
++            (bool) $this->is_hr,
++            (bool) $this->is_admin,
++            (int) $this->user_id === (int) $employee['manager'],
++            $is_delegate
++        );
++        if ($canDecide) {
+@@ -173,2 +193,9 @@
+         $is_delegate = $this->delegations_model->isDelegateOfManager($this->user_id, $employee['manager']);
+-        if (($this->user_id == $employee['manager']) || ($this->is_hr) || ($is_delegate)) {
++        $canDecide = $this->hayne_leave_workflow_model->canActorDecide(
++            (int) $leave['type'],
++            (bool) $this->is_hr,
++            (bool) $this->is_admin,
++            (int) $this->user_id === (int) $employee['manager'],
++            $is_delegate
++        );
++        if ($canDecide) {
+@@ -207,2 +234,9 @@
+         $is_delegate = $this->delegations_model->isDelegateOfManager($this->user_id, $employee['manager']);
+-        if (($this->user_id == $employee['manager']) || ($this->is_hr) || ($is_delegate)) {
++        $canDecide = $this->hayne_leave_workflow_model->canActorDecide(
++            (int) $leave['type'],
++            (bool) $this->is_hr,
++            (bool) $this->is_admin,
++            (int) $this->user_id === (int) $employee['manager'],
++            $is_delegate
++        );
++        if ($canDecide) {
+--- a/legacy/application/views/menu/index.php
++++ b/legacy/application/views/menu/index.php
+@@ -62,2 +62,3 @@
+                 <li class="nav-header">Urlopy</li>
+                 <li><a href="<?php echo base_url(); ?>leavetypes">Rodzaje nieobecności</a></li>
++                <li><a href="<?php echo base_url(); ?>requests">Wnioski do weryfikacji</a></li>
+                 <li class="divider"></li>
