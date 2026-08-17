@@ -60,16 +60,26 @@ class Hayne_leave_workflow_model extends CI_Model
     }
 
     /**
-     * Keep upstream authorization for APPROVAL/missing policies and make HR
-     * routing explicit. NONE has no approval path.
+     * A request owner can never decide their own leave request. This invariant
+     * is evaluated before role/workflow policy so manager, delegate, HR/admin
+     * privileges and registry fallback can never bypass it.
+     *
+     * For non-owners, keep upstream authorization for APPROVAL/missing policies
+     * and make HR routing explicit. NONE has no approval path.
      */
     public function canActorDecide(
         int $leaveTypeId,
+        int $actorUserId,
+        int $employeeUserId,
         bool $isHr,
         bool $isAdmin,
         bool $isLineManager,
         bool $isDelegate
     ): bool {
+        if ($actorUserId > 0 && $employeeUserId > 0 && $actorUserId === $employeeUserId) {
+            return FALSE;
+        }
+
         $mode = $this->getWorkflowModeForType($leaveTypeId);
 
         if ($mode === self::WORKFLOW_HR) {
