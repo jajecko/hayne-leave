@@ -1,7 +1,7 @@
 # PR-REGRESSION-01 — review action, login first paint and mail logo
 
 Date: 2026-08-17
-Status: implementation reviewed; CI pending
+Status: implementation reviewed; dedicated regression CI passed; final full CI pending after checkpoint update
 
 ## Reported production regressions
 
@@ -15,13 +15,13 @@ Status: implementation reviewed; CI pending
 
 ### Requests list
 
-Patch 285 calls the strictly typed `filterAndMergeApproverRequests(array $managerRequests, ...)` with `$data['requests']` directly. Production evidence shows that the key can be absent on the post-review redirect path. The upstream manager-query methods themselves declare `: array`; the regression fix therefore does not weaken workflow-model typing or alter query semantics. It initializes `$data['requests']` to an empty array before the existing history/non-history query branch.
+Patch 285 calls the strictly typed `filterAndMergeApproverRequests(array $managerRequests, ...)` with `$data['requests']` directly. Production evidence shows that the key can be absent on the post-review redirect path. The upstream manager-query methods themselves declare `: array`; the fix therefore keeps workflow-model typing strict and initializes `$data['requests']` to an empty array before the existing history/non-history query branch.
 
 ### Login first paint
 
-The final login layout is scoped to `body.hayne-login-target`, but `login.js` previously added that class only during client enhancement after page parsing. The browser can therefore paint the server-rendered legacy layout first.
+The final login layout is scoped to `body.hayne-login-target`, while `login.js` previously added that class only from its deferred client enhancement after parsing. This allowed the legacy server-rendered form to be painted briefly.
 
-Patch 287 sets the `hayne-login-target` body class server-side in `templates/header.php` only when CodeIgniter routes to `session/login`. The existing JS remains idempotent and continues to provide icons, placeholders and password-toggle behavior.
+The initial implementation attempted to set the body class from the global header. Execution review rejected that approach because the new header hunk did not independently apply to the pinned upstream source. The final patch is narrower: `session/login.php` synchronously adds `hayne-login-target` immediately after the opening PHP block, before the legacy inline `<style>` and before any visible login markup. The existing deferred `login.js` remains idempotent and continues to add icons, placeholders and password-toggle behavior.
 
 ### Mail logo
 
@@ -29,63 +29,71 @@ Patch 286 previously called:
 
 `attach($mailLogoPath, 'inline', 'hayne-logo.png', 'image/png')`
 
-In the pinned CodeIgniter `CI_Email::attach()` implementation, supplying a non-empty MIME argument makes the first argument be treated as already-buffered file content. Because the first argument was actually a filesystem path, the MIME attachment contained the text of the path rather than the PNG bytes. The CID was valid, but the referenced image payload was invalid.
+In the pinned CodeIgniter `CI_Email::attach()` implementation, supplying a non-empty MIME argument makes the first argument be treated as already-buffered file content. Because the first argument was a filesystem path, the attachment contained the text of the path rather than the PNG bytes. The CID existed, but the referenced payload was invalid.
 
 The fix calls:
 
 `attach($mailLogoPath, 'inline', 'hayne-logo.png')`
 
-This causes CodeIgniter to open the file, read the actual PNG bytes, derive the MIME type, and then `attachment_cid()` marks the attachment multipart/related.
+CodeIgniter now opens the file, reads the PNG bytes, derives `image/png`, and `attachment_cid()` marks the attachment multipart/related.
 
 ## Runtime changes
 
 - `hayne/patches/286-ui-mail-branding-hotfix.patch`
   - remove the explicit fourth MIME argument from the inline-logo `attach()` call.
 - `hayne/patches/287-review-login-regression-hotfix.patch`
-  - initialize `$data['requests'] = []` before the existing manager request query branch,
-  - render `class="hayne-login-target"` on `<body>` server-side only for `session/login`.
+  - initialize `$data['requests'] = []` before the manager request query branch,
+  - add the synchronous `hayne-login-target` hook at the top of `session/login.php`, before login styles and markup.
 
-No database, registry, entitlement, leave type, HR routing, AD, PWA or production configuration changes are in scope.
+No database, registry, entitlement, leave type, HR-routing, AD, PWA, push-routing or production-configuration changes are in scope.
 
 ## Review sequence
 
-The work followed the required sequence:
+The required sequence was followed:
 
 1. plan,
-2. plan review,
+2. review plan,
 3. patch,
-4. patch review.
+4. review patch.
 
-The first patch review rejected redundant `(array)` casts because both upstream manager-query methods already declare `: array`. Those casts were removed. The review also found and corrected a shell-expansion bug in the new regression workflow before PR creation.
+Execution review then found and corrected test/integration issues without expanding runtime scope:
+
+- redundant `(array)` casts were removed because upstream manager-query methods already return `array`,
+- the initial global-header login hunk was rejected by independent dry-run and replaced with the login-view synchronous hook,
+- a quoting error in the login-order CI assertion was corrected,
+- the diagnostic harness was hardened so patch stderr is surfaced directly and teardown cannot hide the primary failure.
 
 ## Deterministic verification
 
 ### Existing UI/mail workflow
 
-`.github/workflows/verify-pr-ui-mail-branding-hotfix.yml` is strengthened to:
+`.github/workflows/verify-pr-ui-mail-branding-hotfix.yml` now:
 
-- require the corrected three-argument `attach()` call,
-- reject the old four-argument form,
-- instantiate native `CI_Email`,
-- attach the real runtime `logo.png`,
-- obtain a CID,
-- inspect the private attachment payload,
-- base64-decode it,
-- compare its SHA-256 byte-for-byte with the actual PNG,
-- require MIME `image/png`, multipart `related`, and matching CID.
+- requires the corrected three-argument `attach()` call,
+- rejects the broken four-argument form,
+- instantiates native `CI_Email`,
+- attaches the actual runtime `logo.png`,
+- obtains a CID,
+- reads the private attachment payload,
+- base64-decodes it,
+- compares its SHA-256 byte-for-byte with the actual PNG,
+- requires MIME `image/png`, multipart `related`, and matching CID.
 
-### New regression workflow
+### Dedicated regression workflow
 
-`.github/workflows/verify-pr-review-login-regressions.yml` must prove:
+`.github/workflows/verify-pr-review-login-regressions.yml` verifies:
 
-- patch 287 independently dry-runs against pristine Jorani v1.0.4,
+- patch 287 independently applies to pristine Jorani v1.0.4,
 - the complete overlay + patch stack applies,
-- final `Requests.php`, `header.php` and `tools_helper.php` lint,
-- the requests fallback exists before `filterAndMergeApproverRequests()`,
-- the final header contains the route-scoped server-side login class,
-- the final Docker image contains all three fixes,
-- raw `/session/login` HTML already contains `<body class="hayne-login-target">` before client-side enhancement,
-- native `CI_Email` embeds the real PNG bytes in the inline attachment.
+- final regression targets lint,
+- the requests fallback occurs before `filterAndMergeApproverRequests()`,
+- the login hook occurs before the legacy `<style>` and visible login markup,
+- the final Docker image builds and starts,
+- raw `/session/login` response orders the synchronous hook before the HAYNE login shell,
+- native `CI_Email` embeds the real PNG bytes,
+- final runtime retains HAYNE workflow wiring.
+
+Dedicated run on head `94b90d11f9c7a5246af3b73997bcb6084b777092` passed all steps, including build, raw-login order, real PNG MIME payload and built-runtime contracts.
 
 ## Acceptance
 
@@ -97,4 +105,4 @@ The first patch review rejected redundant `(array)` casts because both upstream 
 
 ## Production
 
-No production deployment is part of this implementation branch. Production deployment remains a separate guarded QNAP rebuild/recreate after merge and green CI.
+No production deployment is part of this PR. Production deployment remains a separate guarded QNAP rebuild/recreate after merge and green final CI.
