@@ -13,8 +13,10 @@ jobs:
         run: |
           set -eux
           model=hayne/overlay/legacy/application/models/Hayne_leave_workflow_model.php
+          controller=hayne/overlay/legacy/application/controllers/Hayneapprovals.php
           patch=hayne/patches/285-registry-workflow-routing.patch
           test -s "$model"
+          test -s "$controller"
           test -s "$patch"
           grep -Fq "WORKFLOW_HR = 'HR'" "$model"
           grep -Fq "HR_ROLE_BIT = 8" "$model"
@@ -22,11 +24,14 @@ jobs:
           grep -Fq "hasRequiredNotificationRecipient" "$model"
           grep -Fq "filterAndMergeApproverRequests" "$model"
           grep -Fq "canActorDecide" "$model"
+          grep -Fq '$actorUserId === $employeeUserId' "$model"
           grep -Fq "getAdditionalHrRecipientEmails" "$model"
           grep -Fq "hayne_leave_workflow_model" "$patch"
           grep -Fq "ensurePendingWorkflowRecipient" "$patch"
           grep -Fq "brak aktywnego konta HR z adresem e-mail" "$patch"
           grep -Fq "Wnioski do weryfikacji" "$patch"
+          test "$(grep -Fc "(int) \$leave['employee']" "$patch")" -ge 4
+          grep -Fq "(int) \$data['leave']['employee']" "$controller"
           ! grep -Fq '$leaveTypeId === 4' "$model"
           ! grep -Fq '$leaveTypeId === 15' "$model"
 
@@ -61,26 +66,36 @@ jobs:
           }
 
           $workflow = new TestWorkflow();
+          $actor = 10;
+          $employee = 20;
+          $owner = 20;
+
           $workflow->mode = 'HR';
-          if ($workflow->canActorDecide(4, false, false, true, false) !== false) exit(1);
-          if ($workflow->canActorDecide(4, false, false, false, true) !== false) exit(1);
-          if ($workflow->canActorDecide(4, true, false, false, false) !== true) exit(1);
-          if ($workflow->canActorDecide(4, false, true, false, false) !== true) exit(1);
+          if ($workflow->canActorDecide(4, $actor, $employee, false, false, true, false) !== false) exit(1);
+          if ($workflow->canActorDecide(4, $actor, $employee, false, false, false, true) !== false) exit(1);
+          if ($workflow->canActorDecide(4, $actor, $employee, true, false, false, false) !== true) exit(1);
+          if ($workflow->canActorDecide(4, $actor, $employee, false, true, false, false) !== true) exit(1);
+          if ($workflow->canActorDecide(4, $owner, $owner, true, true, true, true) !== false) exit(1);
 
           $workflow->mode = 'APPROVAL';
-          if ($workflow->canActorDecide(1, false, false, true, false) !== true) exit(1);
-          if ($workflow->canActorDecide(1, false, false, false, true) !== true) exit(1);
-          if ($workflow->canActorDecide(1, true, false, false, false) !== true) exit(1);
-          if ($workflow->canActorDecide(1, false, true, false, false) !== false) exit(1);
+          if ($workflow->canActorDecide(1, $actor, $employee, false, false, true, false) !== true) exit(1);
+          if ($workflow->canActorDecide(1, $actor, $employee, false, false, false, true) !== true) exit(1);
+          if ($workflow->canActorDecide(1, $actor, $employee, true, false, false, false) !== true) exit(1);
+          if ($workflow->canActorDecide(1, $actor, $employee, false, true, false, false) !== false) exit(1);
+          if ($workflow->canActorDecide(1, $owner, $owner, false, false, true, false) !== false) exit(1);
+          if ($workflow->canActorDecide(1, $owner, $owner, false, false, false, true) !== false) exit(1);
+          if ($workflow->canActorDecide(1, $owner, $owner, true, true, false, false) !== false) exit(1);
 
           $workflow->mode = 'NONE';
-          if ($workflow->canActorDecide(2, true, true, true, true) !== false) exit(1);
+          if ($workflow->canActorDecide(2, $actor, $employee, true, true, true, true) !== false) exit(1);
+          if ($workflow->canActorDecide(2, $owner, $owner, true, true, true, true) !== false) exit(1);
 
           $workflow->mode = NULL;
-          if ($workflow->canActorDecide(999, false, false, true, false) !== true) exit(1);
-          if ($workflow->canActorDecide(999, false, false, false, false) !== false) exit(1);
+          if ($workflow->canActorDecide(999, $actor, $employee, false, false, true, false) !== true) exit(1);
+          if ($workflow->canActorDecide(999, $actor, $employee, false, false, false, false) !== false) exit(1);
+          if ($workflow->canActorDecide(999, $owner, $owner, true, true, true, true) !== false) exit(1);
 
-          echo "ABSENCE-POLICY-04 workflow semantics PASS\n";
+          echo "ABSENCE-POLICY workflow self-approval invariant PASS\n";
           PHP
 
       - name: Verify cumulative overlay and patch stack
@@ -128,10 +143,13 @@ jobs:
           test "$(grep -Fc "getPrimaryNotificationRecipient" "$root/legacy/application/controllers/Leaves.php")" -eq 3
           test "$(grep -Fc "ensurePendingWorkflowRecipient" "$root/legacy/application/controllers/Leaves.php")" -eq 5
           test "$(grep -Fc "canActorDecide" "$root/legacy/application/controllers/Requests.php")" -eq 4
+          grep -Fq "(int) \$leave['employee']" "$root/legacy/application/controllers/Requests.php"
+          grep -Fq '$actorUserId === $employeeUserId' "$root/legacy/application/models/Hayne_leave_workflow_model.php"
           grep -Fq "hasRequiredNotificationRecipient" "$root/legacy/application/models/Hayne_leave_workflow_model.php"
           grep -Fq "brak aktywnego konta HR z adresem e-mail" "$root/legacy/application/controllers/Leaves.php"
           grep -Fq "filterAndMergeApproverRequests" "$root/legacy/application/controllers/Requests.php"
           grep -Fq "canActorDecide" "$root/legacy/application/controllers/Hayneapprovals.php"
+          grep -Fq "(int) \$data['leave']['employee']" "$root/legacy/application/controllers/Hayneapprovals.php"
           grep -Fq "Wnioski do weryfikacji" "$root/legacy/application/views/menu/index.php"
           grep -Fq "getAdditionalHrRecipientEmails" "$root/legacy/application/controllers/Leaves.php"
 
@@ -150,6 +168,7 @@ jobs:
             php -l legacy/application/controllers/Hayneapprovals.php
             grep -Fq "filterAndMergeApproverRequests" legacy/application/controllers/Requests.php
             grep -Fq "getPrimaryNotificationRecipient" legacy/application/controllers/Leaves.php
+            grep -Fq '\''$actorUserId === $employeeUserId'\'' legacy/application/models/Hayne_leave_workflow_model.php
             test "$(grep -Fc "ensurePendingWorkflowRecipient" legacy/application/controllers/Leaves.php)" -eq 5
           '
 
