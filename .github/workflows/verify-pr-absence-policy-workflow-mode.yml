@@ -19,10 +19,13 @@ jobs:
           grep -Fq "WORKFLOW_HR = 'HR'" "$model"
           grep -Fq "HR_ROLE_BIT = 8" "$model"
           grep -Fq "getPrimaryNotificationRecipient" "$model"
+          grep -Fq "hasRequiredNotificationRecipient" "$model"
           grep -Fq "filterAndMergeApproverRequests" "$model"
           grep -Fq "canActorDecide" "$model"
           grep -Fq "getAdditionalHrRecipientEmails" "$model"
           grep -Fq "hayne_leave_workflow_model" "$patch"
+          grep -Fq "ensurePendingWorkflowRecipient" "$patch"
+          grep -Fq "brak aktywnego konta HR z adresem e-mail" "$patch"
           grep -Fq "Wnioski do weryfikacji" "$patch"
           ! grep -Fq '$leaveTypeId === 4' "$model"
           ! grep -Fq '$leaveTypeId === 15' "$model"
@@ -110,7 +113,10 @@ jobs:
           php -l "$root/legacy/application/controllers/Hayneapprovals.php"
           grep -Fq "getPrimaryNotificationRecipient" "$root/legacy/application/controllers/Leaves.php"
           test "$(grep -Fc "getPrimaryNotificationRecipient" "$root/legacy/application/controllers/Leaves.php")" -eq 3
+          test "$(grep -Fc "ensurePendingWorkflowRecipient" "$root/legacy/application/controllers/Leaves.php")" -eq 5
           test "$(grep -Fc "canActorDecide" "$root/legacy/application/controllers/Requests.php")" -eq 4
+          grep -Fq "hasRequiredNotificationRecipient" "$root/legacy/application/models/Hayne_leave_workflow_model.php"
+          grep -Fq "brak aktywnego konta HR z adresem e-mail" "$root/legacy/application/controllers/Leaves.php"
           grep -Fq "filterAndMergeApproverRequests" "$root/legacy/application/controllers/Requests.php"
           grep -Fq "canActorDecide" "$root/legacy/application/controllers/Hayneapprovals.php"
           grep -Fq "Wnioski do weryfikacji" "$root/legacy/application/views/menu/index.php"
@@ -131,6 +137,7 @@ jobs:
             php -l legacy/application/controllers/Hayneapprovals.php
             grep -Fq "filterAndMergeApproverRequests" legacy/application/controllers/Requests.php
             grep -Fq "getPrimaryNotificationRecipient" legacy/application/controllers/Leaves.php
+            test "$(grep -Fc "ensurePendingWorkflowRecipient" legacy/application/controllers/Leaves.php)" -eq 5
           '
 
       - name: Show logs on failure
