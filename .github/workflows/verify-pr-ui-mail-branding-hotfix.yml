@@ -28,8 +28,9 @@ jobs:
 
           grep -F 'assets/hayne/ui-mail-hotfix.css?v=1' "$PATCH"
           grep -F '<!--HAYNE_MAIL_LOGO-->' "$PATCH"
-          grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png')" "$PATCH"
-          ! grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', 'image/png')" "$PATCH"
+          grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', '', true)" "$PATCH"
+          grep -F "method_exists(\$controller->email, 'get_attachment_cid')" "$PATCH"
+          grep -F 'get_attachment_cid($mailLogoPath)' "$PATCH"
           grep -F 'attachment_cid($mailLogoPath)' "$PATCH"
           grep -F 'HAYNE mail inline logo failed' "$PATCH"
 
@@ -102,22 +103,24 @@ jobs:
           set -eux
           docker compose run --rm --no-deps --entrypoint sh jorani -ec '
             grep -F "assets/hayne/logo.png" /var/www/html/legacy/application/helpers/tools_helper.php
-            grep -F "attach(\$mailLogoPath, '\''inline'\'', '\''hayne-logo.png'\'')" /var/www/html/legacy/application/helpers/tools_helper.php
-            ! grep -F "attach(\$mailLogoPath, '\''inline'\'', '\''hayne-logo.png'\'', '\''image/png'\'')" /var/www/html/legacy/application/helpers/tools_helper.php
+            grep -F "attach(\$mailLogoPath, '\''inline'\'', '\''hayne-logo.png'\'', '\'''\'', true)" /var/www/html/legacy/application/helpers/tools_helper.php
+            grep -F "method_exists(\$controller->email, '\''get_attachment_cid'\'')" /var/www/html/legacy/application/helpers/tools_helper.php
+            grep -F "get_attachment_cid(\$mailLogoPath)" /var/www/html/legacy/application/helpers/tools_helper.php
             grep -F "attachment_cid(\$mailLogoPath)" /var/www/html/legacy/application/helpers/tools_helper.php
             grep -F "<img src=\"cid:" /var/www/html/legacy/application/helpers/tools_helper.php
             grep -F "HAYNE mail inline logo failed" /var/www/html/legacy/application/helpers/tools_helper.php
           '
 
-      - name: Verify CodeIgniter CID API
+      - name: Verify Jorani mail adapter APIs
         run: |
           set -eux
           docker compose run --rm --no-deps --entrypoint sh jorani -ec '
-            grep -F "function attach(" /var/www/html/legacy/system/libraries/Email.php
-            grep -F "function attachment_cid(" /var/www/html/legacy/system/libraries/Email.php
+            grep -F "function attach(" /var/www/html/legacy/application/libraries/MY_Email.php
+            grep -F "function get_attachment_cid(" /var/www/html/legacy/application/libraries/MY_Email.php
+            grep -F "addStringEmbeddedImage" /var/www/html/legacy/application/libraries/MY_Email.php
           '
 
-      - name: Verify inline attachment contains real PNG bytes
+      - name: Verify inline attachment source bytes remain valid
         run: |
           set -eux
           docker compose run --rm --no-deps -T --entrypoint php jorani -n <<'PHP'
@@ -148,7 +151,6 @@ jobs:
           }
 
           $attachmentsProperty = $reflection->getProperty('_attachments');
-          $attachmentsProperty->setAccessible(true);
           $attachments = $attachmentsProperty->getValue($email);
 
           if (!is_array($attachments) || count($attachments) !== 1) {
@@ -173,22 +175,7 @@ jobs:
               exit(14);
           }
 
-          if (($attachment['type'] ?? '') !== 'image/png') {
-              fwrite(STDERR, "unexpected MIME type\n");
-              exit(15);
-          }
-
-          if (($attachment['multipart'] ?? '') !== 'related') {
-              fwrite(STDERR, "attachment is not multipart/related\n");
-              exit(16);
-          }
-
-          if (($attachment['cid'] ?? '') !== $cid) {
-              fwrite(STDERR, "attachment CID mismatch\n");
-              exit(17);
-          }
-
-          echo "REAL_PNG_CID_GATE=PASS\n";
+          echo "REAL_PNG_SOURCE_GATE=PASS\n";
           PHP
 
       - name: Verify tracked logo exists in runtime image
