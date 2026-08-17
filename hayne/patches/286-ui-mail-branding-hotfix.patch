@@ -1,98 +1,12 @@
---- a/assets/hayne/app.css
-+++ b/assets/hayne/app.css
-@@ -500,3 +500,46 @@
- #wrap .alert {
-+  position: relative;
-+  padding: 12px 42px 12px 14px;
-+  border: 1px solid #deded8;
-   border-radius: 8px;
-+  background: #fff;
-+  color: #2b2b28;
-+  text-shadow: none;
-+}
-+
-+#wrap .alert-warning,
-+#wrap .alert-block {
-+  border-color: #dfc980;
-+}
-+
-+#wrap .alert-success {
-+  border-color: #bfd7c7;
-+}
-+
-+#wrap .alert-info {
-+  border-color: #c8d7e1;
-+}
-+
-+#wrap .alert-error,
-+#wrap .alert-danger {
-+  border-color: #e0bcbc;
-+}
-+
-+#wrap .alert .close {
-+  position: absolute;
-+  top: 50%;
-+  right: 12px;
-+  float: none;
-+  margin: 0;
-+  transform: translateY(-50%);
-+  color: #555;
-+  opacity: .65;
-+  text-shadow: none;
-+  line-height: 1;
-+}
-+
-+#wrap .alert .close:hover,
-+#wrap .alert .close:focus {
-+  color: #111;
-+  opacity: 1;
- }
---- a/assets/hayne/approval-review-privacy.css
-+++ b/assets/hayne/approval-review-privacy.css
-@@ -1,7 +1,7 @@
- /* HAYNE Leave — caregiver privacy + approval CTA follow-up */
--.hayne-approval-review a.hayne-approval-review__action--accept,
--.hayne-approval-review a.hayne-approval-review__action--accept:link,
--.hayne-approval-review a.hayne-approval-review__action--accept:visited {
-+#wrap .hayne-approval-review a.hayne-approval-review__action--accept,
-+#wrap .hayne-approval-review a.hayne-approval-review__action--accept:link,
-+#wrap .hayne-approval-review a.hayne-approval-review__action--accept:visited {
-   border-color: #176b42;
-   background: #176b42;
-   color: #fff;
-@@ -9,3 +9,3 @@
--.hayne-approval-review a.hayne-approval-review__action--accept:hover,
--.hayne-approval-review a.hayne-approval-review__action--accept:focus,
--.hayne-approval-review a.hayne-approval-review__action--accept:active {
-+#wrap .hayne-approval-review a.hayne-approval-review__action--accept:hover,
-+#wrap .hayne-approval-review a.hayne-approval-review__action--accept:focus,
-+#wrap .hayne-approval-review a.hayne-approval-review__action--accept:active {
-@@ -17 +17 @@
--.hayne-approval-review a.hayne-approval-review__action--accept:focus-visible {
-+#wrap .hayne-approval-review a.hayne-approval-review__action--accept:focus-visible {
-@@ -22 +22 @@
--.hayne-approval-review a.hayne-approval-review__action--accept[aria-disabled="true"] {
-+#wrap .hayne-approval-review a.hayne-approval-review__action--accept[aria-disabled="true"] {
---- a/legacy/application/helpers/hayne_mail_helper.php
-+++ b/legacy/application/helpers/hayne_mail_helper.php
-@@ -53,10 +53,1 @@
--        $logoHtml = '<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;">'
--            . '<tr><td style="padding:0;color:#111111;font-family:Arial,Helvetica,sans-serif;font-size:24px;line-height:24px;font-weight:800;letter-spacing:4px;">HAYNE</td></tr>'
--            . '<tr><td style="padding:7px 0 0 0;">'
--            . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;">'
--            . '<tr>'
--            . '<td style="width:34%;border-top:1px solid #111111;font-size:1px;line-height:1px;">&nbsp;</td>'
--            . '<td style="padding:0 7px;color:#111111;font-family:Arial,Helvetica,sans-serif;font-size:8px;line-height:9px;font-weight:700;letter-spacing:2px;text-align:center;white-space:nowrap;">LEAVE</td>'
--            . '<td style="width:34%;border-top:1px solid #111111;font-size:1px;line-height:1px;">&nbsp;</td>'
--            . '</tr></table>'
--            . '</td></tr></table>';
-+        $logoHtml = '<!--HAYNE_MAIL_LOGO-->';
+--- a/legacy/application/views/templates/header.php
++++ b/legacy/application/views/templates/header.php
+@@ -33 +33,2 @@
+-</head>
++    <link rel="stylesheet" href="<?php echo base_url(); ?>assets/hayne/ui-mail-hotfix.css?v=1">
++</head>
 --- a/legacy/application/helpers/tools_helper.php
 +++ b/legacy/application/helpers/tools_helper.php
-@@ -153,6 +153,30 @@
-     if (!is_null($cc)) {
-         $controller->email->cc($cc);
-     }
+@@ -158 +158,25 @@
 -    $controller->email->message($message);
 +    $mailMessage = $message;
 +    $mailLogoToken = '<!--HAYNE_MAIL_LOGO-->';
@@ -119,6 +33,3 @@
 +        $mailMessage = str_replace($mailLogoToken, $mailLogoHtml, $mailMessage);
 +    }
 +    $controller->email->message($mailMessage);
-     $mailSource = strtolower(get_class($controller));
-     $recipientKey = substr(hash('sha256', strtolower(trim($to))), 0, 12);
-     try {
