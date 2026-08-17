@@ -1,0 +1,86 @@
+name: verify-pr-absence-policy-new-request-filter
+
+on:
+  pull_request:
+
+jobs:
+  verify-absence-policy-new-request-filter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify source guardrails
+        run: |
+          set -eux
+          test -s hayne/patches/284-registry-new-request-types.patch
+          grep -Fq "getActiveLeaveTypeIdsForNewRequests" hayne/patches/284-registry-new-request-types.patch
+          grep -Fq "catalogMatchesMvpSignature" hayne/patches/284-registry-new-request-types.patch
+          grep -Fq "array_intersect_key" hayne/patches/284-registry-new-request-types.patch
+          grep -Fq "2 => self::policy(2, 'on_demand_legacy', 'NONE', 'NONE', 'STANDARD', FALSE, 'LEAVE')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -Fq "17 => self::policy(17, 'holiday_legacy', 'NONE', 'NONE', 'STANDARD', FALSE, 'LEAVE')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -Fq "18 => self::policy(18, 'delegation_legacy', 'NONE', 'NONE', 'STANDARD', FALSE, 'LEAVE')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -Fq "19 => self::policy(19, 'home_office', 'NONE', 'NONE', 'STANDARD', FALSE, 'WORK')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          test "$(grep -Fc "getActiveLeaveTypeIdsForNewRequests" hayne/patches/284-registry-new-request-types.patch)" -eq 2
+          test "$(grep -Fc "array_intersect_key" hayne/patches/284-registry-new-request-types.patch)" -eq 2
+
+      - name: Verify cumulative overlay and patch stack
+        env:
+          JORANI_VERSION: v1.0.4
+        run: |
+          rm -rf /tmp/hayne-final-source
+          mkdir -p /tmp/hayne-final-source
+          curl -fsSL "https://github.com/jorani/jorani/archive/refs/tags/${JORANI_VERSION}.tar.gz" \
+            | tar -xz --strip-components=1 -C /tmp/hayne-final-source
+          cp -a hayne/overlay/. /tmp/hayne-final-source/
+          cd /tmp/hayne-final-source
+          for patch_file in "$GITHUB_WORKSPACE"/hayne/patches/*.patch; do
+            rel="${patch_file#${GITHUB_WORKSPACE}/}"
+            echo "Applying ${rel}"
+            if ! patch_output=$(patch --batch --forward -p1 < "$patch_file" 2>&1); then
+              patch_output=$(printf "%s" "$patch_output" | tr "\n" " ")
+              echo "::error file=${rel}::${patch_output}"
+              exit 1
+            fi
+          done
+
+      - name: Verify final controller scope
+        run: |
+          set -eux
+          controller=/tmp/hayne-final-source/legacy/application/controllers/Leaves.php
+          grep -Fq "hayne_leave_type_registry_model" "$controller"
+          test "$(grep -Fc "getActiveLeaveTypeIdsForNewRequests" "$controller")" -eq 2
+          create_section="$(sed -n '/public function create(): void/,/public function edit(int \$id): void/p' "$controller")"
+          test "$(printf '%s' "$create_section" | grep -Fc "getActiveLeaveTypeIdsForNewRequests")" -eq 2
+          edit_section="$(sed -n '/public function edit(int \$id): void/,/public function delete/p' "$controller")"
+          test "$(printf '%s' "$edit_section" | grep -Fc "getActiveLeaveTypeIdsForNewRequests" || true)" -eq 0
+          test "$(printf '%s' "$create_section" | grep -Fc "array_intersect_key")" -eq 2
+          test "$(printf '%s' "$create_section" | grep -Fc "array_key_exists(\$this->input->post('type'), \$leaveTypesDetails->types)")" -eq 1
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build final HAYNE Leave image
+        run: docker compose build jorani
+
+      - name: Verify final runtime PHP syntax and registry map
+        run: |
+          docker compose run --rm --no-deps jorani sh -ec '
+            php -l legacy/application/controllers/Leaves.php
+            php -l legacy/application/models/Hayne_leave_type_registry_model.php
+            php -r '\''
+              define("BASEPATH", __DIR__);
+              class CI_Model {}
+              require "legacy/application/models/Hayne_leave_type_registry_model.php";
+              $policies = Hayne_leave_type_registry_model::mvpPolicies();
+              $active = [];
+              foreach ($policies as $id => $policy) {
+                  if ((int) $policy["enabled"] === 1 && (int) $policy["active_for_new_requests"] === 1 && $policy["domain"] === "LEAVE") {
+                      $active[] = (int) $id;
+                  }
+              }
+              if (count($policies) !== 20 || count($active) !== 16) { exit(1); }
+              foreach ([2, 17, 18, 19] as $hidden) {
+                  if (in_array($hidden, $active, true)) { exit(1); }
+              }
+            '\''
+          '

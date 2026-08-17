@@ -1,0 +1,31 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -46,1 +46,2 @@
+         $this->load->model('hayne_credit_exemption_model');
++        $this->load->model('hayne_leave_type_registry_model');
+@@ -274,2 +275,10 @@
+             $leaveTypesDetails = $this->contracts_model->getLeaveTypesDetailsOTypesForUser($this->session->userdata('id'));
++            $hayneActiveTypeIds = $this->hayne_leave_type_registry_model->getActiveLeaveTypeIdsForNewRequests();
++            if ($this->hayne_leave_type_registry_model->catalogMatchesMvpSignature() && !empty($hayneActiveTypeIds)) {
++                $leaveTypesDetails->types = array_intersect_key(
++                    $leaveTypesDetails->types,
++                    array_fill_keys($hayneActiveTypeIds, TRUE)
++                );
++                if (!empty($leaveTypesDetails->types) && !array_key_exists((int) $leaveTypesDetails->defaultType, $leaveTypesDetails->types)) {
++                    $leaveTypesDetails->defaultType = (int) array_key_first($leaveTypesDetails->types);
++                }
++            }
+             $data['defaultType'] = $leaveTypesDetails->defaultType;
+@@ -307,2 +316,10 @@
+             $leaveTypesDetails = $this->contracts_model->getLeaveTypesDetailsOTypesForUser($this->session->userdata('id'));
++            $hayneActiveTypeIds = $this->hayne_leave_type_registry_model->getActiveLeaveTypeIdsForNewRequests();
++            if ($this->hayne_leave_type_registry_model->catalogMatchesMvpSignature() && !empty($hayneActiveTypeIds)) {
++                $leaveTypesDetails->types = array_intersect_key(
++                    $leaveTypesDetails->types,
++                    array_fill_keys($hayneActiveTypeIds, TRUE)
++                );
++                if (!empty($leaveTypesDetails->types) && !array_key_exists((int) $leaveTypesDetails->defaultType, $leaveTypesDetails->types)) {
++                    $leaveTypesDetails->defaultType = (int) array_key_first($leaveTypesDetails->types);
++                }
++            }
+             if (!array_key_exists($this->input->post('type'), $leaveTypesDetails->types)) {
