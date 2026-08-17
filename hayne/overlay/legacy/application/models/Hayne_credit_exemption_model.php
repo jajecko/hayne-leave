@@ -1,8 +1,11 @@
 <?php
 /**
- * Explicit HAYNE mappings for leave types that must not consume an entitlement
- * balance. The mapping is persisted by leave_type_id; runtime code never
- * guesses a statutory leave from its translated/display name.
+ * HAYNE adapter for Jorani entitlement-credit checks.
+ *
+ * The central leave-type registry is the primary policy source; runtime code never
+ * guesses credit behavior from a translated/display name or a hard-coded production
+ * leave type ID. The legacy official-summons mapping is retained only as a
+ * compatibility fallback when the central registry has no row.
  */
 if (!defined('BASEPATH')) {
     exit('No direct script access allowed');
@@ -13,14 +16,16 @@ class Hayne_credit_exemption_model extends CI_Model
     public const POLICY_CODE_OFFICIAL_SUMMONS = 'official_summons';
 
     private const POLICY_TABLE = 'hayne_statutory_leave_policies';
+    private const BALANCE_MODE_REQUIRES_CREDIT = 'BALANCE';
+    private const BALANCE_MODES_CREDIT_EXEMPT = ['NONE', 'GRANT'];
 
     public function __construct()
     {
         $this->ensureSchema();
 
-        // ABSENCE-POLICY-01: initialize the central registry alongside the
-        // existing statutory policy storage. This PR does not switch any
-        // runtime decision to the registry yet; existing behavior is preserved.
+        // ABSENCE-POLICY-03: the central registry is authoritative whenever a
+        // row exists. The legacy statutory mapping remains a no-registry-row
+        // compatibility fallback for older/persisted installations.
         $this->load->model('Hayne_leave_type_registry_model', 'hayne_leave_type_registry_model');
     }
 
@@ -87,8 +92,43 @@ class Hayne_credit_exemption_model extends CI_Model
             && (int) $policy['leave_type_id'] === $leaveTypeId;
     }
 
+    /**
+     * Return TRUE when native Jorani entitlement-credit validation must be
+     * skipped for the given leave type.
+     *
+     * BALANCE means native credit is required. NONE and GRANT use another
+     * policy mechanism and therefore must not be rejected only because the
+     * Jorani entitlement balance is zero. Unknown/disabled registry rows fail
+     * closed and keep native credit enforcement enabled.
+     */
     public function isCreditExemptType(int $leaveTypeId): bool
     {
+        if ($leaveTypeId <= 0) {
+            return FALSE;
+        }
+
+        $policy = $this->hayne_leave_type_registry_model->getPolicyForType($leaveTypeId);
+        if (!empty($policy)) {
+            if ((int) ($policy['enabled'] ?? 0) !== 1) {
+                return FALSE;
+            }
+
+            $balanceMode = strtoupper(trim((string) ($policy['balance_mode'] ?? '')));
+            if ($balanceMode === self::BALANCE_MODE_REQUIRES_CREDIT) {
+                return FALSE;
+            }
+
+            if (in_array($balanceMode, self::BALANCE_MODES_CREDIT_EXEMPT, TRUE)) {
+                return TRUE;
+            }
+
+            log_message(
+                'error',
+                'Unknown HAYNE balance_mode for leave type #' . $leaveTypeId . ': ' . $balanceMode
+            );
+            return FALSE;
+        }
+
         return $this->isOfficialSummonsType($leaveTypeId);
     }
 }
