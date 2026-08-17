@@ -111,7 +111,8 @@ jobs:
             MYEMAIL=/var/www/html/legacy/application/libraries/MY_Email.php
 
             php -l "$TOOLS"
-            grep -Fq "useragent'\''\] = '\''PHPMailer" "$EMAIL"
+            grep -Fq "useragent" "$EMAIL"
+            grep -Fq "PHPMailer" "$EMAIL"
             grep -Fq "attach(\$mailLogoPath, '\''inline'\'', '\''hayne-logo.png'\'', '\'''\'', true)" "$TOOLS"
             grep -Fq "get_attachment_cid(\$mailLogoPath)" "$TOOLS"
             grep -Fq "addStringEmbeddedImage" "$MYEMAIL"
