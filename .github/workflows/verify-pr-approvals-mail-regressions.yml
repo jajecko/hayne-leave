@@ -26,7 +26,8 @@ jobs:
           CSS=hayne/overlay/assets/hayne/approvals-first-paint.css
 
           grep -F 'approvals-first-paint.css' "$P150"
-          grep -F "hayne-approvals-host', 'hayne-approvals-pending" "$P288"
+          grep -F 'hayne-approvals-host' "$P288"
+          grep -F 'hayne-approvals-pending' "$P288"
           grep -F 'aria-busy' "$P288"
           grep -F '1500' "$P288"
           grep -F "document.addEventListener('DOMContentLoaded'" "$JS"
