@@ -51,7 +51,7 @@ if (!function_exists('hayne_mail_render')) {
         }
 
         $safeUrl = hayne_mail_escape($ctaUrl);
-        $logoHtml = '<!--HAYNE_MAIL_LOGO-->';
+        $logoHtml = '<!--HAYNE_MAIL_LOGO--><!-- HAYNE LEAVE -->';
 
         return '<!doctype html>'
             . '<html lang="pl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>'
