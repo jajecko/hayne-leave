@@ -28,6 +28,8 @@ jobs:
 
           grep -F 'assets/hayne/ui-mail-hotfix.css?v=1' "$PATCH"
           grep -F '<!--HAYNE_MAIL_LOGO-->' "$PATCH"
+          grep -F "dirname(FCPATH) . DIRECTORY_SEPARATOR . 'assets/hayne/logo.png'" "$PATCH"
+          ! grep -Fq "\$mailLogoPath = FCPATH . 'assets/hayne/logo.png';" "$PATCH"
           grep -F "attach(\$mailLogoPath, 'inline', 'hayne-logo.png', '', true)" "$PATCH"
           grep -F "method_exists(\$controller->email, 'get_attachment_cid')" "$PATCH"
           grep -F 'get_attachment_cid($mailLogoPath)' "$PATCH"
@@ -102,13 +104,15 @@ jobs:
         run: |
           set -eux
           docker compose run --rm --no-deps --entrypoint sh jorani -ec '
-            grep -F "assets/hayne/logo.png" /var/www/html/legacy/application/helpers/tools_helper.php
-            grep -F "attach(\$mailLogoPath, '\''inline'\'', '\''hayne-logo.png'\'', '\'''\'', true)" /var/www/html/legacy/application/helpers/tools_helper.php
-            grep -F "method_exists(\$controller->email, '\''get_attachment_cid'\'')" /var/www/html/legacy/application/helpers/tools_helper.php
-            grep -F "get_attachment_cid(\$mailLogoPath)" /var/www/html/legacy/application/helpers/tools_helper.php
-            grep -F "attachment_cid(\$mailLogoPath)" /var/www/html/legacy/application/helpers/tools_helper.php
-            grep -F "<img src=\"cid:" /var/www/html/legacy/application/helpers/tools_helper.php
-            grep -F "HAYNE mail inline logo failed" /var/www/html/legacy/application/helpers/tools_helper.php
+            TOOLS=/var/www/html/legacy/application/helpers/tools_helper.php
+            grep -F "dirname(FCPATH) . DIRECTORY_SEPARATOR . '\''assets/hayne/logo.png'\''" "$TOOLS"
+            ! grep -Fq "\$mailLogoPath = FCPATH . '\''assets/hayne/logo.png'\'';" "$TOOLS"
+            grep -F "attach(\$mailLogoPath, '\''inline'\'', '\''hayne-logo.png'\'', '\'''\'', true)" "$TOOLS"
+            grep -F "method_exists(\$controller->email, '\''get_attachment_cid'\'')" "$TOOLS"
+            grep -F "get_attachment_cid(\$mailLogoPath)" "$TOOLS"
+            grep -F "attachment_cid(\$mailLogoPath)" "$TOOLS"
+            grep -F "<img src=\"cid:" "$TOOLS"
+            grep -F "HAYNE mail inline logo failed" "$TOOLS"
           '
 
       - name: Verify Jorani mail adapter APIs
@@ -120,12 +124,13 @@ jobs:
             grep -F "addStringEmbeddedImage" /var/www/html/legacy/application/libraries/MY_Email.php
           '
 
-      - name: Verify inline attachment source bytes remain valid
+      - name: Verify runtime FCPATH resolves the real logo and attachment bytes
         run: |
           set -eux
           docker compose run --rm --no-deps -T --entrypoint php jorani -n <<'PHP'
           <?php
           define('BASEPATH', '/var/www/html/legacy/system/');
+          define('FCPATH', '/var/www/html/legacy/');
 
           function &get_mimes()
           {
@@ -137,7 +142,12 @@ jobs:
 
           $reflection = new ReflectionClass('CI_Email');
           $email = $reflection->newInstanceWithoutConstructor();
-          $path = '/var/www/html/assets/hayne/logo.png';
+          $path = dirname(FCPATH) . DIRECTORY_SEPARATOR . 'assets/hayne/logo.png';
+          $resolved = realpath($path);
+          if ($resolved !== '/var/www/html/assets/hayne/logo.png' || !is_file($path)) {
+              fwrite(STDERR, "runtime FCPATH logo resolution failed: {$path}\n");
+              exit(9);
+          }
 
           if ($email->attach($path, 'inline', 'hayne-logo.png') === false) {
               fwrite(STDERR, "attach failed\n");
@@ -167,6 +177,7 @@ jobs:
 
           $expectedSha = hash_file('sha256', $path);
           $actualSha = hash('sha256', $payload);
+          echo "RUNTIME_LOGO_PATH={$resolved}\n";
           echo "EXPECTED_PNG_SHA={$expectedSha}\n";
           echo "ATTACHMENT_PNG_SHA={$actualSha}\n";
 
