@@ -1,0 +1,82 @@
+name: verify-pr-absence-policy-registry
+
+on:
+  pull_request:
+
+jobs:
+  verify-absence-policy-registry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify registry source guardrails
+        run: |
+          test -s hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          test -s hayne/sql/003-leave-type-registry.sql
+          grep -F "runtime code never" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -F "catalogMatchesMvpSignature" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -F "active_for_new_requests" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -F "home_office', 'NONE', 'NONE', 'STANDARD', FALSE, 'WORK'" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -F "holiday_compensation', 'GRANT', 'APPROVAL', 'STANDARD', TRUE, 'LEAVE'" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          test "$(grep -c "=> self::policy(" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php)" -eq 20
+          grep -F "return \$this->isOfficialSummonsType(\$leaveTypeId);" hayne/overlay/legacy/application/models/Hayne_credit_exemption_model.php
+          grep -F "003-leave-type-registry.sql" docker/mysql/Dockerfile
+
+      - name: Verify legacy types are inactive only in registry metadata
+        run: |
+          grep -F "2 => self::policy(2, 'on_demand_legacy', 'NONE', 'NONE', 'STANDARD', FALSE, 'LEAVE')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -F "17 => self::policy(17, 'holiday_legacy', 'NONE', 'NONE', 'STANDARD', FALSE, 'LEAVE')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -F "18 => self::policy(18, 'delegation_legacy', 'NONE', 'NONE', 'STANDARD', FALSE, 'LEAVE')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          grep -F "19 => self::policy(19, 'home_office', 'NONE', 'NONE', 'STANDARD', FALSE, 'WORK')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
+          test "$(git grep -l "getActiveLeaveTypeIdsForNewRequests" -- hayne/ ':!hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php' | wc -l)" -eq 0
+
+      - name: Verify cumulative overlay and patch stack
+        env:
+          JORANI_VERSION: v1.0.4
+        run: |
+          rm -rf /tmp/hayne-final-source
+          mkdir -p /tmp/hayne-final-source
+          curl -fsSL "https://github.com/jorani/jorani/archive/refs/tags/${JORANI_VERSION}.tar.gz" \
+            | tar -xz --strip-components=1 -C /tmp/hayne-final-source
+          cp -a hayne/overlay/. /tmp/hayne-final-source/
+          cd /tmp/hayne-final-source
+          for patch_file in "$GITHUB_WORKSPACE"/hayne/patches/*.patch; do
+            rel="${patch_file#${GITHUB_WORKSPACE}/}"
+            echo "Applying ${rel}"
+            if ! patch_output=$(patch --batch --forward -p1 < "$patch_file" 2>&1); then
+              patch_output=$(printf "%s" "$patch_output" | tr "\n" " ")
+              echo "::error file=${rel}::${patch_output}"
+              exit 1
+            fi
+          done
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build final HAYNE Leave image
+        run: docker compose build jorani mysql
+
+      - name: Verify final runtime PHP syntax
+        run: |
+          docker compose run --rm --no-deps jorani sh -ec '
+            php -l legacy/application/models/Hayne_leave_type_registry_model.php
+            php -l legacy/application/models/Hayne_credit_exemption_model.php
+            grep -F "Hayne_leave_type_registry_model" legacy/application/models/Hayne_credit_exemption_model.php
+            grep -F "return \$this->isOfficialSummonsType(\$leaveTypeId);" legacy/application/models/Hayne_credit_exemption_model.php
+          '
+
+      - name: Verify fresh-install registry schema
+        run: |
+          docker compose up -d mysql
+          for attempt in $(seq 1 30); do
+            if docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" "$MYSQL_DATABASE" -Nse "SHOW TABLES LIKE '\''hayne_leave_type_registry'\''"' | grep -qx hayne_leave_type_registry; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Registry table was not created by fresh-install SQL"
+          exit 1
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
