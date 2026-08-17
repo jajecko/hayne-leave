@@ -1,18 +1,7 @@
 --- a/legacy/application/views/requests/index.php
 +++ b/legacy/application/views/requests/index.php
-@@ -7,2 +7,14 @@
+@@ -7,2 +7,3 @@
   */
++echo '<script>(function(){var host=document.currentScript&&document.currentScript.parentElement;if(!host)return;host.classList.add("hayne-approvals-host","hayne-approvals-pending");host.setAttribute("aria-busy","true");window.setTimeout(function(){host.classList.remove("hayne-approvals-pending");host.removeAttribute("aria-busy");},1500);}());</script>';
  ?>
-+<script>
-+    (function () {
-+        var host = document.currentScript && document.currentScript.parentElement;
-+        if (!host) return;
-+        host.classList.add('hayne-approvals-host', 'hayne-approvals-pending');
-+        host.setAttribute('aria-busy', 'true');
-+        window.setTimeout(function () {
-+            host.classList.remove('hayne-approvals-pending');
-+            host.removeAttribute('aria-busy');
-+        }, 1500);
-+    }());
-+</script>
  <h2><?php echo lang('requests_index_title'); ?><?php echo $help; ?></h2>
