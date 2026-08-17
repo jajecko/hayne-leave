@@ -15,7 +15,7 @@
 +            . '<span style="font-size:24px;font-weight:700;letter-spacing:-0.7px;line-height:1;">HAYNE</span><br>'
 +            . '<span style="font-size:11px;font-weight:700;letter-spacing:2.4px;text-transform:uppercase;line-height:1.5;">Leave</span>'
 +            . '</span>';
-+        $mailLogoPath = FCPATH . 'assets/hayne/logo.png';
++        $mailLogoPath = dirname(FCPATH) . DIRECTORY_SEPARATOR . 'assets/hayne/logo.png';
 +        if (is_file($mailLogoPath)) {
 +            try {
 +                $controller->email->attach($mailLogoPath, 'inline', 'hayne-logo.png', '', true);
