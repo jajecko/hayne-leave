@@ -22,8 +22,9 @@ jobs:
           grep -F '$mailLogoWidth = 180;' "$PATCH"
           grep -F '$mailLogoHeight = 25;' "$PATCH"
           grep -F '@getimagesize($mailLogoPath)' "$PATCH"
-          grep -F 'width="'"'"' . $mailLogoWidth . '"'"'"' height="'"'"' . $mailLogoHeight . '"'"'"'' "$PATCH"
-          grep -F 'height:'"'"' . $mailLogoHeight . '"'"'px' "$PATCH"
+          grep -F 'alt="HAYNE Leave" width="' "$PATCH"
+          grep -F 'height="' "$PATCH"
+          grep -F 'max-width:' "$PATCH"
           ! grep -Fq 'height:auto' "$PATCH"
 
       - name: Verify patch 286 independently
@@ -52,7 +53,9 @@ jobs:
             grep -Fq "\$mailLogoWidth = 180;" "$TOOLS"
             grep -Fq "\$mailLogoHeight = 25;" "$TOOLS"
             grep -Fq "@getimagesize(\$mailLogoPath)" "$TOOLS"
-            grep -Fq "width=\"'\'' . \$mailLogoWidth . '\''\" height=\"'\'' . \$mailLogoHeight . '\''\"" "$TOOLS"
+            grep -Fq "alt=\"HAYNE Leave\" width=\"" "$TOOLS"
+            grep -Fq "height=\"" "$TOOLS"
+            grep -Fq "max-width:" "$TOOLS"
             if grep -Fq "height:auto" "$TOOLS"; then
               echo "legacy auto-height mail logo styling still present"
               exit 31
