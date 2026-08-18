@@ -145,10 +145,11 @@ jobs:
           }
 
           $mime = $mail->getSentMIMEMessage();
+          $mimeHtml = preg_replace("/=\r?\n/", '', $mime);
           $normalizedMime = preg_replace('/\s+/', '', $mime);
           $expectedBase64 = base64_encode(file_get_contents($path));
-          $hasDimensions = strpos($mime, 'width="180" height="25"') !== false
-              || strpos($mime, 'width=3D"180" height=3D"25"') !== false;
+          $hasDimensions = strpos($mimeHtml, 'width="180" height="25"') !== false
+              || strpos($mimeHtml, 'width=3D"180" height=3D"25"') !== false;
 
           $checks = [
               'multipart/related' => stripos($mime, 'multipart/related') !== false,
