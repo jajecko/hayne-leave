@@ -1,0 +1,164 @@
+/* HAYNE Leave — employee request detail on the same visual language as manager review. */
+.hayne-leave-review-surface .hayne-leave-detail-card--comments {
+  float: none;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+.hayne-leave-review-surface .hayne-leave-detail-card--comments > h4 {
+  margin: 0 0 18px;
+  color: #171715;
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -.01em;
+}
+
+.hayne-leave-review-surface .hayne-leave-detail-card--comments .accordion {
+  margin: 0 0 22px;
+}
+
+.hayne-leave-review-surface .hayne-leave-detail-card--comments .accordion-group {
+  margin: 0 0 10px;
+  overflow: hidden;
+  border: 1px solid #e7e7e2;
+  border-radius: 10px;
+  background: #fafaf8;
+}
+
+.hayne-leave-review-surface .hayne-leave-detail-card--comments .accordion-heading {
+  background: transparent;
+}
+
+.hayne-leave-review-surface .hayne-leave-detail-card--comments .accordion-toggle,
+.hayne-leave-review-surface .hayne-leave-detail-card--comments h6.accordion-toggle {
+  display: block;
+  margin: 0;
+  padding: 12px 14px;
+  color: #3a3a36;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.45;
+  text-decoration: none;
+}
+
+.hayne-leave-review-surface .hayne-leave-detail-card--comments .accordion-inner {
+  padding: 12px 14px;
+  border-top: 1px solid #e8e8e4;
+  background: #fff;
+  color: #41413d;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.hayne-leave-review-surface .hayne-leave-detail-card--comments .label {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  margin-left: 7px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 999px;
+  background-image: none;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: none;
+}
+
+.hayne-leave-review-surface .hayne-leave-detail-card--comments label[for="comment"] {
+  display: block;
+  margin: 18px 0 8px;
+  color: #30302d;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.hayne-leave-review-surface .hayne-leave-detail-comment-input {
+  box-sizing: border-box;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 124px;
+  margin: 0;
+  padding: 12px 13px;
+  border: 1px solid #d9d9d4;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: none;
+  color: #292926;
+  font-family: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.hayne-leave-review-surface .hayne-leave-detail-comment-input:focus {
+  border-color: #9d9d96;
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, .08);
+}
+
+.hayne-leave-review-surface .hayne-leave-detail-comment-submit {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0 0;
+  padding: 0 16px;
+  border: 1px solid #111;
+  border-radius: 9px;
+  background: #111;
+  background-image: none;
+  box-shadow: none;
+  color: #fff;
+  font-family: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: none;
+}
+
+.hayne-leave-review-surface .hayne-leave-review-back-button {
+  margin-top: 10px;
+}
+
+.hayne-leave-review-surface .hayne-leave-review-special {
+  margin: 22px 0 0 !important;
+  padding: 20px !important;
+  border: 1px solid #e7e7e2 !important;
+  border-radius: 12px !important;
+  background: #fafaf8 !important;
+  box-shadow: none !important;
+}
+
+.hayne-leave-review-surface .hayne-leave-review-special h4 {
+  margin: 0 0 14px !important;
+  color: #22221f;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.hayne-leave-review-surface .hayne-leave-review-special p,
+.hayne-leave-review-surface .hayne-leave-review-special dl {
+  margin-bottom: 0;
+  color: #41413d;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.hayne-leave-review-surface .hayne-leave-review-special.dl-horizontal dt,
+.hayne-leave-review-surface .hayne-leave-review-special .dl-horizontal dt {
+  width: auto;
+  float: none;
+  margin: 10px 0 2px;
+  color: #85857f;
+  font-size: 11px;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.hayne-leave-review-surface .hayne-leave-review-special.dl-horizontal dd,
+.hayne-leave-review-surface .hayne-leave-review-special .dl-horizontal dd {
+  margin-left: 0;
+}
