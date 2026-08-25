@@ -1,0 +1,31 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@
+-            $usr_lang = $this->polyglot->code2language($manager['language']);
++            $usr_lang = 'polish';
+@@
+-            $usr_lang = $this->polyglot->code2language($manager['language']);
++            $usr_lang = 'polish';
+@@
+-            $usr_lang = $this->polyglot->code2language($manager['language']);
++            $usr_lang = 'polish';
+@@
+-        $message = $this->parser->parse('emails/' . $manager['language'] . '/' . $emailModel, $data, TRUE);
++        $message = $this->parser->parse('emails/pl/' . $emailModel, $data, TRUE);
+--- a/legacy/application/controllers/Requests.php
++++ b/legacy/application/controllers/Requests.php
+@@
+-        $usr_lang = $this->polyglot->code2language($employee['language']);
++        $usr_lang = 'polish';
+@@
+-                $message = $this->parser->parse('emails/' . $employee['language'] . '/request_accepted', $data, TRUE);
++                $message = $this->parser->parse('emails/pl/request_accepted', $data, TRUE);
+@@
+-                $message = $this->parser->parse('emails/' . $employee['language'] . '/request_rejected', $data, TRUE);
++                $message = $this->parser->parse('emails/pl/request_rejected', $data, TRUE);
+@@
+-                $message = $this->parser->parse('emails/' . $employee['language'] . '/cancel_rejected', $data, TRUE);
++                $message = $this->parser->parse('emails/pl/cancel_rejected', $data, TRUE);
+@@
+-                $message = $this->parser->parse('emails/' . $employee['language'] . '/cancel_accepted', $data, TRUE);
++                $message = $this->parser->parse('emails/pl/cancel_accepted', $data, TRUE);
