@@ -27,6 +27,17 @@
     z-index: auto;
   }
 
+  /* Bootstrap 2.3 injects a full-screen .dropdown-backdrop on touch devices.
+   * In the custom fixed drawer that legacy backdrop sits above submenu content
+   * and consumes taps before the leaf link can receive them. Modern mobile
+   * browsers do not need that delegation shim, so disable it only inside the
+   * HAYNE drawer and keep the rest of Bootstrap behavior unchanged.
+   */
+  #wrap .nav-responsive .dropdown-backdrop {
+    display: none !important;
+    pointer-events: none !important;
+  }
+
   #wrap .nav-responsive > .nav:first-child > li.dropdown > .dropdown-menu > li > a {
     position: relative;
     z-index: 1;
