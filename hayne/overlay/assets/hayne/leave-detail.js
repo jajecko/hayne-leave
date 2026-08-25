@@ -1,13 +1,27 @@
 (() => {
+  const currentScriptSrc = document.currentScript?.src || '';
+  const appRoot = currentScriptSrc
+    ? currentScriptSrc.replace(/assets\/hayne\/leave-detail\.js(?:\?.*)?$/, '')
+    : `${window.location.origin}/`;
+  const assetRoot = `${appRoot}assets/hayne/`;
+
   const directChild = (parent, predicate) => Array.from(parent?.children || []).find(predicate) || null;
 
   const ensureReviewStyles = () => {
-    if (document.querySelector('link[data-hayne-approval-review-css]')) return;
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = `${document.baseURI.replace(/\/?$/, '/')}assets/hayne/approval-review.css?v=3`;
-    link.dataset.hayneApprovalReviewCss = '1';
-    document.head.appendChild(link);
+    if (!document.querySelector('link[data-hayne-approval-review-css]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = `${assetRoot}approval-review.css?v=3`;
+      link.dataset.hayneApprovalReviewCss = '1';
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector('link[data-hayne-leave-review-css]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = `${assetRoot}leave-detail-review.css?v=1`;
+      link.dataset.hayneLeaveReviewCss = '1';
+      document.head.appendChild(link);
+    }
   };
 
   const statusClass = (status) => {
@@ -44,7 +58,7 @@
     return 'secondary';
   };
 
-  const enhanceView = (scope, commentForm) => {
+  const enhanceView = (scope) => {
     const title = directChild(scope, (node) => node.tagName === 'H2');
     const row = directChild(scope, (node) => node.classList?.contains('row'));
     if (!title || !row) return false;
@@ -89,7 +103,7 @@
 
     const back = document.createElement('a');
     back.className = 'hayne-approval-review__back';
-    back.href = backAction?.href || `${document.baseURI.replace(/\/?$/, '/')}leaves`;
+    back.href = backAction?.href || `${appRoot}leaves`;
     back.textContent = '← Wróć do listy';
     fragment.appendChild(back);
 
@@ -283,7 +297,7 @@
     const scope = findScope(isEdit ? editForm : commentForm, isEdit, editForm);
     if (!scope) return;
 
-    if (isView) enhanceView(scope, commentForm);
+    if (isView) enhanceView(scope);
     else enhanceEdit(scope, editForm);
   };
 
