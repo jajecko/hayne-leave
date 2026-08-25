@@ -20,6 +20,8 @@ jobs:
           grep -F '@media (max-width: 979px)' hayne/overlay/assets/hayne/mobile-navigation-hotfix.css
           grep -F 'float: none;' hayne/overlay/assets/hayne/mobile-navigation-hotfix.css
           grep -F 'touch-action: manipulation;' hayne/overlay/assets/hayne/mobile-navigation-hotfix.css
+          grep -F '.dropdown-backdrop' hayne/overlay/assets/hayne/mobile-navigation-hotfix.css
+          grep -F 'pointer-events: none !important;' hayne/overlay/assets/hayne/mobile-navigation-hotfix.css
           grep -F "dropdown-menu a[href]" hayne/overlay/assets/hayne/mobile-navigation-hotfix.js
           grep -F 'event.stopPropagation();' hayne/overlay/assets/hayne/mobile-navigation-hotfix.js
           grep -F 'mobile-navigation-hotfix.css' hayne/patches/010-header-branding.patch
@@ -42,6 +44,8 @@ jobs:
             grep -F "mobile-navigation-hotfix.css" legacy/application/views/templates/header.php
             grep -F "mobile-navigation-hotfix.js" legacy/application/views/templates/header.php
             grep -F "float: none;" assets/hayne/mobile-navigation-hotfix.css
+            grep -F ".dropdown-backdrop" assets/hayne/mobile-navigation-hotfix.css
+            grep -F "pointer-events: none !important;" assets/hayne/mobile-navigation-hotfix.css
             grep -F "event.stopPropagation();" assets/hayne/mobile-navigation-hotfix.js
           '
 
