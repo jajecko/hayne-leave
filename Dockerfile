@@ -26,7 +26,7 @@ RUN composer install --ignore-platform-reqs --no-dev --no-interaction --prefer-d
     && composer require --ignore-platform-reqs --update-no-dev --no-interaction --prefer-dist --with-all-dependencies \
       minishlink/web-push:11.0.0 guzzlehttp/guzzle:^7.9
 
-FROM php:8.5-apache
+FROM php:8.5.9-apache-bookworm
 ENV LANGUAGE=polish \
     LANGUAGES=pl \
     HAYNE_AD_DEFAULT_LANGUAGE=pl
