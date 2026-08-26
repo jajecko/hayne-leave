@@ -100,29 +100,13 @@
       const eyebrow = header.querySelector('.hayne-request-eyebrow');
       const title = header.querySelector('h1');
       const intro = header.querySelector('p');
-      const createsForEmployee = Boolean(form.querySelector('#hayneEmployeeTarget'));
       if (eyebrow) eyebrow.remove();
       if (title) title.textContent = 'Nowy wniosek';
-      if (intro) {
-        intro.textContent = createsForEmployee
-          ? 'Wybierz pracownika i wypełnij wniosek w jego imieniu. Wniosek zostanie przesłany do właściwej osoby akceptującej.'
-          : 'Wypełnij formularz poniżej, aby złożyć wniosek o nieobecność. Wniosek zostanie przesłany do osoby akceptującej.';
-      }
+      if (intro) intro.textContent = 'Wypełnij formularz poniżej, aby złożyć wniosek o nieobecność. Wniosek zostanie przesłany do osoby akceptującej.';
     }
 
     const layout = document.createElement('div');
     layout.className = 'hayne-request-layout';
-
-    const employeeTarget = form.querySelector('#hayneEmployeeTarget');
-    const employeeSelector = form.querySelector('#hayne_employee_selector');
-    if (employeeTarget && employeeSelector) {
-      employeeSelector.addEventListener('change', () => {
-        const targetUrl = employeeSelector.getAttribute('data-target-url') || '';
-        const employeeId = String(employeeSelector.value || '');
-        if (targetUrl && employeeId) window.location.assign(`${targetUrl}${encodeURIComponent(employeeId)}`);
-      });
-      layout.appendChild(employeeTarget);
-    }
 
     const type = form.querySelector('#type');
     const typeLabel = form.querySelector('label[for="type"]');

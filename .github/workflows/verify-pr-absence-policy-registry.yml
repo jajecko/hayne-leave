@@ -34,12 +34,8 @@ jobs:
           grep -Fq "19 => self::policy(19, 'home_office', 'NONE', 'NONE', 'STANDARD', FALSE, 'WORK')" hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php
           test -s hayne/patches/284-registry-new-request-types.patch
           runtime_consumers="$(git grep -l "getActiveLeaveTypeIdsForNewRequests" -- hayne/ ':!hayne/overlay/legacy/application/models/Hayne_leave_type_registry_model.php' || true)"
-          expected_runtime_consumers="$(printf '%s\n' \
-            'hayne/patches/284-registry-new-request-types.patch' \
-            'hayne/patches/291-hr-create-on-behalf.patch')"
-          test "$runtime_consumers" = "$expected_runtime_consumers"
+          test "$runtime_consumers" = "hayne/patches/284-registry-new-request-types.patch"
           test "$(grep -Fc "getActiveLeaveTypeIdsForNewRequests" hayne/patches/284-registry-new-request-types.patch)" -eq 2
-          test "$(grep -Fc "getActiveLeaveTypeIdsForNewRequests" hayne/patches/291-hr-create-on-behalf.patch)" -eq 2
 
       - name: Verify cumulative overlay and patch stack
         env:
