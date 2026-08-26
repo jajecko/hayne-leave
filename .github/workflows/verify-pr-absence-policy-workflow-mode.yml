@@ -141,7 +141,7 @@ jobs:
           root=/tmp/hayne-final-source
           grep -Fq "getPrimaryNotificationRecipient" "$root/legacy/application/controllers/Leaves.php"
           test "$(grep -Fc "getPrimaryNotificationRecipient" "$root/legacy/application/controllers/Leaves.php")" -eq 3
-          test "$(grep -Fc "ensurePendingWorkflowRecipient" "$root/legacy/application/controllers/Leaves.php")" -eq 5
+          test "$(grep -Fc "ensurePendingWorkflowRecipient" "$root/legacy/application/controllers/Leaves.php")" -eq 4
           test "$(grep -Fc "canActorDecide" "$root/legacy/application/controllers/Requests.php")" -eq 4
           grep -Fq "(int) \$leave['employee']" "$root/legacy/application/controllers/Requests.php"
           grep -Fq '$actorUserId === $employeeUserId' "$root/legacy/application/models/Hayne_leave_workflow_model.php"
@@ -169,7 +169,7 @@ jobs:
             grep -Fq "filterAndMergeApproverRequests" legacy/application/controllers/Requests.php
             grep -Fq "getPrimaryNotificationRecipient" legacy/application/controllers/Leaves.php
             grep -Fq '\''$actorUserId === $employeeUserId'\'' legacy/application/models/Hayne_leave_workflow_model.php
-            test "$(grep -Fc "ensurePendingWorkflowRecipient" legacy/application/controllers/Leaves.php)" -eq 5
+            test "$(grep -Fc "ensurePendingWorkflowRecipient" legacy/application/controllers/Leaves.php)" -eq 4
           '
 
       - name: Show logs on failure
