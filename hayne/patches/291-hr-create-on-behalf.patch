@@ -1,0 +1,568 @@
+--- a/legacy/application/controllers/Leaves.php
++++ b/legacy/application/controllers/Leaves.php
+@@ -310,6 +310,55 @@
+         $data['title'] = lang('leaves_create_title');
+         $data['help'] = $this->help->create_help_link('global_link_doc_page_request_leave');
+ 
++        $actorId = (int) $this->session->userdata('id');
++        $employeeId = $actorId;
++        $requestedEmployeeId = (int) (
++            $this->input->post('employee', TRUE)
++            ?: $this->input->get('employee', TRUE)
++        );
++
++        $this->load->model('users_model');
++        if ($this->is_hr && $requestedEmployeeId > 0) {
++            $employeeId = $requestedEmployeeId;
++        }
++
++        $targetEmployee = $this->users_model->getUsers($employeeId);
++        if (empty($targetEmployee) || (int) ($targetEmployee['active'] ?? 0) !== 1) {
++            log_message(
++                'error',
++                'User #' . $actorId . ' tried to create a leave for unavailable employee #' . $employeeId
++            );
++            $this->session->set_flashdata('msg', 'Nie można złożyć wniosku dla wybranego pracownika.');
++            redirect('leaves/create');
++            return;
++        }
++
++        $data['hayneCanCreateForEmployee'] = (bool) $this->is_hr;
++        $data['hayneTargetEmployeeId'] = $employeeId;
++        $data['hayneTargetEmployeeName'] = trim(
++            (string) ($targetEmployee['firstname'] ?? '') . ' ' . (string) ($targetEmployee['lastname'] ?? '')
++        );
++        $data['hayneEmployees'] = [];
++        if ($this->is_hr) {
++            $data['hayneEmployees'] = $this->db
++                ->select('id, firstname, lastname')
++                ->where('active', 1)
++                ->order_by('lastname', 'asc')
++                ->order_by('firstname', 'asc')
++                ->get('users')
++                ->result_array();
++        }
++        $createRoute = $this->is_hr && $employeeId !== $actorId
++            ? 'leaves/create?employee=' . $employeeId
++            : 'leaves/create';
++
++        // Lazy yearly policy initialization must follow the request owner, not
++        // the HR account that is creating the request on their behalf.
++        $this->hayne_leave_policy_model->ensureCurrentYear($employeeId);
++        $this->hayne_caregiver_leave_model->ensureCurrentYear($employeeId);
++        $this->hayne_childcare_model->ensureCurrentYear($employeeId);
++        $this->hayne_force_majeure_model->ensureCurrentYear($employeeId);
++
+         $this->form_validation->set_rules('startdate', lang('leaves_create_field_start'), 'required|strip_tags');
+         $this->form_validation->set_rules('startdatetype', 'Start Date type', 'required|strip_tags');
+         $this->form_validation->set_rules('enddate', lang('leaves_create_field_end'), 'required|strip_tags');
+@@ -319,16 +368,16 @@
+         $this->form_validation->set_rules('cause', lang('leaves_create_field_cause'), 'strip_tags');
+         $this->form_validation->set_rules('status', lang('leaves_create_field_status'), 'required|strip_tags');
+         $data['hayneChildcareState'] = $this->hayne_childcare_model
+-            ->getFormState((int) $this->session->userdata('id'));
++            ->getFormState($employeeId);
+ 
+         if ($this->form_validation->run() === FALSE) {
+             $data['hayneOccasionState'] = $this->hayne_occasion_leave_model
+-                ->getFormState((int) $this->session->userdata('id'));
++                ->getFormState($employeeId);
+             $data['hayneHolidayCompensationState'] = $this->hayne_holiday_compensation_model->getFormState(
+-                (int) $this->session->userdata('id')
++                $employeeId
+             );
+             $this->load->model('contracts_model');
+-            $leaveTypesDetails = $this->contracts_model->getLeaveTypesDetailsOTypesForUser($this->session->userdata('id'));
++            $leaveTypesDetails = $this->contracts_model->getLeaveTypesDetailsOTypesForUser($employeeId);
+             $hayneActiveTypeIds = $this->hayne_leave_type_registry_model->getActiveLeaveTypeIdsForNewRequests();
+             if ($this->hayne_leave_type_registry_model->catalogMatchesMvpSignature() && !empty($hayneActiveTypeIds)) {
+                 $leaveTypesDetails->types = array_intersect_key(
+@@ -341,13 +390,13 @@
+             }
+             $data['defaultType'] = $leaveTypesDetails->defaultType;
+             $data['hayneCaregiverState'] = $this->hayne_caregiver_leave_model
+-                ->getFormState((int) $this->session->userdata('id'));
++                ->getFormState($employeeId);
+             $data['credit'] = $leaveTypesDetails->credit;
+             $data['types'] = $leaveTypesDetails->types;
+             $data['hayneOnDemandState'] = $this->hayne_on_demand_model
+-                ->getFormState((int) $this->session->userdata('id'));
++                ->getFormState($employeeId);
+             $data['hayneForceMajeureState'] = $this->hayne_force_majeure_model
+-                ->getFormState((int) $this->session->userdata('id'));
++                ->getFormState($employeeId);
+             $submissionTokens = $this->session->userdata('hayne_leave_submission_tokens');
+             if (!is_array($submissionTokens)) {
+                 $submissionTokens = [];
+@@ -380,7 +429,7 @@
+             if ($submissionToken === '' || !array_key_exists($submissionToken, $submissionTokens)) {
+                 log_message('error', 'Duplicate or expired HAYNE leave submission blocked for user #' . $this->session->userdata('id'));
+                 $this->session->set_flashdata('msg', 'Ten formularz został już wysłany lub wygasł. Sprawdź listę wniosków przed ponowną próbą.');
+-                redirect('leaves');
++                redirect($createRoute);
+             }
+ 
+             // Consume before any write. A second POST with the same form instance cannot create another leave.
+@@ -399,7 +448,7 @@
+             //Users must use an existing leave type, otherwise
+             //force leave type to default leave type
+             $this->load->model('contracts_model');
+-            $leaveTypesDetails = $this->contracts_model->getLeaveTypesDetailsOTypesForUser($this->session->userdata('id'));
++            $leaveTypesDetails = $this->contracts_model->getLeaveTypesDetailsOTypesForUser($employeeId);
+             $hayneActiveTypeIds = $this->hayne_leave_type_registry_model->getActiveLeaveTypeIdsForNewRequests();
+             if ($this->hayne_leave_type_registry_model->catalogMatchesMvpSignature() && !empty($hayneActiveTypeIds)) {
+                 $leaveTypesDetails->types = array_intersect_key(
+@@ -417,7 +466,6 @@
+                 log_message('debug', 'LR type forced to ' . $leaveTypesDetails->defaultType);
+             }
+ 
+-            $employeeId = $this->session->userdata('id');
+             $leaveTypeId = $this->input->post('type');
+             $startDate = $this->input->post('startdate');
+             $startDateType = 'Morning';
+@@ -433,7 +481,7 @@
+                 (int) $this->input->post('status') === LMS_REQUESTED &&
+                 !$this->ensurePendingWorkflowRecipient((int) $leaveTypeId)
+             ) {
+-                redirect('leaves');
++                redirect($createRoute);
+             }
+ 
+             // Reinforce control for leave requests spanning two periods
+@@ -455,7 +503,7 @@
+                     if (isset($_GET['source'])) {
+                         redirect($_GET['source']);
+                     } else {
+-                        redirect('leaves');
++                        redirect($createRoute);
+                     }
+                 }
+             }
+@@ -499,7 +547,7 @@
+                 } catch (Throwable $exception) {
+                     $this->db->trans_rollback();
+                     $this->session->set_flashdata('msg', $exception->getMessage());
+-                    redirect('leaves/create');
++                    redirect($createRoute);
+                     return;
+                 }
+             }
+@@ -516,14 +564,14 @@
+                 if (isset($_GET['source'])) {
+                     redirect($_GET['source']);
+                 }
+-                redirect('leaves/create');
++                redirect($createRoute);
+             }
+ 
+             $hayneCaregiverForCredit = $this->hayne_caregiver_leave_model->isCaregiverType((int) $leaveTypeId);
+             $hayneForceMajeure = $this->hayne_force_majeure_model->isForceMajeureType((int) $leaveTypeId);
+             if ($hayneCaregiverForCredit && $hayneForceMajeure) {
+                 $this->session->set_flashdata('msg', 'Błędna konfiguracja: jeden rodzaj nieobecności nie może obsługiwać dwóch ustawowych pul.');
+-                redirect('leaves/create');
++                redirect($createRoute);
+                 return;
+             }
+             $targetYear = (int) substr((string) $startDate, 0, 4);
+@@ -540,7 +588,7 @@
+ 
+                 // Get the real balance
+                 $availableCredit = $this->leaves_model->getLeavesTypeBalanceForEmployee(
+-                    $this->session->userdata('id'),
++                    $employeeId,
+                     $typeName,
+                     $startDate
+                 );
+@@ -550,7 +598,7 @@
+                     if (isset($_GET['source'])) {
+                         redirect($_GET['source']);
+                     } else {
+-                        redirect('leaves');
++                        redirect($createRoute);
+                     }
+                 }
+             }
+@@ -571,7 +619,7 @@
+                 } catch (Throwable $exception) {
+                     $this->db->trans_rollback();
+                     $this->session->set_flashdata('msg', $exception->getMessage());
+-                    redirect('leaves/create');
++                    redirect($createRoute);
+                     return;
+                 }
+             }
+@@ -603,7 +651,7 @@
+                 } catch (Throwable $exception) {
+                     $this->db->trans_rollback();
+                     $this->session->set_flashdata('msg', $exception->getMessage());
+-                    redirect('leaves/create');
++                    redirect($createRoute);
+                     return;
+                 }
+             }
+@@ -615,7 +663,7 @@
+                 in_array($pendingStatus, [LMS_REQUESTED, LMS_CANCELLATION], TRUE) &&
+                 !$this->ensurePendingWorkflowRecipient((int) $leaveTypeId)
+             ) {
+-                redirect('leaves');
++                redirect($createRoute);
+             }
+                 $hayneForceMajeureDetails = [
+                     'event_code' => $this->input->post('hayne_force_majeure_event', TRUE),
+@@ -639,7 +687,7 @@
+                 } catch (Throwable $exception) {
+                     $this->db->trans_rollback();
+                     $this->session->set_flashdata('msg', $exception->getMessage());
+-                    redirect('leaves/create');
++                    redirect($createRoute);
+                     return;
+                 }
+             }
+@@ -669,7 +717,7 @@
+                 } catch (Throwable $exception) {
+                     $this->db->trans_rollback();
+                     $this->session->set_flashdata('msg', $exception->getMessage());
+-                    redirect('leaves/create');
++                    redirect($createRoute);
+                     return;
+                 }
+             }
+@@ -693,7 +741,7 @@
+                 } catch (Throwable $exception) {
+                     $this->db->trans_rollback();
+                     $this->session->set_flashdata('msg', $exception->getMessage());
+-                    redirect('leaves/create');
++                    redirect($createRoute);
+                     return;
+                 }
+             }
+@@ -702,7 +750,7 @@
+                 triggerCreateLeaveRequest($this);
+             }
+             $leave_id = $this->leaves_model->setLeaves(
+-                $this->session->userdata('id'),
++                $employeeId,
+                 $this->input->post('startdate'),
+                 $this->input->post('enddate'),
+                 $this->input->post('startdatetype'),
+@@ -710,14 +758,16 @@
+                 $duration,
+                 $this->input->post('type'),
+                 $this->input->post('cause', true),
+-                $this->input->post('status')
++                $this->input->post('status'),
++                NULL,
++                $actorId
+             );
+             if ($hayneOnDemand) {
+                 $this->hayne_on_demand_model->setOnDemand((int) $leave_id, TRUE);
+                 if ($this->db->trans_status() === FALSE) {
+                     $this->db->trans_rollback();
+                     $this->session->set_flashdata('msg', 'Nie udało się zapisać urlopu na żądanie.');
+-                    redirect('leaves/create');
++                    redirect($createRoute);
+                     return;
+                 }
+                 $this->db->trans_commit();
+@@ -727,10 +777,7 @@
+                 if ($this->db->trans_status() === FALSE) {
+                     $this->db->trans_rollback();
+                     $this->session->set_flashdata('msg', 'Nie udało się zapisać danych urlopu opiekuńczego.');
+-                if (!$this->ensurePendingWorkflowRecipient((int) $leave['type'])) {
+-                    redirect('leaves');
+-                }
+-                    redirect('leaves/create');
++                    redirect($createRoute);
+                     return;
+                 }
+                 $this->db->trans_commit();
+@@ -740,7 +787,7 @@
+                 if ($this->db->trans_status() === FALSE) {
+                     $this->db->trans_rollback();
+                     $this->session->set_flashdata('msg', 'Nie udało się zapisać danych zwolnienia z powodu siły wyższej.');
+-                    redirect('leaves/create');
++                    redirect($createRoute);
+                     return;
+                 }
+                 $this->db->trans_commit();
+@@ -749,7 +796,7 @@
+                 if ($this->db->trans_status() === FALSE) {
+                     $this->db->trans_rollback();
+                     $this->session->set_flashdata('msg', 'Nie udało się zapisać wniosku o opiekę nad dzieckiem.');
+-                    redirect('leaves/create');
++                    redirect($createRoute);
+                     return;
+                 }
+                 $this->db->trans_commit();
+@@ -759,7 +806,7 @@
+                 if ($this->db->trans_status() === FALSE) {
+                     $this->db->trans_rollback();
+                     $this->session->set_flashdata('msg', 'Nie udało się zapisać danych urlopu okolicznościowego.');
+-                    redirect('leaves/create');
++                    redirect($createRoute);
+                     return;
+                 }
+                 $this->db->trans_commit();
+@@ -769,7 +816,7 @@
+                 if ($this->db->trans_status() === FALSE) {
+                     $this->db->trans_rollback();
+                     $this->session->set_flashdata('msg', 'Nie udało się zapisać dnia wolnego za święto.');
+-                    redirect('leaves/create');
++                    redirect($createRoute);
+                     return;
+                 }
+                 $this->db->trans_commit();
+@@ -780,7 +827,9 @@
+             if ($this->input->post('status') == LMS_REQUESTED) {
+                 $this->sendMailOnLeaveRequestCreation($leave_id);
+             }
+-            if (isset($_GET['source'])) {
++            if ($this->is_hr && $employeeId !== $actorId) {
++                redirect('hr/leaves/' . $employeeId);
++            } elseif (isset($_GET['source'])) {
+                 redirect($_GET['source']);
+             } else {
+                 redirect('leaves');
+--- a/legacy/application/models/Leaves_model.php
++++ b/legacy/application/models/Leaves_model.php
+@@ -595,6 +595,7 @@
+      * @param string $cause Identifier of the leave
+      * @param int $status status of the leave
+      * @param string|null $document document attached to the leave request
++     * @param int|null $changedBy user who performed the creation (defaults to the employee)
+      * @return int id of the newly created leave request into the db
+      */
+     public function setLeaves(
+@@ -607,7 +608,8 @@
+         int $type,
+         string $cause,
+         int $status,
+-        ?string $document = null
++        ?string $document = null,
++        ?int $changedBy = null
+     ): int {
+         //TODO: decouple config
+         $data = [
+@@ -628,7 +630,7 @@
+         //Trace the modification if the feature is enabled
+         if ($this->config->item('enable_history')) {
+             $this->load->model('history_model');
+-            $this->history_model->setHistory(1, 'leaves', $newId, $employeeId);
++            $this->history_model->setHistory(1, 'leaves', $newId, $changedBy ?? $employeeId);
+         }
+ 
+         return $newId;
+--- a/legacy/application/controllers/Hr.php
++++ b/legacy/application/controllers/Hr.php
+@@ -200,29 +200,12 @@
+         if ($this->auth->isAllowed('list_employees') == FALSE) {
+             $this->output->set_header("HTTP/1.1 403 Forbidden");
+         } else {
+-            $type = $this->input->post('type', TRUE);
+-            $duration = $this->input->post('duration', TRUE);
+-            $startdate = $this->input->post('startdate', TRUE);
+-            $enddate = $this->input->post('enddate', TRUE);
+-            $startdatetype = $this->input->post('startdatetype', TRUE);
+-            $enddatetype = $this->input->post('enddatetype', TRUE);
+-            $cause = $this->input->post('cause', TRUE);
+-            $status = $this->input->post('status', TRUE);
+-            $employees = $this->input->post('employees', TRUE);
+-            $objectEmployees = json_decode($employees);
+-            $this->load->model('leaves_model');
+-            $result = $this->leaves_model->createRequestForUserList(
+-                $type,
+-                $duration,
+-                $startdate,
+-                $enddate,
+-                $startdatetype,
+-                $enddatetype,
+-                $cause,
+-                $status,
+-                $objectEmployees
+-            );
+-            echo $result;
++            // The legacy bulk endpoint bypasses HAYNE statutory metadata,
++            // server-side duration calculation and per-employee policy checks.
++            $this->output->set_header("HTTP/1.1 410 Gone");
++            echo json_encode([
++                'error' => 'Użyj formularza Nowy wniosek i wybierz jednego pracownika.'
++            ]);
+         }
+     }
+ 
+@@ -379,52 +362,7 @@
+     public function createleave(int $id): void
+     {
+         $this->auth->checkIfOperationIsAllowed('list_employees');
+-        $data = getUserContext($this);
+-        $this->load->helper('form');
+-        $this->load->library('form_validation');
+-        $data['title'] = lang('hr_leaves_create_title');
+-        $data['help'] = $this->help->create_help_link('global_link_doc_page_request_leave');
+-        $data['form_action'] = 'hr/leaves/create/' . $id;
+-        $data['source'] = 'hr/employees';
+-        $data['employee'] = $id;
+-
+-        $this->form_validation->set_rules('startdate', lang('hr_leaves_create_field_start'), 'required|strip_tags');
+-        $this->form_validation->set_rules('startdatetype', 'Start Date type', 'required|strip_tags');
+-        $this->form_validation->set_rules('enddate', lang('hr_leaves_create_field_end'), 'required|strip_tags');
+-        $this->form_validation->set_rules('enddatetype', 'End Date type', 'required|strip_tags');
+-        $this->form_validation->set_rules('duration', lang('hr_leaves_create_field_duration'), 'required|strip_tags');
+-        $this->form_validation->set_rules('type', lang('hr_leaves_create_field_type'), 'required|strip_tags');
+-        $this->form_validation->set_rules('cause', lang('hr_leaves_create_field_cause'), 'strip_tags');
+-        $this->form_validation->set_rules('status', lang('hr_leaves_create_field_status'), 'required|strip_tags');
+-
+-        if ($this->form_validation->run() === FALSE) {
+-            $this->load->model('contracts_model');
+-            $leaveTypesDetails = $this->contracts_model->getLeaveTypesDetailsOTypesForUser($id);
+-            $data['defaultType'] = $leaveTypesDetails->defaultType;
+-            $data['credit'] = $leaveTypesDetails->credit;
+-            $data['types'] = $leaveTypesDetails->types;
+-            $this->load->model('users_model');
+-            $data['name'] = $this->users_model->getName($id);
+-            $this->load->view('templates/header', $data);
+-            $this->load->view('menu/index', $data);
+-            $this->load->view('hr/createleave');
+-            $this->load->view('templates/footer');
+-        } else {
+-            $this->leaves_model->setLeaves(
+-                $id,
+-                $this->input->post('startdate'),
+-                $this->input->post('enddate'),
+-                $this->input->post('startdatetype'),
+-                $this->input->post('enddatetype'),
+-                (float) $this->input->post('duration'),
+-                $this->input->post('type'),
+-                $this->input->post('cause', true),
+-                $this->input->post('status')
+-            );   //Return not used
+-            $this->session->set_flashdata('msg', lang('hr_leaves_create_flash_msg_success'));
+-            //No mail is sent, because the HR Officer would set the leave status to accepted
+-            redirect('hr/employees');
+-        }
++        redirect('leaves/create?employee=' . $id);
+     }
+ 
+     /**
+--- a/legacy/application/controllers/Requests.php
++++ b/legacy/application/controllers/Requests.php
+@@ -362,6 +362,10 @@
+         $this->lang->load('hr', $this->language);
+         $this->load->model('users_model');
+         $employee = $this->users_model->getUsers($id);
++        if ($this->is_hr) {
++            redirect('leaves/create?employee=' . $id);
++            return;
++        }
+         if (($this->user_id != $employee['manager']) && ($this->is_hr === FALSE)) {
+             log_message('error', 'User #' . $this->user_id . ' illegally tried to access to collaborators/leave/create  #' . $id);
+             $this->session->set_flashdata('msg', lang('requests_summary_flash_msg_forbidden'));
+--- a/legacy/application/views/leaves/create.php
++++ b/legacy/application/views/leaves/create.php
+@@ -29,6 +29,27 @@
+         $attributes = array('id' => 'frmLeaveForm', 'class' => 'hayne-request-form');
+         echo form_open('leaves/create', $attributes) ?>
+ 
++        <input type="hidden" name="employee" id="hayne_employee"
++            value="<?php echo (int) ($hayneTargetEmployeeId ?? $user_id); ?>" />
++
++        <?php if (!empty($hayneCanCreateForEmployee) && !empty($hayneEmployees)) { ?>
++            <div id="hayneEmployeeTarget" class="hayne-request-field hayne-request-field--employee">
++                <label for="hayne_employee_selector">Wniosek w imieniu pracownika</label>
++                <select id="hayne_employee_selector"
++                    data-target-url="<?php echo html_escape(base_url() . 'leaves/create?employee='); ?>">
++                    <?php foreach ($hayneEmployees as $hayneEmployee) { ?>
++                        <option value="<?php echo (int) $hayneEmployee['id']; ?>"
++                            <?php echo (int) $hayneEmployee['id'] === (int) $hayneTargetEmployeeId ? 'selected' : ''; ?>>
++                            <?php echo html_escape(trim($hayneEmployee['lastname'] . ' ' . $hayneEmployee['firstname'])); ?>
++                        </option>
++                    <?php } ?>
++                </select>
++                <p class="hayne-request-employee-hint">
++                    Formularz, saldo i limity dotyczą wybranego pracownika. Wniosek trafi do właściwej ścieżki akceptacji.
++                </p>
++            </div>
++        <?php } ?>
++
+         <label for="type">
+             <?php echo lang('leaves_create_field_type'); ?>
+             &nbsp;<span class="muted"
+@@ -158,7 +179,8 @@
+         <button name="status" value="2" type="submit" class="btn btn-primary "><i class="mdi mdi-check"></i>&nbsp;
+             <?php echo lang('Requested'); ?></button>
+         <br /><br />
+-        <a href="<?php echo base_url(); ?>leaves" class="btn btn-danger"><i class="mdi mdi-close"></i>&nbsp;
++        <a href="<?php echo base_url(); ?><?php echo !empty($hayneCanCreateForEmployee) && (int) $hayneTargetEmployeeId !== (int) $user_id ? 'hr/leaves/' . (int) $hayneTargetEmployeeId : 'leaves'; ?>"
++            class="btn btn-danger"><i class="mdi mdi-close"></i>&nbsp;
+             <?php echo lang('leaves_create_button_cancel'); ?></a>
+         </form>
+ 
+@@ -190,7 +212,7 @@
+ </script>
+ <script type="text/javascript">
+     var baseURL = '<?php echo base_url(); ?>';
+-    var userId = <?php echo $user_id; ?>;
++    var userId = <?php echo (int) ($hayneTargetEmployeeId ?? $user_id); ?>;
+     var leaveId = null;
+     var languageCode = '<?php echo $language_code; ?>';
+     var dateJsFormat = '<?php echo lang('global_date_js_format'); ?>';
+@@ -265,4 +287,4 @@
+     <?php } ?>
+ </script>
+ <script type="text/javascript" src="<?php echo base_url(); ?>assets/js/lms/leave.edit-1.0.4.js"
+-    type="text/javascript"></script>
+\ No newline at end of file
++    type="text/javascript"></script>
+--- a/legacy/application/views/hr/employees.php
++++ b/legacy/application/views/hr/employees.php
+@@ -803,37 +803,14 @@
+             }
+         });
+ 
+-        //Create a leave request for a group of employees
++        //Create a leave request for one employee through the canonical HAYNE form.
+         $("#cmdCreateRequest").click(function () {
+-            if (oTable.rows({ selected: true }).any()) {
+-                $("#frmCreateLeaveRequest").modal('show');
+-                //Init the start and end date picker and link them (end>=date)
+-                $("#viz_leaveStartdate").datepicker({
+-                    changeMonth: true,
+-                    changeYear: true,
+-                    dateFormat: '<?php echo lang('global_date_js_format'); ?>',
+-                    altFormat: "yy-mm-dd",
+-                    altField: "#leaveStartdate",
+-                    numberOfMonths: 1,
+-                    onClose: function (selectedDate) {
+-                        $("#viz_leaveEnddate").datepicker("option", "minDate", selectedDate);
+-                    }
+-                }, $.datepicker.regional['<?php echo $language_code; ?>']);
+-                $("#viz_leaveEnddate").datepicker({
+-                    changeMonth: true,
+-                    changeYear: true,
+-                    dateFormat: '<?php echo lang('global_date_js_format'); ?>',
+-                    altFormat: "yy-mm-dd",
+-                    altField: "#leaveEnddate",
+-                    numberOfMonths: 1,
+-                    onClose: function (selectedDate) {
+-                        $("#viz_leaveStartdate").datepicker("option", "maxDate", selectedDate);
+-                    }
+-                }, $.datepicker.regional['<?php echo $language_code; ?>']);
+-            }
+-            else {
+-                bootbox.alert("<?php echo lang('hr_employees_multiple_edit_selection_msg'); ?>");
++            var employeeIds = JSON.parse(getSelectedEmployees());
++            if (employeeIds.length !== 1) {
++                bootbox.alert("Wybierz jednego pracownika, dla którego chcesz złożyć wniosek.");
++                return;
+             }
++            window.location.href = "<?php echo base_url(); ?>leaves/create?employee=" + encodeURIComponent(employeeIds[0]);
+         });
+ 
+         //Select or deselect all rows
+@@ -941,4 +918,4 @@
+             refreshDataTable();
+         });
+     });
+-</script>
+\ No newline at end of file
++</script>

@@ -1,0 +1,231 @@
+name: verify-pr-hr-create-on-behalf
+
+on:
+  pull_request:
+    paths:
+      - 'hayne/patches/291-hr-create-on-behalf.patch'
+      - 'hayne/overlay/assets/hayne/request.js'
+      - 'hayne/overlay/assets/hayne/request-form-hotfix.js'
+      - 'hayne/overlay/assets/hayne/request.css'
+      - '.github/workflows/verify-pr-hr-create-on-behalf.yml'
+      - 'docs/checkpoints/PR-HR-01_CREATE_ON_BEHALF.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'hayne/patches/291-hr-create-on-behalf.patch'
+      - 'hayne/overlay/assets/hayne/request.js'
+      - 'hayne/overlay/assets/hayne/request-form-hotfix.js'
+      - 'hayne/overlay/assets/hayne/request.css'
+      - '.github/workflows/verify-pr-hr-create-on-behalf.yml'
+      - 'docs/checkpoints/PR-HR-01_CREATE_ON_BEHALF.md'
+
+jobs:
+  hr-create-on-behalf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Static guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check hayne/overlay/assets/hayne/request.js
+          node --check hayne/overlay/assets/hayne/request-form-hotfix.js
+          grep -F "if (\$this->is_hr && \$requestedEmployeeId > 0)" hayne/patches/291-hr-create-on-behalf.patch
+          grep -F "getLeaveTypesDetailsOTypesForUser(\$employeeId)" hayne/patches/291-hr-create-on-behalf.patch
+          grep -F "getLeavesTypeBalanceForEmployee(" hayne/patches/291-hr-create-on-behalf.patch
+          grep -F "\$employeeId," hayne/patches/291-hr-create-on-behalf.patch
+          grep -F "\$changedBy ?? \$employeeId" hayne/patches/291-hr-create-on-behalf.patch
+          grep -F "HTTP/1.1 410 Gone" hayne/patches/291-hr-create-on-behalf.patch
+          grep -F "currentDraftKey()" hayne/overlay/assets/hayne/request-form-hotfix.js
+
+      - name: Build and start HAYNE Leave
+        run: docker compose up --build -d
+
+      - name: Wait for application
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/session/login >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs --no-color
+          exit 1
+
+      - name: Verify built source
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose exec -T jorani php -l legacy/application/controllers/Leaves.php
+          docker compose exec -T jorani php -l legacy/application/controllers/Hr.php
+          docker compose exec -T jorani php -l legacy/application/controllers/Requests.php
+          docker compose exec -T jorani php -l legacy/application/models/Leaves_model.php
+          docker compose exec -T jorani php -l legacy/application/views/leaves/create.php
+          docker compose exec -T jorani php -l legacy/application/views/hr/employees.php
+
+      - name: Authenticate as HR administrator
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          curl -fsS -c artifacts/hr-cookies.txt http://localhost:8080/session/login -o artifacts/hr-login.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/hr-login.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/hr-cookies.txt \
+            -b artifacts/hr-cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jorani' \
+            --data-urlencode 'password=jorani' \
+            --data-urlencode 'language=en' \
+            http://localhost:8080/session/login \
+            -o artifacts/hr-home.html
+          grep -F 'Cześć Admin!' artifacts/hr-home.html
+
+      - name: HR sees every active employee on canonical form
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS -b artifacts/hr-cookies.txt \
+            'http://localhost:8080/leaves/create?employee=2' \
+            -o artifacts/hr-create-target.html
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          html = Path('artifacts/hr-create-target.html').read_text(encoding='utf-8')
+          assert 'id="hayne_employee_selector"' in html
+          assert 'DOE John' in html
+          assert re.search(r'name="employee"\s+id="hayne_employee"\s+value="2"', html)
+          assert re.search(r'var userId = 2;', html)
+          assert 'A PHP Error was encountered' not in html
+          PY
+
+      - name: Configure target employee vacation profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS -b artifacts/hr-cookies.txt http://localhost:8080/haynelimits -o artifacts/hr-limits.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/hr-limits.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/hr-cookies.txt \
+            -b artifacts/hr-cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'employee_id=2' \
+            --data-urlencode 'vacation_type_id=1' \
+            --data-urlencode 'annual_days=26' \
+            --data-urlencode 'auto_renew=1' \
+            http://localhost:8080/haynelimits/save \
+            -o artifacts/hr-limits-saved.html
+          grep -F 'Limit urlopowy został zapisany.' artifacts/hr-limits-saved.html
+
+      - name: HR creates a policy-checked request for employee 2
+        shell: bash
+        run: |
+          set -euo pipefail
+          start="$(date -d 'next monday +21 days' +%F)"
+          curl -fsS -b artifacts/hr-cookies.txt \
+            'http://localhost:8080/leaves/create?employee=2' \
+            -o artifacts/hr-create-submit.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/hr-create-submit.html | head -n 1)"
+          submission_token="$(sed -n 's/.*name="hayne_submission_token" value="\([^"]*\)".*/\1/p' artifacts/hr-create-submit.html | head -n 1)"
+          test -n "$csrf_token"
+          test -n "$submission_token"
+
+          final_url="$(curl -fsS -L \
+            -c artifacts/hr-cookies.txt \
+            -b artifacts/hr-cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode "hayne_submission_token=${submission_token}" \
+            --data-urlencode 'employee=2' \
+            --data-urlencode "startdate=${start}" \
+            --data-urlencode 'startdatetype=Morning' \
+            --data-urlencode "enddate=${start}" \
+            --data-urlencode 'enddatetype=Afternoon' \
+            --data-urlencode 'duration=999' \
+            --data-urlencode 'type=1' \
+            --data-urlencode 'cause=CI HR ON BEHALF' \
+            --data-urlencode 'status=1' \
+            -o artifacts/hr-created.html \
+            -w '%{url_effective}' \
+            http://localhost:8080/leaves/create)"
+          test "$final_url" = 'http://localhost:8080/hr/leaves/2'
+
+          request_row="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT CONCAT(id, ':', employee, ':', status, ':', duration) FROM leaves WHERE cause='CI HR ON BEHALF' ORDER BY id DESC LIMIT 1\"")"
+          request_id="${request_row%%:*}"
+          test "$request_row" = "${request_id}:2:1:1.000"
+          changed_by="$(docker compose exec -T mysql sh -ec "mysql -u\"\$MYSQL_USER\" -p\"\$MYSQL_PASSWORD\" \"\$MYSQL_DATABASE\" -Nse \"SELECT changed_by FROM leaves_history WHERE id=${request_id} AND change_type=1 ORDER BY change_id DESC LIMIT 1\"")"
+          test "$changed_by" = '1'
+
+      - name: Ordinary employee cannot forge another request owner
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS -c artifacts/user-cookies.txt http://localhost:8080/session/login -o artifacts/user-login.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/user-login.html | head -n 1)"
+          test -n "$csrf_token"
+          curl -fsS -L \
+            -c artifacts/user-cookies.txt \
+            -b artifacts/user-cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'login=jdoe' \
+            --data-urlencode 'password=jdoe' \
+            --data-urlencode 'language=en' \
+            http://localhost:8080/session/login \
+            -o artifacts/user-home.html
+          curl -fsS -b artifacts/user-cookies.txt \
+            'http://localhost:8080/leaves/create?employee=1' \
+            -o artifacts/user-forged-target.html
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          html = Path('artifacts/user-forged-target.html').read_text(encoding='utf-8')
+          assert 'id="hayne_employee_selector"' not in html
+          assert re.search(r'name="employee"\s+id="hayne_employee"\s+value="2"', html)
+          assert re.search(r'var userId = 2;', html)
+          PY
+
+      - name: Legacy HR bulk write is closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS -b artifacts/hr-cookies.txt \
+            'http://localhost:8080/leaves/create?employee=2' \
+            -o artifacts/hr-legacy-token.html
+          csrf_token="$(sed -n 's/.*name="csrf_test_jorani" value="\([^"]*\)".*/\1/p' artifacts/hr-legacy-token.html | head -n 1)"
+          test -n "$csrf_token"
+          http_code="$(curl -sS \
+            -o artifacts/legacy-bulk.json \
+            -w '%{http_code}' \
+            -b artifacts/hr-cookies.txt \
+            --data-urlencode "csrf_test_jorani=${csrf_token}" \
+            --data-urlencode 'employees=[2]' \
+            http://localhost:8080/hr/employees/create/leave)"
+          test "$http_code" = '410'
+          grep -F 'Użyj formularza Nowy wniosek' artifacts/legacy-bulk.json
+
+      - name: Reject runtime regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          if docker compose logs --no-color | grep -E 'Undefined variable|Fatal error|Uncaught|Parse error|TypeError'; then
+            exit 1
+          fi
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
