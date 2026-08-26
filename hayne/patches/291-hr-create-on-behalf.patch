@@ -383,7 +383,7 @@
 -            echo $result;
 +            // The legacy bulk endpoint bypasses HAYNE statutory metadata,
 +            // server-side duration calculation and per-employee policy checks.
-+            $this->output->set_header("HTTP/1.1 410 Gone");
++            $this->output->set_status_header(410);
 +            echo json_encode([
 +                'error' => 'Użyj formularza Nowy wniosek i wybierz jednego pracownika.'
 +            ]);

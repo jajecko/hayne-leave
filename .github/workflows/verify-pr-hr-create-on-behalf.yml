@@ -41,7 +41,7 @@ jobs:
           grep -F "getLeavesTypeBalanceForEmployee(" hayne/patches/291-hr-create-on-behalf.patch
           grep -F "\$employeeId," hayne/patches/291-hr-create-on-behalf.patch
           grep -F "\$changedBy ?? \$employeeId" hayne/patches/291-hr-create-on-behalf.patch
-          grep -F "HTTP/1.1 410 Gone" hayne/patches/291-hr-create-on-behalf.patch
+          grep -F "set_status_header(410)" hayne/patches/291-hr-create-on-behalf.patch
           grep -F "currentDraftKey()" hayne/overlay/assets/hayne/request-form-hotfix.js
 
       - name: Build and start HAYNE Leave
