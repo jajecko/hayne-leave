@@ -7,6 +7,11 @@
   const byId = (id) => document.getElementById(id);
   const currentPage = () => document.querySelector('[data-hayne-view="leave-create-v2"]');
   const currentForm = () => byId('frmLeaveForm');
+  const currentDraftKey = () => {
+    const employee = byId('hayne_employee');
+    const employeeId = employee ? String(employee.value || 'self') : 'self';
+    return `${DRAFT_KEY}.${employeeId}`;
+  };
 
   const setRequired = (field, required) => {
     if (!field) return;
@@ -195,7 +200,7 @@
     });
 
     try {
-      window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ savedAt: Date.now(), values }));
+      window.sessionStorage.setItem(currentDraftKey(), JSON.stringify({ savedAt: Date.now(), values }));
     } catch (error) {
       // Storage is an enhancement only; the server-side request must still work.
     }
@@ -204,7 +209,7 @@
   const clearDraft = () => {
     if (!window.sessionStorage) return;
     try {
-      window.sessionStorage.removeItem(DRAFT_KEY);
+      window.sessionStorage.removeItem(currentDraftKey());
     } catch (error) {
       // Ignore browsers that block session storage.
     }
@@ -213,7 +218,7 @@
   const loadDraft = () => {
     if (!window.sessionStorage) return null;
     try {
-      const raw = window.sessionStorage.getItem(DRAFT_KEY);
+      const raw = window.sessionStorage.getItem(currentDraftKey());
       if (!raw) return null;
       const draft = JSON.parse(raw);
       if (!draft || !draft.savedAt || !draft.values || (Date.now() - draft.savedAt) > DRAFT_TTL_MS) {
