@@ -1,0 +1,10 @@
+--- a/legacy/application/views/menu/index.php
++++ b/legacy/application/views/menu/index.php
+@@ -90,6 +90,7 @@
+                 <li><a href="<?php echo base_url(); ?>positions"><?php echo lang('menu_hr_list_positions'); ?></a></li>
+                 <li class="divider"></li>
+                 <li class="nav-header"><?php echo lang('menu_hr_reports_divider'); ?></li>
++                <li><a href="<?php echo base_url(); ?>haynehrreport/monthly">Raport miesięczny dla kadr</a></li>
+                 <li><a
+                     href="<?php echo base_url(); ?>reports/balance"><?php echo lang('menu_hr_report_leave_balance'); ?></a>
+                 </li>
