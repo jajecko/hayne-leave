@@ -41,7 +41,14 @@ jobs:
           grep -F "if (!\$this->is_hr && !\$this->is_admin)" hayne/overlay/legacy/application/controllers/Haynehrreport.php
           grep -F "Raport miesięczny dla kadr" hayne/patches/295-hr-monthly-report-menu.patch
           grep -F "'Kod płacowy'" hayne/overlay/legacy/application/controllers/Haynehrreport.php
-          test "$(grep -Ec '^[[:space:]]+[0-9]+ => '\''\'\'[,]?$' hayne/overlay/legacy/application/config/hayne_payroll_codes.php)" -eq 20
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          text = Path('hayne/overlay/legacy/application/config/hayne_payroll_codes.php').read_text(encoding='utf-8')
+          entries = re.findall(r"^\s+\d+\s*=>\s*'',?\s*$", text, re.M)
+          assert len(entries) == 20, f'expected 20 blank payroll codes, got {len(entries)}'
+          PY
           ! grep -Eiq 'care_reason|person_name|household_address|comments|document' hayne/overlay/legacy/application/controllers/Haynehrreport.php hayne/overlay/legacy/application/views/haynehrreport/monthly.php
 
       - name: Validate Compose configuration
